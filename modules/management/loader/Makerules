@@ -1,0 +1,9 @@
+#
+#	Loader Module
+#
+
+SRCS += loader.c
+MODROOT = modules/management/loader
+
+vpath loader.c $(ROOTDIR)/$(MODROOT)
+INCDIR += -I$(ROOTDIR)/$(MODROOT)

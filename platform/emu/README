@@ -1,0 +1,2 @@
+This directory has platform specific code for gateway node. 
+It is a little different from simulation.  The uart has ability to send message to uart instead of dropping it.

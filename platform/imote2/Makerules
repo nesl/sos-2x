@@ -1,0 +1,25 @@
+# -*- Makefile -*-
+#
+# Makerules for Kernel image for iMote2 platform
+#
+
+#DEFS += -DIMOTE2_PLATFORM -DNO_SOS_I2C -DNO_SOS_RADIO
+DEFS += -DIMOTE2_PLATFORM -DNO_SOS_I2C
+
+PROCESSOR = pxa27x
+
+VPATH += $(ROOTDIR)/platform/$(PLATFORM)
+VPATH += $(ROOTDIR)/drivers/uart
+
+INCDIR += -I$(ROOTDIR)/platform/$(PLATFORM)/include
+INCDIR += -I$(ROOTDIR)/drivers/uart/include
+
+ifeq ($(BUILD),_SOS_KERNEL_)
+SRCS += cc2420_hal.c vhal.c vmac.c led.c sos_uart.c sos_uart_mgr.c pmic.c
+endif
+
+include $(ROOTDIR)/processor/$(PROCESSOR)/Makerules
+
+imote2_install:
+	xflash -p imote2 -tt "JTAG CPU" $(PROJ).bin.out
+

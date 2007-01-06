@@ -1,0 +1,49 @@
+#
+# Makerules for Kernel and Module image for XYZ Platform
+#
+
+DEFS += -D'XYZ_PLATFORM' -DNO_SOS_I2C
+
+PROCESSOR = oki
+
+VPATH += $(ROOTDIR)/platform/$(PLATFORM)
+VPATH += $(ROOTDIR)/platform/xyz/lib/mac/OKI
+VPATH += $(ROOTDIR)/platform/xyz/lib/hal/OKI
+
+INCDIR += -I$(ROOTDIR)/platform/$(PLATFORM)/include
+INCDIR += -I$(ROOTDIR)/drivers/uart/include
+
+#SRCS += hardware.c 
+ifeq ($(BUILD),_SOS_KERNEL_)
+SRCS += radio.c sdram.c photo.c led.c sos_uart.c sos_uart_mgr.c
+
+#SRCS += mac_tx_pool.c mac_scan.c mac_scheduler.c mac_support.c mac_timer.c mac.c
+#SRCS += hal_rf_wait_for_crystal_oscillator.c hal_wait.c
+#SRCS += mac_general.c mac_indirect_queue.c mac_beacon_handler.c mac_security.c
+#SRCS += mac_indirect_polling.c mac_power_management.c mac_rx_engine.c 
+#SRCS += mac_tx_engine.c mac_rx_pool.c
+
+OBJS += $(ROOTDIR)/platform/xyz/cc2420_mac.a
+
+endif
+
+include $(ROOTDIR)/processor/$(PROCESSOR)/Makerules
+
+
+ifdef ENAROOT
+RADIO_LIST = cc2420_mac
+RADIO = $(filter $(MAKECMDGOALS), $(RADIO_LIST))
+ifneq ($(RADIO),)
+
+VPATH += $(ENAROOT)/src/lib/mac/OKI
+VPATH += $(ENAROOT)/src/lib/hal/OKI
+
+SRCS += mac_tx_pool.c mac_scan.c mac_scheduler.c mac_support.c mac_timer.c mac.c
+SRCS += hal_rf_wait_for_crystal_oscillator.c hal_wait.c
+SRCS += mac_general.c mac_indirect_queue.c mac_beacon_handler.c mac_security.c
+SRCS += mac_indirect_polling.c mac_power_management.c mac_rx_engine.c 
+SRCS += mac_tx_engine.c mac_rx_pool.c
+
+endif
+endif
+

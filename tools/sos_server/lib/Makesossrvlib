@@ -1,0 +1,15 @@
+# -*-Makefile -*- #
+
+# Makerules for including the SOS Server Client Library
+
+VPATH += $(ROOTDIR)/tools/sos_server/lib
+VPATH += $(ROOTDIR)/tools/sos_server/src
+
+SRCS += sossrv_client.c sock_utils.c
+
+INCDIR += -I$(ROOTDIR)/tools/sos_server/src/include
+INCDIR += -I$(ROOTDIR)/tools/sos_server/lib/include 
+
+#LIBS += -lpthread
+
+DEFS += -D_SOS_SERVER_CLIENT_

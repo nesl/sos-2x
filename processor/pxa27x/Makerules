@@ -1,0 +1,79 @@
+# -*-Makefile-*-
+#
+# Makerules for Kernel and Module image for PXA27X processor
+#
+
+TRG = xscale-elf-
+
+DEFS += -DPXA27X_MCU -DLLITTLE_ENDIAN -DSUPPORTS_PACKED
+
+MCU = pxa27x
+
+ifeq ($(CC_DEBUG),)
+  CC_DEBUG=-g
+endif
+ifeq ($(AS_DEBUG),)
+  AS_DEBUG=-Wa,-gstabs
+endif
+
+#MCUFLAG += -mmcu=$(MCU)
+
+#PROC=xscale
+#TYPE=elf
+#PATH:=/usr/local/bin:$(PATH)
+#LIBPATH=/usr/local/$(PROC)-$(TYPE)/lib
+#INCPATH=/usr/local/$(PROC)-$(TYPE)/include
+#CC=$(PROC)-$(TYPE)-gcc
+#AS=$(PROC)-$(TYPE)-as
+#AR=$(PROC)-$(TYPE)-ar
+#LD=$(PROC)-$(TYPE)-ld
+#NM=$(PROC)-$(TYPE)-nm
+#OBJDUMP=$(PROC)-$(TYPE)-objdump
+#OBJCOPY=$(PROC)-$(TYPE)-objcopy
+
+#OPTFLAG= -O3
+#DBGFLAG= -gstabs 
+DBGFLAG= -g
+LDSCRIPT= $(ROOTDIR)/processor/$(PROCESSOR)/kernel.ld
+
+CFLAGS= $(DBGFLAG) $(OPTFLAG) $(INCDIR)
+ASFLAGS= -mcpu=iwmmxt -mfpu=softfpa
+LDFLAGS= --cref -T $(LDSCRIPT) -nostartfiles
+
+VPATH  += $(ROOTDIR)/drivers/uart
+VPATH += $(ROOTDIR)/drivers/i2c
+VPATH += $(ROOTDIR)/processor/$(PROCESSOR)
+
+INCDIR += -I$(ROOTDIR)/drivers/uart/include
+INCDIR += -I$(ROOTDIR)/drivers/i2c/include
+INCDIR += -I$(ROOTDIR)/processor/$(PROCESSOR)/include
+
+ifeq ($(BUILD),_SOS_KERNEL_)
+
+#BLS_START = -Wl,--section-start=.sos_bls=0x1fc00
+
+SRCS += timer.c uart_hal.c uart.c uart_system.c crc.c gpio.c
+SRCS += adc_stub.c flash_stub.c systime_stub.c dma.c
+SRCS += irq.c dvfs.c pxa27x_init.c pxa27xhardware_once.c
+#SRCS += i2c.c i2c_system.c
+
+OBJS += barecrt.o memsetup-pxa.o mmu_table.o util.o flash.o binarymover.o
+
+#CFLAGS += -Os $(CC_DEBUG) -fshort-enums -fpack-struct -Wno-cast-qual -Wall -Wa,-adhlmsn=$(notdir $(<:.c=.lst))
+#SFLAGS += -Wa,$(MCUFLAG),$(AS_DEBUG),-ahlms=$(notdir $(<:.S=.lst))
+
+endif # _SOS_KERNEL_
+
+ifeq ($(BUILD),_MODULE_)
+endif # _MODULE_
+
+
+pxa27x: $(PROJ).bin $(PROJ).elf $(PROJ).elf.lst $(PROJ).srec $(OBJS) 
+
+%.bin:	%.elf
+	$(OBJCOPY) --output-target=binary $< $*.bin.out
+	dwarf2bd $*.elf
+
+%.elf: $(OBJS)
+	$(CC) $(OBJS) $(LIBS) $(LDFLAGS) -o $@
+

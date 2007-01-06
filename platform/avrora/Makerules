@@ -1,0 +1,13 @@
+#
+# Makerules for Kernel and Modules image for Avrora Platform
+#
+
+
+PLATFORM = mica2
+
+DEFS += -DAVRORA_PLATFORM
+DEFS += -DNO_SOS_I2C
+
+include $(ROOTDIR)/platform/$(PLATFORM)/Makerules
+
+avrora: mica2 $(PROJ).od

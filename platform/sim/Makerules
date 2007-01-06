@@ -1,0 +1,44 @@
+#
+# Makerules for Kernel and Modules image for SIM platform
+#
+
+DEFS += -DSOS_SIM -D_SOS_SERVER_CLIENT_
+
+PROCESSOR = posix
+
+CFLAGS += -DNO_SOS_I2C 
+
+VPATH += $(ROOTDIR)/platform/$(PLATFORM)
+VPATH += $(ROOTDIR)/drivers/uart
+
+INCDIR += -I$(ROOTDIR)/platform/$(PLATFORM)/include
+INCDIR += -I$(ROOTDIR)/drivers/uart/include
+
+ifeq ($(EMU_PLATFORM), mica2)
+DEFS += -DEMU_MICA2
+endif
+
+ifeq ($(EMU_PLATFORM), xyz)
+DEFS += -DEMU_XYZ
+endif
+
+ifneq ($(SIM_PORT_OFFSET),)
+DEFS += -D'SIM_PORT_OFFSET=$(SIM_PORT_OFFSET)'
+endif
+
+ifneq ($(SIM_DEBUG_PORT),)
+DEFS += -D'SIM_DEBUG_PORT=$(SIM_DEBUG_PORT)'
+endif
+
+ifneq ($(SIM_MAX_GROUP_ID),)
+DEFS += -D'SIM_MAX_GROUP_ID=$(SIM_MAX_GROUP_ID)'
+endif
+
+ifneq ($(SIM_MAX_MOTE_ID),)
+DEFS += -D'SIM_MAX_MOTE_ID=$(SIM_MAX_MOTE_ID)'
+endif
+
+SRCS += $(SIM_SRCS) radio.c pid.c mod_pid.c sos_uart.c sos_uart_mgr.c sim_interface.c
+
+include $(ROOTDIR)/processor/$(PROCESSOR)/Makerules
+

@@ -1,0 +1,107 @@
+# -*- Makefile -*-
+#
+# Makerules for Kernel image for protosb platform
+#
+
+DEFS += -DPROTOSB_PLATFORM
+DEFS += -DNO_LEDS -DNO_RADIO
+
+PROCESSOR = avr
+
+DRIVER_DIR = $(ROOTDIR)/drivers
+
+VPATH += $(ROOTDIR)/platform/$(PLATFORM)
+VPATH += $(DRIVER_DIR)/uart
+VPATH += $(DRIVER_DIR)/i2c
+VPATH += $(DRIVER_DIR)/spi
+VPATH += $(DRIVER_DIR)/mux/adg715
+VPATH += $(DRIVER_DIR)/amplifier/ltc6915
+VPATH += $(DRIVER_DIR)/adc/ads8341
+
+INCDIR += -I$(ROOTDIR)/platform/$(PLATFORM)/include
+INCDIR += -I$(DRIVER_DIR)/uart/include
+INCDIR += -I$(DRIVER_DIR)/i2c/include
+INCDIR += -I$(DRIVER_DIR)/spi/include
+INCDIR += -I$(DRIVER_DIR)/mux/adg715/include
+INCDIR += -I$(DRIVER_DIR)/amplifier/ltc6915/include
+INCDIR += -I$(DRIVER_DIR)/adc/include
+INCDIR += -I$(DRIVER_DIR)/adc/ads8341/include
+
+ifeq ($(BUILD),_SOS_KERNEL_)
+# this should be adde to the SRCS list in processor but  needs to be included here for now
+# because of a driver conflict with the mica2/z radio drivers
+SRCS += spi_hal.c
+SRCS += spi.c spi_system.c sos_i2c.c sos_i2c_mgr.c sos_uart.c sos_uart_mgr.c
+SRCS += vref.c vreg.c preamp.c adg715_mux.c ltc6915_amp_hal.c ltc6915_amp.c ads8341_adc_hal.c ads8341_adc.c switches.c
+endif
+
+include $(ROOTDIR)/processor/$(PROCESSOR)/Makerules
+
+ifneq ($(UISP),)
+UISP_PROG = $(UISP) 
+else 
+UISP_PROG = uisp
+endif
+
+####
+# Programer configuration
+#   dapa  | mib510 | stk500 | avarice | vorata (not yet supported)
+#   specify PORT if you want serial programming
+#   specify IP address if you are using ethernet programming
+####
+ifndef PROG
+PROG=dapa
+endif
+INSTALLER_PORG = -dprog=$(PROG)
+
+# TODO: fix this to handle alternative parallel ports
+#PORT=
+ifneq ($(PORT),)
+INSTALLER_PORT = -dserial=$(PORT)
+endif
+
+#IP=
+ifneq ($(IP),)
+INSTALLER_PORT = -dhost=$(IP)
+endif
+
+INSTALLER_PART = -dpart=$(MCU)
+
+ifeq ($(PROG),jtag)
+INSTALLER = avarice 
+else
+INSTALLER = $(UISP_PROG) $(INSTALLER_PART) $(INSTALLER_PORG) $(INSTALLER_PORT)
+endif
+
+
+#######
+# Make rules
+#######
+
+protosb_install: $(PROJ).srec
+	$(ROOTDIR)/tools/admin/set-mote-id $(PROJ).srec $(PROJ).srec.out.$(ADDRESS) $(ADDRESS)
+ifneq ($(PROG),jtag)
+# unset watchdog fuse for atmega128
+# Fuses are read as logical 0 when programmed 1=not set
+	$(INSTALLER) --wr_fuse_e=0xff
+	sleep 2
+	$(INSTALLER) --wr_fuse_h=0x9f
+	sleep 2
+	$(INSTALLER) --wr_fuse_l=0xff
+	sleep 2
+	$(INSTALLER) --erase
+	sleep 2
+	$(INSTALLER) --upload if=$(PROJ).srec.out.$(ADDRESS)
+ifndef NO_VERIFY
+	sleep 2
+	$(INSTALLER) --verify if=$(PROJ).srec.out.$(ADDRESS)
+endif
+	rm -f $(PROJ).srec.out.$(ADDRESS)
+else
+	$(INSTALLER) --jtag $(PORT) --write-fuses ff9fff
+	$(INSTALLER) --erase --program --jtag $(PORT) --file $(PROJ).srec.out.$(ADDRESS)
+ifndef NO_VERIFY
+	$(INSTALLER) --verify --jtag $(PORT) --file $(PROJ).srec.out.$(ADDRESS) && rm -f $(PROJ).srec.out.$(ADDRESS)
+endif
+endif
+

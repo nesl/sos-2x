@@ -1,0 +1,55 @@
+# -*- Makefile -*- #
+#####################################
+# PROJECT SETUP
+#####################################
+SOSELFROOT = $(ROOTDIR)/tools/elfloader
+VPATH += $(SOSELFROOT)/minielf/ 
+VPATH += $(SOSELFROOT)/elflib/
+INCDIR += -I$(SOSELFROOT)/minielf/ 
+INCDIR += -I$(ROOTDIR)/kernel/include/ 
+INCDIR += -I$(SOSELFROOT)/elflib/
+
+#####################################
+# COMPILER TOOLCHAIN SETUP
+#####################################
+CC = gcc
+CFLAGS += -g -Wall -Werror
+LDFLAGS +=
+LIBS += -lelf
+
+####################################
+# TARGET ARCH SETUP
+####################################
+ifeq ($(MAKECMDGOALS), avr)
+DEFS += -DAVR_MCU
+endif
+
+####################################
+# HOST PLATFORM SETUP
+####################################
+HOST = $(shell uname -s)
+ifeq ($(HOST), Darwin)
+CFLAGS += -DBBIG_ENDIAN
+else
+CFLAGS += -DLLITTLE_ENDIAN
+endif
+
+####################################
+# PROTOTYPES
+####################################
+%.o: %.c
+	$(CC) -c $(CFLAGS) $(DEFS) $(INCDIR) $< -o $@
+
+%.exe: $(OBJS)
+	$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $@
+
+all:
+	@echo "Compiling"
+	@echo "Specify target architecture"
+	@echo "AVR: make avr"
+
+avr: $(PROJ).exe
+
+clean:
+	rm -f *.o *.exe *~
+

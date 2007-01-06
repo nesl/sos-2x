@@ -1,0 +1,56 @@
+#########
+# Cricket
+########
+
+DEFS += -DCRICKET_PLATFORM
+
+PROCESSOR = avr
+
+BLS_START = -Wl,--section-start=.sos_bls=0x1fc00
+                                                              
+SRCS += cc1k_radio.c led.c  systime.c
+SRCS += cc1k_cnt.c adc_proc.c spi.c cc1k.c  i2c.c i2c_system.c
+SRCS += flash_api.c  
+
+OBJS += flash.o
+                                                              
+TRG = avr-
+
+MCU = atmega128
+
+MCUFLAG = -mmcu=$(MCU)
+
+CFLAGS = $(MCUFLAG) -O1 -Wall -Wno-cast-qual -Wa,-adhlmsn=$(notdir $(<:.c=.lst)) $(DEFS)
+
+LDFLAGS = $(MCUFLAG) -Wl,-Map=$(PROJ).map,--cref $(BLS_START) -Wl,-T $(ROOTDIR)/processor/avr/sos_avr5.x
+
+SFLAGS = $(MCUFLAG) -Wa,$(MCUFLAG),-gstabs,-ahlms=$(notdir $(<:.S=.lst))
+
+cricket: $(PROJ).elf $(PROJ).elf.lst $(PROJ).srec $(OBJS) 
+
+###
+# Special case to block warnings from 17 bit addressing woes
+###
+
+cc1k_radio.o : cc1k_radio.c
+	$(CC) -c $(CFLAGS) -w $(INCDIR) $< -o $@
+
+cc1k_cnt.o : cc1k_cnt.c
+	$(CC) -c $(CFLAGS) -w $(INCDIR) $< -o $@
+
+uart_stub.o : uart_stub.c
+	$(CC) -c $(CFLAGS) -w $(INCDIR) $< -o $@
+
+uart_stream.o : uart_stream.c
+	$(CC) -c $(CFLAGS) -w $(INCDIR) $< -o $@
+
+fntable.o : fntable.c
+	$(CC) -c $(CFLAGS) -w $(INCDIR) $< -o $@
+
+monitor.o : monitor.c
+	$(CC) -c $(CFLAGS) -w $(INCDIR) $< -o $@
+
+sched.o : sched.c
+	$(CC) -c $(CFLAGS) -w $(INCDIR) $< -o $@
+
+

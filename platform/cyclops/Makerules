@@ -1,0 +1,110 @@
+# -*-Makefile-*-
+# Makerules for Kernel image for Cyclops platform
+#
+
+#DEFS += -DNO_SOS_I2C
+DEFS += -DCYCLOPS_PLATFORM
+DEFS += -DNO_RADIO -DDISABLE_WDT 
+
+PROCESSOR = avr
+
+VPATH += $(ROOTDIR)/platform/$(PLATFORM)
+VPATH += $(ROOTDIR)/drivers/uart
+VPATH += $(ROOTDIR)/drivers/i2c
+VPATH += $(ROOTDIR)/drivers/spi
+VPATH += $(ROOTDIR)/platform/$(PLATFORM)/drivers/adcm1700
+VPATH += $(ROOTDIR)/platform/$(PLATFORM)/lib/debug
+VPATH += $(ROOTDIR)/platform/$(PLATFORM)/lib/matrix
+VPATH += $(ROOTDIR)/platform/$(PLATFORM)/lib/backgroundSubtraction
+VPATH += $(ROOTDIR)/platform/$(PLATFORM)/lib/statistics
+
+INCDIR += -I$(ROOTDIR)/platform/$(PLATFORM)/include
+INCDIR += -I$(ROOTDIR)/drivers/uart/include
+INCDIR += -I$(ROOTDIR)/drivers/i2c/include
+
+ifeq ($(BUILD),_SOS_KERNEL_)
+SRCS += led.c sos_uart.c sos_uart_mgr.c sos_i2c.c  sos_i2c_mgr.c  
+SRCS += adcm1700Const.c adcm1700Comm.c cpld.c adcm1700ctrlWindowSize.c adcm1700ctrlRun.c adcm1700ctrlStat.c adcm1700ctrlPattern.c
+SRCS += adcm1700ctrlPatch.c adcm1700ctrlFormat.c adcm1700ctrlExposure.c 
+#SRCS += adcm1700Control.c
+SRCS += adcm1700ControlThread.c
+SRCS += matrixLogic.c matrixArithmetics.c imgBackground.c basicStat.c matrixImage.c
+#SRCS += serialDump.c 
+SRCS += radioDump.c 
+
+
+
+SRCS += malloc_extmem.c ext_memmap.c
+
+
+LDFLAGS += -lm
+endif
+
+include $(ROOTDIR)/processor/$(PROCESSOR)/Makerules
+
+ifneq ($(UISP),)
+UISP_PROG = $(UISP)
+else 
+UISP_PROG = uisp
+endif
+
+####
+# Programer configuration
+#   dapa  | mib510 | stk500 | vorata (not yet supported)
+#   specify PORT if you want serial programming
+#   specify IP address if you are using ethernet programming
+####
+ifndef PROG
+PROG=dapa
+endif
+INSTALLER_PORG = -dprog=$(PROG)
+
+# TODO: fix this to handle alternative parallel ports
+#PORT=
+ifneq ($(PORT),)
+INSTALLER_PORT = -dserial=$(PORT)
+endif
+
+#IP=
+ifneq ($(IP),)
+INSTALLER_PORT = -dhost=$(IP)
+endif
+
+INSTALLER_PART = -dpart=$(MCU)
+
+ifeq ($(PROG),jtag)
+INSTALLER = avarice 
+else
+INSTALLER = $(UISP_PROG) $(INSTALLER_PART) $(INSTALLER_PORG) $(INSTALLER_PORT)
+endif
+
+#######
+# Make rules
+#######
+
+cyclops_install: $(PROJ).srec
+	$(ROOTDIR)/tools/admin/set-mote-id $(PROJ).srec $(PROJ).srec.out.$(ADDRESS) $(ADDRESS)
+ifneq ($(PROG),jtag)
+# Disable watchdog for Cyclops
+	$(INSTALLER) --wr_fuse_e=0xff
+	sleep 2
+	$(INSTALLER) --wr_fuse_h=0x9f
+	sleep 2
+	$(INSTALLER) --wr_fuse_l=0xff
+	sleep 2
+	$(INSTALLER) --erase
+	sleep 2
+	$(INSTALLER) --upload if=$(PROJ).srec.out.$(ADDRESS)
+ifndef NO_VERIFY
+	sleep 2
+	$(INSTALLER) --verify if=$(PROJ).srec.out.$(ADDRESS)
+endif
+	rm -f $(PROJ).srec.out.$(ADDRESS)
+else
+	$(INSTALLER) --jtag $(PORT) --write-fuses ff9fff
+	$(INSTALLER) --erase --program --jtag $(PORT) --file $(PROJ).srec.out.$(ADDRESS)
+ifndef NO_VERIFY
+	$(INSTALLER) --verify --jtag $(PORT) --file $(PROJ).srec.out.$(ADDRESS) && rm -f $(PROJ).srec.out.$(ADDRESS)
+endif
+endif
+

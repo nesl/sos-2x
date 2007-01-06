@@ -1,0 +1,28 @@
+#
+# Makerules for Kernel image for GW platform
+#
+
+DEFS += -DSOS_GW -D_SOS_SERVER_CLIENT_
+
+PROCESSOR = posix
+
+VPATH += $(ROOTDIR)/platform/$(PLATFORM)
+VPATH += $(ROOTDIR)/drivers/uart
+
+INCDIR += -I$(ROOTDIR)/platform/$(PLATFORM)/include
+INCDIR += -I$(ROOTDIR)/drivers/uart/include
+
+CFLAGS += -DNO_SOS_UART -DNO_SOS_I2C
+
+ifeq ($(EMU_PLATFORM), mica2)
+DEFS += -DEMU_MICA2
+endif
+
+ifeq ($(EMU_PLATFORM), xyz)
+DEFS += -DEMU_XYZ
+endif
+
+SRCS += radio.c pid.c mod_pid.c 
+
+include $(ROOTDIR)/processor/$(PROCESSOR)/Makerules
+

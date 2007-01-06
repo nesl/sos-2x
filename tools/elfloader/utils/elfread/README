@@ -1,0 +1,19 @@
+README
+------
+elfread is a tool that is intended to parse ELF files and print out the contents in a readable format.
+
+INSTALL
+-------
+Compilation and building of elfread requires the libelf library.
+libelf library can be obtained from libelf website (http://directory.fsf.org/all/libelf.html)
+To Compile: make
+
+TESTING
+-------
+elfread has been tested with libelf-0.8.6 on MAC OS X.
+
+NOTE
+----
+GNU binutils also contains a similar tool readelf (See: http://www.gnu.org/software/binutils/manual/html_chapter/binutils_14.html).
+
+

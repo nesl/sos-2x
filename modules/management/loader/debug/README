@@ -1,0 +1,18 @@
+README for Loader Debug
+-----------------------
+This application can be used to debug the loader.
+Setup requires three motes: MoteA, MoteB, MoteSnoop.
+1. MoteA is attached to the PC.
+2. MoteB is one-hop away from MoteA.
+3. MoteSnoop is also attached to the PC (on a different serial port than MoteA).
+
+
+Installation
+-------------
+1. Install the blank SOS kernel on MoteA and MoteB.
+2. Install RadioSnoop_App on MoteSnoop.
+3. Start two instances of sos_server as follows:
+   a) ./sos_server -s <serial_device_for_MoteA>
+   b) ./sos_server -s <serial_device_for_MoteSnoop> -p <Snoop_Server_Port>
+4. Start loader_snoop with the port address set to Snoop_Server_Port
+5. Use the sos_tool to install modules on the network and observer the messages sent over the air.

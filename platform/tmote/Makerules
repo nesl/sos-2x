@@ -1,0 +1,48 @@
+# -*- Makefile -*-
+#
+# Makerules for Kernel image for Tmote platform
+#
+
+DEFS += -DTMOTE_PLATFORM
+# until it works
+#DEFS += -DNO_RADIO -DNO_SOS_RADIO
+DEFS += -DNO_SOS_I2C -DNO_KERTABLE_PLAT
+
+PROCESSOR = msp430
+
+LIBCDIR = /usr
+
+INCDIR += -I$(LIBCDIR)/msp430/include
+INCDIR += -I$(LIBCDIR)/msp430/include/sys
+
+VPATH += $(ROOTDIR)/platform/$(PLATFORM)
+VPATH += $(ROOTDIR)/drivers/uart
+
+INCDIR += -I$(ROOTDIR)/platform/$(PLATFORM)/include
+INCDIR += -I$(ROOTDIR)/drivers/uart/include
+
+ifeq ($(BUILD),_SOS_KERNEL_)
+# TODO: build source list dynamicly based on defines/flags
+SRCS +=  led.c sos_uart.c sos_uart_mgr.c  
+SRCS +=  cc2420_hal.c
+SRCS +=  vhal.c vmac.c
+endif
+
+include $(ROOTDIR)/processor/$(PROCESSOR)/Makerules
+
+###########
+# Programmer Configuration
+##########
+
+PORT=
+ifneq ($(PORT),)
+INSTALLER_PORT = $(PORT)  #-dserial=$(PORT)
+else
+INSTALLER_PORT = 4 #COM5
+endif
+
+INSTALLER = msp430-bsl --tmote -c $(INSTALLER_PORT) -r -e -p 
+
+tmote_install: $(PROJ).elf
+	$(INSTALLER) $(PROJ).elf
+	rm -f $(PROJ).srec.out.$(ADDRESS)

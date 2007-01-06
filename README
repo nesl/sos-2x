@@ -1,0 +1,79 @@
+Tool Installation
+-----------------
+
+To install tools, execute install.sh
+
+
+Overview of Directory Layout
+----------------------------
+
+This is the base directory of the SOS operating system.  This base directory
+simply acts as a root for other parts of the SOS distribution.  Most of this
+distribution tries to place groups of files in labeled directories, rather than
+clumping files in a generic location.  For example, the modules directory use
+subdirectories to separate test modules from the more commonly used generic
+modules.  Base directories include:
+
+config
+~~~~~~
+
+Location of SOS kernel configurations.  These include the 'blank' kernel that
+is loaded onto nodes in a sensor network, the 'base' kernel that is used to
+interface between a server PC and the sensor network, and the 'modd_gw' kernel
+used to load programs from the PC into a sensor network.
+
+contrib
+~~~~~~~
+
+SOS releated work that is not part of the core release.  This includes
+applicaton and driver code developed by other research labs and individuals.
+This is a good place to develop custom applications.
+
+doc
+~~~~
+
+Documentation for SOS.  Most of the documentation is written as HTML for use
+on the SOS website.  SOS publications are also included on the website.  Small
+TODO type lists sit directly in the doc directory.
+
+drivers
+~~~~~~~
+
+include
+~~~~~~~
+
+SOS operating system include files.  These describe the core API provided by
+SOS.  Platform and processor specific include files are NOT included in this
+directory, but in the appropriate platform or processor directory.
+
+kernel
+~~~~~~
+
+The core SOS kernel.  This is all of the C code that is used to make the core
+kernel common on all platforms and processors.  Building a specific SOS kernel
+can be accomplished directly from this directory (?).
+
+modules
+~~~~~~~
+
+Individual modules that can be loaded on top of SOS.  Platform specific
+modules sit in platform specific subdirectories of the the modules directory.
+
+platform
+~~~~~~~~
+
+Platform specific driver code.  Note that processor specific driver code is
+kept in a separate processor directory.
+
+processor
+~~~~~~~~~
+
+Processor specific driver code.  Note that platform specific driver code is
+kept in a separate platform directory.
+
+tools
+~~~~~
+
+Tools used with SOS.  This consists of PC tools used with SOS including: the
+sosserv server, tools for automated testing of the code base, and the SOS GUI.
+

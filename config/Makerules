@@ -1,0 +1,120 @@
+# -*-Makefile-*-
+#
+# Generel Makerules for Kernel image
+#
+
+VIRTPLATLIST = sim emu
+
+EMUPLATLIST = mica2 xyz
+DEFAULT_EMUPLAT = mica2
+
+PLATLIST = plat1281 802_15_4_sim cyclops mica2 micaz iBadge xyz avrora cricket tmote protosb imote2
+DEFAULT_PLAT = mica2
+
+VIRTGOALS = $(filter $(VIRTPLATLIST), $(MAKECMDGOALS))
+EMUGOALS = $(filter $(EMUPLATLIST), $(MAKECMDGOALS))
+PLATGOALS = $(filter $(PLATLIST), $(MAKECMDGOALS))
+
+# no sanity checks!!
+ifeq ($(PLATFORM),)
+# user defined VIRTUAL PLATFORM
+ifneq ($(VIRTGOALS),)
+PLATFORM = $(VIRTGOALS)
+ifeq ($(EMU_PLATFORM),)
+ifneq ($(EMUGOALS),)
+EMU_PLATFORM = $(EMUGOALS)
+else
+EMU_PLATFORM = $(DEFAULT_EMUPLAT)
+endif
+endif
+endif
+
+ifeq ($(PLATFORM),)
+PLATFORM = $(filter $(PLATLIST), $(PLATGOALS))
+endif
+
+ifeq ($(PLATFORM),)
+PLATFORM = $(DEFAULT_PLAT)
+endif
+endif
+
+BUILD = _SOS_KERNEL_
+
+DEFS += -D_SOS_KERNEL
+
+# NOTE: hardware.c has to be the first entry!
+SRCS_FIRST += hardware.c main.c
+OBJS_FIRST =
+
+##################################################
+# MEMORY PROTECTION OPTIONS
+#################################################
+ifeq ($(MODE), safe)
+DEFS += -DFAULT_TOLERANT_SOS
+SRCS += malloc_domains.c
+endif
+
+ifeq ($(MODE), sfi)
+DEFS += -DSOS_SFI
+#SRCS += malloc_sfi.c memmap.c
+SRCS += malloc.c memmap.c
+ifeq ($(DOMS),8)
+DEFS += -DSFI_DOMS_8
+else
+DEFS += -DSFI_DOMS_2
+endif
+endif
+
+ifeq ($(MODE),)
+SRCS += malloc.c
+endif
+#################################################
+
+SRCS += $(PROJ).c
+SRCS += sched.c message.c message_queue.c message_net.c
+SRCS += codemem.c sos_module_fetcher.c fntable.c
+SRCS += sos_timer.c monitor.c
+SRCS += sos_list.c sos_info.c 
+SRCS += random.c sensor.c timestamp.c
+SRCS += sos_cam.c sos_logging.c
+#SRCS += version_sync.c
+
+OBJS += $(SRCS_FIRST:.c=.o) $(OBJS_FIRST) $(SRCS:.c=.o) $(ASMSRCS:.S=.o)
+
+ifneq ($(PLATFORM),)
+include $(ROOTDIR)/kernel/Makerules
+endif
+
+
+####
+# Make rules
+####
+
+$(PLATFORM): $(PROCESSOR)
+
+all:
+	@echo "make { $(PLATLIST) check}";
+	@echo "make mica2 install ADDRESS=<node_address>";
+
+install: $(PLATFORM)_install
+
+check: $(SRCS:.c=.i)
+	for i in `ls *.i`; do \
+        echo "# Warnings for file $$i:"; \
+        $(ROOTDIR)/tools/verify/check $$i $(ROOTDIR) $(QUIET); \
+    done
+ 
+clean:
+	rm -f *.o *.srec *.ihex *.elf *.lst $(PROJ).map $(PROJ).exe
+	rm -f $(PROJ).exe.out.* $(PROJ).od $(PROJ).srec.out.* .build.tmp
+	rm -f $(PROJ).bd $(PROJ).bin.out xflash.log
+	rm -f *.i *.check
+	rm -f sfi_jumptable_proc.S	
+	for mod in $(MOD_PATHS); do               \
+		$(MAKE) --directory=$$mod clean;  \
+	done
+
+.PHONY: $(EMU_PLATFORM)
+$(EMU_PLATFORM):
+	@echo $(PLATFORM) binary built for $(EMU_PLATFORM) platform
+

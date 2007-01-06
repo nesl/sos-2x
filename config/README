@@ -1,0 +1,103 @@
+
+
+********************
+*                  *
+*   NIC Support    *
+*                  *
+********************
+Add "CFLAGS += -DSOS_UART_NIC" to compile a uart to radio nic.
+Add "CFLAGS += -DSOS_I2C_NIC" to compile an i2c to radio nic.
+Add "CFLAGS += -DDISABLE_RADIO -DSOS_UART_NIC -DSOS_I2C_NIC" to compile i2c to uart bridge.
+when compile, id of the NIC will have to be the same as gw (emu target)
+by default, gw use id = 65534, so use following to compile
+% make mica2 install ADDRESS=65534
+
+To compile emu target, use the following
+% make emu EMU_PLATFORM=[ mica2 | xyz ] {ADDRESS=65534}
+
+NOTE that you must select one of the platform from [ ].
+Paramters in { } are optional.
+
+***************************
+*                         *
+*   SOS on Mica2 Setup    *
+*                         *
+***************************
+To use SOS, following fuse bit is required
+
+Fuse bit setting           (Original Setting)
+=============================================
+Fuse Low Byte      = 0xff   (0xff)
+Fuse High Byte     = 0x98   (0xd9)
+Fuse Extended Byte = 0xfe   (0xff)
+
+if you are using avarice to program the fuses will be set correctly when the 
+device is programed and no changes are necessary.
+
+if you use usip the following command will set them correctly.
+
+uisp -dpart=atmega128 -dprog=dapa --rd_fuses
+uisp -dpart=atmega128 -dprog=dapa --wr_fuse_h=0x98
+uisp -dpart=atmega128 -dprog=dapa --wr_fuse_e=0xfe
+uisp -dpart=atmega128 -dprog=dapa --rd_fuses
+
+OR
+
+uisp -dpart=atmega128 -dprog=mib510 -dserial=/dev/ttyS0 --rd_fuses
+uisp -dpart=atmega128 -dprog=mib510 -dserial=/dev/ttyS0 --wr_fuse_h=0x98
+uisp -dpart=atmega128 -dprog=mib510 -dserial=/dev/ttyS0 --wr_fuse_e=0xfe
+uisp -dpart=atmega128 -dprog=mib510 -dserial=/dev/ttyS0 --rd_fuses
+
+to disable the watchdog timer leave the extended fuse byte set to 0xff
+if the code is compiled with -DDISABLE_WDT this this fuse MUST be cleared 
+
+***********************************
+*                                 *
+*   SOS on Mica2 Installation     *
+*                                 *
+***********************************
+First go into one of the application 
+% cd blink
+
+Make applcation with node address of 5
+% make mica2 ADDRESS=5
+
+Install applcation using mib510 (serial programming)
+% make mica2 install ADDRESS=5 PROG=mib510 PORT=/dev/ttyUSB0
+
+Install application using STK500 (Ethernet programming)
+% make mica2 install ADDRESS=5 PROG=stk500 IP=192.168.0.1
+
+Install application using avarice (JTAG programming)
+% make mica2 install ADDRESS=5 PROG=jtag PORT=/dev/ttyUSB1
+
+******************************************
+*                                        *
+*  JTAG use for a atmega based platform  *
+*                                        *
+******************************************
+First go into one of the applications
+% cd blink
+
+If you are doing anything involving interrupts
+compile for the device with the radio interrupt
+disabled and the watchdog timer disabled.  the disabling
+of the watchdog timer is not required but the jtag unit
+operates the device at 1Mhz making watchdog timeouts a
+possibility so it is recomended
+% CFLAGS="-DDISABLE_RADIO -DDISABLE_WDT" make mica2
+
+Now start the debuger passing it the port that the JTAG unit
+is connected to
+% AVARICE_ARGS="-j /dev/ttyUSB0 -W ff9fff" ice-gdb blink_app.elf
+
+If you do not need to debug interrupts and want to use the
+radio, compile with
+% CFLAGS="-DDISABLE_WDT" make mica2
+
+Now run the application with the ignore interrupts flag
+% AVARICE_ARGS="-j /dev/ttyUSB0 -I -W ff9fff" ice-gdb blink_app.elf
+
+To run a GDB config file use
+% AVARICE_ARGS="-j /dev/ttyUSB0 -W ff9fff" ice-gdb --command=gdb_conf blink_app.elf
+

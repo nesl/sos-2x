@@ -1,0 +1,45 @@
+# -*-Makefile-*-
+#
+# Makerules for Kernel and Module image for POSIX processor
+#
+
+DEFS += -DPC_PLATFORM -DSUPPORTS_PACKED
+
+HOST = $(shell uname -s)
+
+VPATH  += $(ROOTDIR)/drivers/uart
+VPATH += $(ROOTDIR)/processor/$(PROCESSOR)
+
+INCDIR += -I$(ROOTDIR)/drivers/uart/include
+INCDIR += -I$(ROOTDIR)/processor/$(PROCESSOR)/include
+
+ifeq ($(HOST), Darwin)
+DEFS += -DBBIG_ENDIAN
+else
+DEFS += -DLLITTLE_ENDIAN
+endif
+
+CFLAGS += -g -O -Wno-char-subscripts
+
+LIBS += -lpthread
+
+SRCS += led.c systime.c adc_proc.c flash.c crc.c timer.c exflash.c uart_hal.c uart.c uart_system.c interrupt.c
+SRCS += server.c
+
+DEFS += -DMINIELF_LOADER
+SRCS += melfloader_pc.c minielfendian.c melfloader.c sim_melfloader.c
+VPATH += $(ROOTDIR)/tools/elfloader/minielf
+VPATH += $(ROOTDIR)/tools/elfloader/soslib
+INCDIR += -I$(ROOTDIR)/tools/elfloader/soslib
+INCDIR += -I$(ROOTDIR)/tools/elfloader/minielf
+
+##############################################################################
+# Include memory map checker for SFI Mode
+##############################################################################
+ifeq ($(MODE), sfi)
+SRCS += memmap_checker_proc.c 
+endif
+##############################################################################
+
+posix: $(PROJ).exe
+

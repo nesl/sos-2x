@@ -1,0 +1,85 @@
+/* -*- Mode: C; tab-width:2 -*- */
+/* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
+
+/**
+ * @brief    device related messages
+ * @author   Naim Busek	(naim@gmail.com)
+ * @version  0.1
+ *
+ */
+#ifndef _PLAT_MSG_TYPES_H_
+#define _PLAT_MSG_TYPES_H_
+#include <message_types.h>
+
+/**
+ * @brief device msg_types list
+ */
+enum {
+	/* spi msgs */
+	MSG_SPI_SEND_DONE=PLAT_MSG_START, // 0x80 (128) //!< SPI send done
+	MSG_SPI_READ_DONE, //!< SPI read done
+	MSG_SPI_FREE, //!< SPI notify blocked module
+	
+	MSG_RAW_IMAGE_FRAGMENT,
+	MSG_DATA_NACK, 
+	MSG_DATA_ACK, 
+	MSG_DATA_ACK_BACK, 
+	MSG_GET_SERVO,
+	
+	READ_REGISTER_DONE,   
+	WRITE_REGISTER_DONE,  
+	WRITE_BLOCK_DONE,   
+	READ_BLOCK_DONE,  
+	READ_PACKET_DONE,  
+	WRITE_PACKET_DONE,  
+	SET_EXPOSURE_TIME_DONE,   
+	SET_ANALOG_GAIN_DONE,   
+	SET_DIGITAL_GAIN_DONE,   
+	SET_FORMAT_DONE,   
+	SET_PATCH_DONE,
+	SET_PATTERN_DONE, 
+	CAMERA_DONE, 
+	SENSOR_DONE, 
+	GET_SUMS_DONE, 
+	SET_INPUT_SIZE_DONE, 
+	SET_OUTPUT_SIZE_DONE, 
+	SET_INPUT_PAN_DONE, 
+	PROCESS_SIGNAL,
+	SET_CPLD_MODE_DONE, 
+	IMAGER_READY,
+	SNAP_IMAGE_DONE,
+	SET_CAPTURE_PARAMETERS_DONE,
+	GET_PIXEL_AVERAGES_DONE,
+	RUN_DONE,
+	SEND_START_DONE,
+	SEND_END_DONE,
+	WRITE_DONE,
+	READ_DONE,
+	I2C_TASK,
+	SEND_DONE,
+	RECEIVE,
+	MEMORY_DUMP_DONE,
+	MSG_DUMP_BUFFER_TO_SERIAL,
+	MSG_DUMP_BUFFER_TO_RADIO,
+	MSG_RADIO_DUMP_DONE,
+	MSG_SERIAL_DUMP_DONE,
+	//Matrix message type
+	CONVERT_IMAGE_TO_MATRIX,
+	CONVERT_RGB_TO_MATRIX,
+	ADD,
+	SUB,
+	ABS_SUB,
+	GET_ROW,
+	GET_COLUMN,
+	GET_BIT,
+	SCALE, 
+	THRESHOLD,
+	// Image Background message type
+	UPDATE_BACKGROUND,
+	ESTIMATE_AVG_BACKGROUND,
+	OVER_THRESH,
+	
+};
+
+#endif /* _PLAT_MSG_TYPES_H_ */
+

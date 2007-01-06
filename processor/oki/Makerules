@@ -1,0 +1,87 @@
+#
+# Makerules for Oki processor
+#
+
+
+TRG = arm-none-elf-
+#TRG = arm-elf-
+#TRG = /f/Enalab/XYZ/armgnutools/gnutools/bin/arm-elf-
+
+DEFS += -DLLITTLE_ENDIAN -DSUPPORTS_PACKED
+
+LIBS += -lm
+
+#DEBUG += -pg -g
+
+MCUFLAG += -nostartfiles -mthumb-interwork -marm
+
+VPATH  += $(ROOTDIR)/drivers/uart
+VPATH += $(ROOTDIR)/processor/$(PROCESSOR)
+
+INCDIR += -I$(ROOTDIR)/drivers/uart/include
+INCDIR += -I$(ROOTDIR)/processor/$(PROCESSOR)/include
+
+# XXX
+#DEFS += -DSYS_JUMP_TBL_START=0x0
+#DEFS += -DSYS_JUMP_TBL_SIZE=4
+
+ifeq ($(BUILD),_SOS_KERNEL_)
+
+SRCS += irq.c flash.c systime.c adc_proc.c crc.c timer.c uart_hal.c uart.c uart_system.c wdt.c
+
+OBJS += init.o reentrant_irq.o 
+
+#BLS_START = -Wl,--section-start=.sos_bls=0x1fc00
+#BLS_START = -Wl,--section-start=.sos_bls=0x30000
+
+#CFLAGS += -O3
+CFLAGS 	+= -g
+
+LDFLAGS += -Wl,-Map=$(PROJ).map,--cref $(CFLAGS)
+LDFLAGS += -Wl,-L$(ROOTDIR)/processor/oki,-Tkernel.ld $(BLS_START)
+
+SFLAGS 	+= -Wa,-I$(ROOTDIR)/processor/oki $(CFLAGS)
+#SDFLAGS += -Wa,-adhlmsn=$(notdir $(<:.c=.lst))
+
+endif
+
+
+ifeq ($(BUILD),_MODULE_)
+
+CFLAGS += -Os -fno-unit-at-a-time -fshort-enums
+CFLAGS += -Wa,-adhlmsn=$(notdir $(<:.c=.lst))
+#CFLAGS += -fpack-struct
+
+LDFLAGS += -nodefaultlibs -nostdlib -lgcc -lc 
+LDFLAGS += -Wl,-T $(ROOTDIR)/processor/oki/module.ld 
+LDFLAGS += -Wl,-Map=$(PROJ).map,--cref
+
+SFLAGS += $(STACK_START) 
+SFLAGS += -Wa,$(MCUFLAG),-gstabs,-ahlms=$(notdir $(<:.S=.lst))
+
+endif
+
+
+####
+# A few rule prototypes
+####
+
+oki: $(PROJ).elf $(PROJ).elf.lst $(PROJ).srec
+
+cc2420_mac: 	mac_tx_pool.o mac_scan.o mac_scheduler.o mac_support.o mac_timer.o mac.o	\
+		hal_rf_wait_for_crystal_oscillator.o hal_wait.o					\
+		mac_general.o mac_indirect_queue.o mac_beacon_handler.o mac_security.o		\
+		mac_indirect_polling.o mac_power_management.o mac_rx_engine.o			\
+		mac_tx_engine.o mac_rx_pool.o
+	$(TRG)ar -rc cc2420_mac.a 								\
+		mac_tx_pool.o mac_scan.o mac_scheduler.o mac_support.o mac_timer.o mac.o	\
+		hal_rf_wait_for_crystal_oscillator.o hal_wait.o					\
+		mac_general.o mac_indirect_queue.o mac_beacon_handler.o mac_security.o		\
+		mac_indirect_polling.o mac_power_management.o mac_rx_engine.o			\
+		mac_tx_engine.o mac_rx_pool.o
+
+
+
+#cc2420_mac: $(PROJ).elf
+#	$(TRG)ar -rc cc2420_mac.a hal_*.o mac_*.o mac.o
+#	mv cc2420_mac.a $(ROOTDIR)/platform/xyz
