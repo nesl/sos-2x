@@ -24,9 +24,9 @@ SRCS += loader.c
 #################################################
 ifeq ($(MODE),sfi)
 SRCS += sos_mod_verify.c
-VPATH += $(ROOTDIR)/tools/sos_sandbox/soslib
-INCDIR += -I$(ROOTDIR)/tools/sos_sandbox/soslib
-INCDIR += -I$(ROOTDIR)/tools/sos_sandbox/lib
+VPATH += $(ROOTDIR)/tools/harbor/soslib
+INCDIR += -I$(ROOTDIR)/tools/harbor/soslib
+INCDIR += -I$(ROOTDIR)/tools/harbor/lib
 endif
 
 # Include simulated module 

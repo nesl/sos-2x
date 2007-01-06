@@ -1,0 +1,12 @@
+README
+-------
+Harbor is a tool for introducing memory protection in SOS operating system.
+
+INSTALL
+-------
+./harbor_install.sh
+
+USAGE
+-----
+Static Image: Compile using MODE=sfi flag. This will compile the run-time components.
+Modules: Compile using MODE=sfi flag. This will invoke the sandbox tool.

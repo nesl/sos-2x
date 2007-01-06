@@ -206,7 +206,7 @@ build_info:
 
 %.sos : %.elf
 	$(OBJCOPY) -j .text -O binary -R .eeprom $< $@
-	$(ROOTDIR)/tools/admin/verify_module_header.pl $@
+	$(ROOTDIR)/tools/utils/verify_module_header.pl $@
 
 
 %.exe: $(OBJS)

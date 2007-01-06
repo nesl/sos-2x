@@ -103,7 +103,7 @@ $(PLATFORM): $(PROCESSOR) $(PROJ).sos $(PROJ).i $(SFIDEPS) $(MELFDEPS)
 	$(ROOTDIR)/tools/elfloader/utils/elftomini/elftomini.exe -o $@ $<
 
 %.sbx : %.elf
-	$(ROOTDIR)/tools/sos_sandbox/app/avrsandbox/avrsandbox.exe -f $< -o $@
+	$(ROOTDIR)/tools/harbor/app/avrsandbox/avrsandbox.exe -f $< -o $@
 
 %.sbx.lst: %.sbx
 	$(OBJDUMP) -h -S $< > $@
