@@ -114,8 +114,9 @@ void sos_patch_mod_header(bblklist_t* blist, uint8_t* mhdr)
       }
       newaddr = bblk->newaddr;
       
+      // If the exported function is also called internally
       if (((bblk->newinstr[0].rawVal & OP_TYPE10_MASK) == OP_CALL) &&
-	  ((bblk->newinstr[1].rawVal == KER_RCALL_CODE)))
+	  ((bblk->newinstr[1].rawVal == KER_INTCALL_CODE)))
 	newaddr += 4;
       
 

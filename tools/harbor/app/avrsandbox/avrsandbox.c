@@ -27,6 +27,7 @@
 #include <fileutils.h>
 #include <elfhelper.h>
 #include <elfdisplay.h>
+#include <avr_minielf.h>
 
 #include <sos_mod_header_patch.h>
 #include <sos_mod_patch_code.h>
@@ -96,7 +97,7 @@ static void avr_create_new_text_data(Elf_Data* edata, Elf_Data* nedata,
 				     file_desc_t* fdesc, bblklist_t* blist, uint32_t startaddr);
 static void avr_create_new_rela_text_data(Elf_Data* nedata, Elf* elf,
 					  Elf32_Shdr *nshdr, uint32_t startaddr, bblklist_t* blist);
-static void avr_create_new_symbol_table(Elf_Data* nedata, Elf* elf,
+static void avr_create_new_symbol_table(Elf_Data* nedata, Elf* elf, Elf* nelf,
 					Elf32_Shdr *nshdr, uint32_t startaddr, bblklist_t* blist);
 //----------------------------------------------------------------------------
 int main(int argc, char** argv)
@@ -278,44 +279,52 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
     }    
   }
 
-  // Second pass through basic blocks to patch rcall
-  DEBUG("============ Second Pass for RCalls ================\n");
+  // Second pass through basic blocks to patch rcall and internal calls
+  DEBUG("============ Second Pass for RCalls/Calls ================\n");
   for (cblk = blist->blk_st; cblk != NULL; cblk = (basicblk_t*)cblk->link.next){
     int ndxlastinstr, ndx;
-    basicblk_t* rcalltargetblk;
+    basicblk_t* intcalltargetblk;
     uint32_t callinstr;
 
     // If basic block ends in call or jump then it cannot end in RCALL
-    if (cblk->calljmpflag) continue;
     if (cblk->size == 0) continue;
-    // Compute index of last instruction
-    ndxlastinstr = (cblk->size/sizeof(avr_instr_t)) - 1;
-    // Compare last instruction with RCALL
-    if ((cblk->instr[ndxlastinstr].rawVal & OP_TYPE17_MASK) != OP_RCALL) continue;
+
+    if (cblk->calljmpflag){
+      // Basic Block ending in call implies that it is internal
+      ndxlastinstr = (cblk->size/sizeof(avr_instr_t)) - 2;
+      if ((cblk->instr[ndxlastinstr].rawVal & OP_TYPE10_MASK) != OP_CALL) continue;
+    }
+    else{
+      // Compute index of last instruction
+      ndxlastinstr = (cblk->size/sizeof(avr_instr_t)) - 1;
+      // Compare last instruction with RCALL
+      if ((cblk->instr[ndxlastinstr].rawVal & OP_TYPE17_MASK) != OP_RCALL) continue;
+    }
+
     // Fun starts now
-    rcalltargetblk = cblk->branch;
-    DEBUG("Found RCALL Site: 0x%x RCALL Target: 0x%x\n", (int)(cblk->addr + (cblk->size-2)),(int)rcalltargetblk->addr);
+    intcalltargetblk = cblk->branch;
+    DEBUG("Found internal call site: 0x%x Target: 0x%x\n", (int)(cblk->addr + (cblk->size-2)),(int)intcalltargetblk->addr);
     // Check if it has already been patched
-    if (((rcalltargetblk->newinstr[0].rawVal & OP_TYPE10_MASK) == OP_CALL) &&
-	((rcalltargetblk->newinstr[1].rawVal == KER_RCALL_CODE)))
+    if (((intcalltargetblk->newinstr[0].rawVal & OP_TYPE10_MASK) == OP_CALL) &&
+	((intcalltargetblk->newinstr[1].rawVal == KER_INTCALL_CODE)))
       continue;
 
-    ndxlastinstr = (rcalltargetblk->newsize/sizeof(avr_instr_t)) - 1;
+    ndxlastinstr = (intcalltargetblk->newsize/sizeof(avr_instr_t)) - 1;
     for (ndx = ndxlastinstr; ndx >= 0; ndx--)
-      rcalltargetblk->newinstr[ndx+2].rawVal = rcalltargetblk->newinstr[ndx].rawVal;
+      intcalltargetblk->newinstr[ndx+2].rawVal = intcalltargetblk->newinstr[ndx].rawVal;
     // Update Address Map
-    for (ndx = 0; ndx < (rcalltargetblk->size/sizeof(avr_instr_t)); ndx++)
-      rcalltargetblk->addrmap[ndx] += 2 * sizeof(avr_instr_t); 
-    callinstr = create_optype10(OP_CALL, KER_RCALL_CODE);
-    rcalltargetblk->newinstr[0].rawVal = (uint16_t)(callinstr >> 16);
-    rcalltargetblk->newinstr[1].rawVal = (uint16_t)callinstr;
-    rcalltargetblk->newsize += 2 * sizeof(avr_instr_t);
+    for (ndx = 0; ndx < (intcalltargetblk->size/sizeof(avr_instr_t)); ndx++)
+      intcalltargetblk->addrmap[ndx] += 2 * sizeof(avr_instr_t); 
+    callinstr = create_optype10(OP_CALL, KER_INTCALL_CODE);
+    intcalltargetblk->newinstr[0].rawVal = (uint16_t)(callinstr >> 16);
+    intcalltargetblk->newinstr[1].rawVal = (uint16_t)callinstr;
+    intcalltargetblk->newsize += 2 * sizeof(avr_instr_t);
     sandboxcnt++;
-    DEBUG("Patched RCALL Site: 0x%x RCALL Target: 0x%x\n", (int)(cblk->addr + (cblk->size-2)),(int)rcalltargetblk->addr);
+    DEBUG("Patched internal call site: 0x%x Target: 0x%x\n", (int)(cblk->addr + (cblk->size-2)),(int)intcalltargetblk->addr);
   }
   
   // Third pass to mark basic blocks that target rcall target but are NOT rcalls  
-  DEBUG("============ Third Pass for RCall Targets ================\n");
+  DEBUG("============ Third Pass for RCall/Call Targets ================\n");
   for (cblk = blist->blk_st; cblk != NULL; cblk = (basicblk_t*)cblk->link.next){
     int ndxlastinstr;
     basicblk_t *branchblk;// *fallblk;
@@ -328,11 +337,14 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
       ndxlastinstr = (cblk->size/sizeof(avr_instr_t)) - 1;
     // Skip RCALL Blocks
     if ((cblk->instr[ndxlastinstr].rawVal & OP_TYPE17_MASK) == OP_RCALL) continue;
+    // Skip CALL Blocks
+    if ((cblk->instr[ndxlastinstr].rawVal & OP_TYPE10_MASK) == OP_CALL) continue;
+
     // Fun starts now
     branchblk = cblk->branch;
     if ((NULL != branchblk) && (branchblk->size > 0)){
       if (((branchblk->newinstr[0].rawVal & OP_TYPE10_MASK) == OP_CALL) &&
-	  ((branchblk->newinstr[1].rawVal == KER_RCALL_CODE))){
+	  ((branchblk->newinstr[1].rawVal == KER_INTCALL_CODE))){
 	DEBUG("Found a funky one ! Site: 0x%x\n", (int)(cblk->addr + sizeof(avr_instr_t)*ndxlastinstr));
       }
     }
@@ -340,7 +352,7 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
     fallblk = cblk->fall;
     if (NULL != fallblk){
       if (((fallblk->newinstr[0].rawVal & OP_TYPE10_MASK) == OP_CALL) &&
-	  ((fallblk->newinstr[1].rawVal == KER_RCALL_CODE))){
+	  ((fallblk->newinstr[1].rawVal == KER_INTCALL_CODE))){
 	DEBUG("Found a funky one ! Site: 0x%x\n", (uint32_t)(cblk->addr + sizeof(avr_instr_t)*ndxlastinstr));
       }
     }
@@ -391,7 +403,7 @@ static int avr_get_sandbox_desc(avr_instr_t* instr, sandbox_desc_t* sndbx)
   // Two-word instructions
   if (twowordinstr){
     twowordinstr = 0;
-    if ((instr->rawVal & OP_TYPE19_MASK) == OP_STS){
+    if ((previnstr.rawVal & OP_TYPE19_MASK) == OP_STS){
       sndbx->numnewinstr = 11;
       sndbx->sbxtype = ST_SBX_TYPE;
       sndbx->optype = OP_TYPE19;
@@ -406,13 +418,16 @@ static int avr_get_sandbox_desc(avr_instr_t* instr, sandbox_desc_t* sndbx)
   // OPTYPE 19 Instruction: STS
   switch (instr->rawVal & OP_TYPE19_MASK){
   case OP_STS:
-    previnstr.rawVal = instr->rawVal;
   case  OP_LDS:
+    previnstr.rawVal = instr->rawVal;
     twowordinstr = 1;
     return -1;
   }
   // We don't care for the rest of the two word instructions
-  if (match_optype10(instr) == 0){  
+  switch (instr->rawVal & OP_TYPE10_MASK){
+  case OP_CALL:
+  case OP_JMP:
+    previnstr.rawVal = instr->rawVal;
     twowordinstr = 1;
     return -1;
   }
@@ -1007,7 +1022,7 @@ static void avr_write_elffile(bblklist_t* blist, char* outFileName, file_desc_t*
     }
     else if (strcmp(CurrSecName, ".symtab") == 0){
       avr_create_new_data(edata, nedata);
-      avr_create_new_symbol_table(nedata, elf, nshdr, startaddr, blist);
+      avr_create_new_symbol_table(nedata, elf, nelf, nshdr, startaddr, blist);
     }
     else
       avr_create_new_data(edata, nedata);
@@ -1016,14 +1031,16 @@ static void avr_write_elffile(bblklist_t* blist, char* outFileName, file_desc_t*
   elf_end(nelf);
 }
 //-------------------------------------------------------------------
-static void avr_create_new_symbol_table(Elf_Data* nedata, Elf* elf,
+static void avr_create_new_symbol_table(Elf_Data* nedata, Elf* elf, Elf* nelf,
 					Elf32_Shdr *nshdr, uint32_t startaddr, bblklist_t* blist)
 {
   Elf32_Ehdr* ehdr;
   Elf32_Sym* nsym;
-  int numSyms, i, txtscnndx, btxtscnfound;
-  Elf_Scn* txtscn;
-  Elf32_Shdr* txtshdr;
+  Elf_Data* nreladata;
+  Elf32_Rela *nerela;
+  int numSyms, numRecs, i, txtscnndx, btxtscnfound;
+  Elf_Scn *txtscn, *nrelascn;
+  Elf32_Shdr *txtshdr, *nrelashdr;
 
   DEBUG("Determine .text section index ...\n");
   // Get the ELF Header
@@ -1051,7 +1068,12 @@ static void avr_create_new_symbol_table(Elf_Data* nedata, Elf* elf,
   }
   DEBUG(".text section index: %d\n", txtscnndx);
   
-  
+  // Get .rela.text section
+  nrelascn = getELFSectionByName(nelf, ".rela.text");
+  nrelashdr = elf32_getshdr(nrelascn);
+  nreladata = NULL;
+  nreladata = elf_getdata(nrelascn, nreladata);
+  numRecs = nreladata->d_size/nrelashdr->sh_entsize;
 
   numSyms = nedata->d_size/nshdr->sh_entsize;
   nsym = (Elf32_Sym*)(nedata->d_buf);
@@ -1060,6 +1082,25 @@ static void avr_create_new_symbol_table(Elf_Data* nedata, Elf* elf,
       if (nsym->st_value > startaddr){
 	uint32_t oldValue = nsym->st_value;
 	nsym->st_value = find_updated_address(blist, oldValue);
+	// Check if we have to further modify this symbol (if it is used as a call target value)
+	int j;
+	nerela = (Elf32_Rela*)nreladata->d_buf;
+	for (j = 0; j < numRecs; j++){
+	  if ((ELF32_R_SYM(nerela->r_info) == i) && (ELF32_R_TYPE(nerela->r_info) == R_AVR_CALL)){
+	    nsym->st_value -= sizeof(avr_instr_t) * 2;
+	    DEBUG("Call target symbol. Modify to accomodate safe stack store.\n");
+	    break;
+	  }
+	  // Follwing is only for producing a more readable elf.lst
+	  if ((ELF32_ST_BIND(nsym->st_info) == STB_LOCAL) &&
+	      (ELF32_ST_TYPE(nsym->st_info) == STT_FUNC) &&
+	      (ELF32_R_TYPE(nerela->r_info) == R_AVR_CALL) &&
+	      (nerela->r_addend == (nsym->st_value - (2*sizeof(avr_instr_t))))){
+	    nsym->st_value -= sizeof(avr_instr_t) * 2;
+	    DEBUG("Call target symbol. Modified for ELF pretty print.\n");
+	  }
+	  nerela++;
+	}
 	DEBUG("Entry: %d Old Value: 0x%x New Value: 0x%x\n", i, (int)oldValue, (int)nsym->st_value);
       }
     }
@@ -1120,6 +1161,13 @@ static void avr_create_new_rela_text_data(Elf_Data* nedata, Elf* elf,
       if (nerela->r_addend > startaddr){
 	uint32_t old_addend = nerela->r_addend;
 	nerela->r_addend = find_updated_address(blist, old_addend);
+	// If relocation type is of R_AVR_CALL, then modify addend.
+	// The addend should point to two words before the actual function 
+	// so as to invoke the call to the safe stack save function
+	if (ELF32_R_TYPE(nerela->r_info) == R_AVR_CALL){
+	  nerela->r_addend -= sizeof(avr_instr_t) * 2;
+	  DEBUG("Internal call target -> Modify addend to include safe stack.\n");
+	}
 	DEBUG("Entry: %d Old Addend: 0x%x New Addend: 0x%x\n", i, (int)old_addend, nerela->r_addend);
       }
     }

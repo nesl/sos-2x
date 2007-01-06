@@ -17,23 +17,23 @@
 // STATIC FUNCTIONS
 static inline int8_t verify_instr(avr_instr_t instr);
 static inline int8_t patch_instr(avr_instr_t instr, codemem_t h, uint16_t code_offset, 
-				 uint16_t mod_lb, uint16_t mod_ub);
+				 uint16_t init_offset, uint16_t code_size, uint16_t mod_start_word_addr);
 
 //---------------------------------------------------
 int8_t ker_verify_module(codemem_t h, uint16_t init_offset, uint16_t code_size)
 {
   uint16_t code_offset;
   avr_instr_t instr;
-  uint16_t mod_lb, mod_ub;
-  mod_lb = (ker_codemem_get_start_address(h) >> 1) + init_offset;
-  mod_ub = (ker_codemem_get_start_address(h) >> 1) + code_size;
+  uint16_t mod_start_word_addr;
+
+  mod_start_word_addr = (ker_codemem_get_start_address(h) >> 1);
   // Single pass patch and verify
   for (code_offset = init_offset; code_offset < code_size; code_offset += sizeof(avr_instr_t)){
     ker_codemem_read(h, KER_DFT_LOADER_PID, &instr, sizeof(avr_instr_t), code_offset);
     if (verify_instr(instr) != SOS_OK){
       return -EINVAL;
     }
-    if (patch_instr(instr, h, code_offset, mod_lb, mod_ub) != SOS_OK){
+    if (patch_instr(instr, h, code_offset, init_offset, code_size, mod_start_word_addr) != SOS_OK){
       return -EINVAL;
     }
     watchdog_reset();
@@ -100,8 +100,8 @@ static inline int8_t verify_instr(avr_instr_t instr)
   return SOS_OK;
 }
 //---------------------------------------------------
-static inline int8_t patch_instr(avr_instr_t instr, codemem_t h, uint16_t code_offset,
-				 uint16_t mod_lb, uint16_t mod_ub)
+static inline int8_t patch_instr(avr_instr_t instr, codemem_t h, uint16_t code_offset, 
+				 uint16_t init_offset, uint16_t code_size, uint16_t mod_start_word_addr)
 {
 
 #define TWO_WORD_FLAG 0x01
@@ -129,6 +129,19 @@ static inline int8_t patch_instr(avr_instr_t instr, codemem_t h, uint16_t code_o
       writeval = (uint16_t)(ker_restore_ret_addr);
       ker_codemem_write(h, KER_DFT_LOADER_PID, &writeval, 
 			sizeof(avr_instr_t), code_offset);      
+    }
+    else if (patch_state & INTERNAL_CALL_FLAG){
+      avr_instr_t saveretcall[2];
+      uint16_t calloffset;
+      calloffset = (instr.rawVal - mod_start_word_addr) * sizeof(avr_instr_t);
+      if (ker_codemem_read(h, KER_DFT_LOADER_PID, &saveretcall, 2*sizeof(avr_instr_t), calloffset) != SOS_OK)
+	return -EINVAL;
+      if ((saveretcall[0].rawVal & OP_TYPE10_MASK) != OP_CALL)
+	return -EINVAL;
+      if (saveretcall[1].rawVal != (uint16_t)ker_save_ret_addr){
+	writeval = (uint16_t)ker_save_ret_addr;
+	ker_codemem_write(h, KER_DFT_LOADER_PID, &writeval, sizeof(avr_instr_t), calloffset + sizeof(avr_instr_t));
+      }
     }
     patch_state = 0;
     return SOS_OK;
@@ -175,7 +188,9 @@ static inline int8_t patch_instr(avr_instr_t instr, codemem_t h, uint16_t code_o
     patch_state |= TWO_WORD_FLAG;
     // Check if the call is for mem map check
     if ((patch_state & PATCH_CALL_MEMMAP_CHECK_FLAG) == 0){
-      uint16_t calladdr;
+      uint16_t calladdr, mod_lb, mod_ub;
+      mod_lb = mod_start_word_addr + (init_offset >> 1);
+      mod_ub = mod_start_word_addr + (code_size >> 1);
       // Read call address i.e. Read the word following the current word
       ker_codemem_read(h, KER_DFT_LOADER_PID, &calladdr, sizeof(avr_instr_t), code_offset + sizeof(avr_instr_t));
       // Check if call is internal to module
@@ -187,6 +202,9 @@ static inline int8_t patch_instr(avr_instr_t instr, codemem_t h, uint16_t code_o
 	  if (calladdr != (uint16_t)ker_save_ret_addr)
 	    patch_state |= PATCH_CALL_ICALL_CHECK_FLAG;
 	}
+      }
+      else {
+	patch_state |= INTERNAL_CALL_FLAG;
       }
     }
     return SOS_OK;
