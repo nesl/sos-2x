@@ -202,7 +202,7 @@ build_info:
 	$(OBJDUMP) -zhD $< > $@
 
 %.srec.out.$(ADDRESS): %.srec
-	$(ROOTDIR)/tools/admin/set-mote-id $< $@ 0x$(ADDRESS)
+	$(ROOTDIR)/tools/utils/set-mote-id $< $@ 0x$(ADDRESS)
 
 %.sos : %.elf
 	$(OBJCOPY) -j .text -O binary -R .eeprom $< $@
