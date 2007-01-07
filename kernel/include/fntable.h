@@ -83,6 +83,7 @@ extern int8_t fntable_remove_all(sos_module_t *m);
 extern void fntable_link_subscribed_functions(sos_module_t *m);
 
 
+#ifdef MINIELF_LOADER
 /**
  * @brief link the module into correct address
  * NOTE: this rountine assumes the header is in RAM
@@ -96,6 +97,7 @@ void fntable_fix_address(
 		uint8_t     *buf,        
 		uint16_t     nbytes,        
 		func_addr_t  offset);
+#endif//MINIELF_LOADER
 
 /**
  * @brief unlink the module from absolute address into position independent code

@@ -7,6 +7,9 @@
 #include <codemem_conf.h> // For CODEMEM_END_PAGE
 #include <sos_module_types.h>
 #include <sos_linker_conf.h>
+#ifdef MINIELF_LOADER
+#include <codemem.h>
+#endif
 #ifndef _SFI_JUMPTABLE_H_
 #define _SFI_JUMPTABLE_H_
 
@@ -87,7 +90,7 @@ int8_t sfi_modtable_init();
  * \param mhdr Header for the module being registered
  */
 #ifdef MINIELF_LOADER
-void sfi_modtable_register(codemem_t h, uint16_t mod_header_size);
+void sfi_modtable_register(codemem_t h);
 #else
 void sfi_modtable_register(mod_header_t* mhdr);
 #endif

@@ -188,6 +188,7 @@ static inline func_addr_t mod_header_size(uint8_t num_funcs)
 		(num_funcs * sizeof(func_cb_t)) + offsetof(func_cb_t, ptr);
 }
 
+#ifndef MINIELF_LOADER
 void fntable_fix_address(
 		func_addr_t  base_addr, 
 		uint8_t      num_funcs, 
@@ -235,7 +236,8 @@ void fntable_fix_address(
 {
 	DEBUG("simulate fix_address on PC platform base_addr = %d, num_funcs = %d, nbytes = %d, offset = %d\n", base_addr, num_funcs, nbytes, offset);
 }
-#endif
+#endif//PC_PLATFORM
+#endif//MINIELF_LOADER
 
 #if 0
 int8_t fntable_fix_address(mod_header_t *hdr, func_addr_t base_addr)

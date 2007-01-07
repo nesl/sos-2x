@@ -15,6 +15,15 @@
  * @{
  */
 
+#ifdef MINIELF_LOADER
+
+/**
+ * Verify the safety properties of a node
+ * \param h Handle to codemem component storing the module binary
+ */
+int8_t ker_verify_module(codemem_t h);
+
+#else
 /**
  * Verify the safety properties of a node
  * \param h Handle to codemem component storing the module binary
@@ -22,6 +31,7 @@
  * \param code_size Size of binary module
  */
 int8_t ker_verify_module(codemem_t h, uint16_t init_offset, uint16_t code_size);
+#endif//MINIELF_LOADER
 
 /* @} */
 

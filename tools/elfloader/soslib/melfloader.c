@@ -14,12 +14,10 @@
 //----------------------------------------------------------
 // STATIC FUNCTIONS
 //----------------------------------------------------------
-static int8_t melf_begin(melf_desc_t* mdesc, codemem_t h);
 static int8_t melf_read_shdr_ndx(melf_desc_t* mdesc, Melf_Shdr* shdr, Melf_Half shndx);
 //static int8_t melf_read_shdr_id(melf_desc_t* mdesc, Melf_Shdr* shdr, Melf_Half shid);
 static int8_t melf_read_symtab_shdr(melf_desc_t* mdesc, Melf_Shdr* symshdr);
 //static int8_t melf_read_relatab_shdr(melf_desc_t* mdesc, Melf_Shdr* relashdr);
-static int8_t melf_read_progbits_shdr(melf_desc_t* mdesc, Melf_Shdr* progshdr);
 static int8_t melf_read_symbol(melf_desc_t* mdesc, Melf_Shdr* symshdr, 
 			       Melf_Word symndx, Melf_Sym* sym);
 static int8_t melf_read_rela(melf_desc_t* mdesc, Melf_Shdr* relashdr, 
@@ -86,9 +84,7 @@ mod_header_ptr melf_get_header_address(codemem_t h)
   return (mod_header_ptr)(FlashGetProgmem(header_byte_addr));
 }
 //----------------------------------------------------------
-// STATIC FUNCTIONS
-//----------------------------------------------------------
-static int8_t melf_begin(melf_desc_t* mdesc, codemem_t h)
+int8_t melf_begin(melf_desc_t* mdesc, codemem_t h)
 {
   if (ker_codemem_read(h, KER_DFT_LOADER_PID, (void*)&(mdesc->mhdr), sizeof(Melf_Mhdr), 0) != SOS_OK){
     return -EFAULT;
@@ -99,6 +95,22 @@ static int8_t melf_begin(melf_desc_t* mdesc, codemem_t h)
   mdesc->base_addr = ker_codemem_get_start_address(mdesc->cmhdl);
   return SOS_OK;
 }
+//----------------------------------------------------------
+int8_t melf_read_progbits_shdr(melf_desc_t* mdesc, Melf_Shdr* progshdr)
+{
+  Melf_Half i;
+  for (i = 0; i < mdesc->mhdr.m_shnum; i++){
+    if (melf_read_shdr_ndx(mdesc, progshdr, i) != SOS_OK){
+      return -EFAULT;
+    }
+    if (SHT_PROGBITS == progshdr->sh_type){
+      return SOS_OK;
+    }
+  }
+  return -EFAULT;
+}
+//----------------------------------------------------------
+// STATIC FUNCTIONS
 //----------------------------------------------------------
 static int8_t melf_read_shdr_ndx(melf_desc_t* mdesc, Melf_Shdr* shdr, Melf_Half shndx)
 {
@@ -158,20 +170,6 @@ static int8_t melf_read_relatab_shdr(melf_desc_t* mdesc, Melf_Shdr* relashdr)
   return -EFAULT;
 }
 */
-//----------------------------------------------------------
-static int8_t melf_read_progbits_shdr(melf_desc_t* mdesc, Melf_Shdr* progshdr)
-{
-  Melf_Half i;
-  for (i = 0; i < mdesc->mhdr.m_shnum; i++){
-    if (melf_read_shdr_ndx(mdesc, progshdr, i) != SOS_OK){
-      return -EFAULT;
-    }
-    if (SHT_PROGBITS == progshdr->sh_type){
-      return SOS_OK;
-    }
-  }
-  return -EFAULT;
-}
 //----------------------------------------------------------
 static int8_t melf_read_symbol(melf_desc_t* mdesc, Melf_Shdr* symshdr, Melf_Word symndx, Melf_Sym* sym)
 {

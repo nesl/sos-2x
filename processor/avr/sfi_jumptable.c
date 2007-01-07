@@ -125,7 +125,7 @@ int8_t sfi_modtable_init()
 
 
 #ifdef MINIELF_LOADER
-void sfi_modtable_register(codemem_t h, uint16_t mod_header_size)
+void sfi_modtable_register(codemem_t h)
 #else
 void sfi_modtable_register(mod_header_t* mhdr)
 #endif
@@ -133,8 +133,17 @@ void sfi_modtable_register(mod_header_t* mhdr)
   int8_t domainid;
   func_addr_t module_handler;
 #ifdef MINIELF_LOADER
-  mod_header_t* mhdr = ker_malloc(mod_header_size, KER_DFT_LOADER_PID);
-  ker_codemem_read(h, KER_DFT_LOADER_PID, mhdr, mod_header_size, 0);
+  uint16_t mod_hdr_offset, mod_hdr_size, mod_handler_word_addr;
+  uint32_t mod_start_addr;
+  mod_header_ptr p;
+  mod_header_t* mhdr;
+  mod_start_addr = ker_codemem_get_start_address(h);
+  p = ker_codemem_get_header_address(h);
+  mod_handler_word_addr = sos_read_header_ptr(p, offsetof(mod_header_t, module_handler));
+  mod_hdr_size = (uint16_t)((mod_handler_word_addr - p) << 1);
+  mod_hdr_offset = (uint16_t)((uint32_t)((uint32_t)p << 1) - mod_start_addr);
+  mhdr = (mod_header_t*)ker_malloc(mod_hdr_size, KER_DFT_LOADER_PID);
+  ker_codemem_read(h, KER_DFT_LOADER_PID, mhdr, mod_hdr_size, mod_hdr_offset);
 #endif
 
   domainid = get_free_domain_id(mhdr->mod_id);
@@ -160,7 +169,7 @@ void sfi_modtable_register(mod_header_t* mhdr)
     dummy_func *f = (dummy_func*)((uint8_t*)mhdr + func_loc);
     *f = (dummy_func)sfi_modtable_add((func_addr_t)*f);
   }
-  ker_codemem_write(h, KER_DFT_LOADER_PID, mhdr, mod_header_size, 0);
+  ker_codemem_write(h, KER_DFT_LOADER_PID, mhdr, mod_hdr_size, mod_hdr_offset);
   ker_codemem_flush(h, KER_DFT_LOADER_PID);
 #endif
   return;			       
@@ -215,6 +224,7 @@ void sfi_modtable_flash(mod_header_ptr h)
   sos_pid_t pid;
   uint16_t sfimodtable[WORDS_PER_PAGE];
   uint8_t fnidx, wordidx;
+  uint32_t flash_write_addr;
   //  uint16_t* sfimodtable;
   fnidx = 0;
   wordidx = 0;
@@ -245,7 +255,8 @@ void sfi_modtable_flash(mod_header_ptr h)
   }
 
   //  FlashWritePage(jmptblrec.page, (uint8_t*)sfimodtable, WORDS_PER_PAGE * 2);
-  flash_write((uint32_t)(jmptblrec.page * 256), (uint8_t*)sfimodtable, WORDS_PER_PAGE * 2);
+  flash_write_addr = (uint32_t)jmptblrec.page * 256;
+  flash_write(flash_write_addr, (uint8_t*)sfimodtable, WORDS_PER_PAGE * 2);
 
   jmptblrec.pid = NULL_PID;
   jmptblrec.numfx = 0;

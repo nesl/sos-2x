@@ -58,6 +58,23 @@ mod_header_t* melf_get_mod_header(unsigned char* image_buf);
 void melf_arch_relocate(melf_desc_t* mdesc, Melf_Rela* rela, 
 			       Melf_Sym* sym, Melf_Shdr* progshdr);
 
+/**
+ * \brief Initialize the Mini-ELF Descritpor and read the Mini-ELF header
+ * \param mdesc Mini-ELF Descriptor
+ * \param h Code memory page hanndle storing the Mini-ELF module
+ * \return SOS_OK upon success
+ */
+int8_t melf_begin(melf_desc_t* mdesc, codemem_t h);
+
+
+/**
+ * \brief Read the program bits section header
+ * \param mdesc Initialized Mini-ELF Header
+ * \param progshdr Buffer to copy the program section header into
+ * \return SOS_OK upon success
+ */
+int8_t melf_read_progbits_shdr(melf_desc_t* mdesc, Melf_Shdr* progshdr);
+
 // ELF CONSTANTS (from libelf.h)
 
 /*
