@@ -95,7 +95,7 @@ endif
 #######
 
 mica2_install: $(PROJ).srec
-	$(ROOTDIR)/tools/admin/set-mote-id $(PROJ).srec $(PROJ).srec.out.$(ADDRESS) $(ADDRESS)
+	$(ROOTDIR)/tools/utils/set-mote-id $(PROJ).srec $(PROJ).srec.out.$(ADDRESS) $(ADDRESS)
 ifneq ($(PROG),jtag)
 # Can enable watchdog in software, but don't foce fuses.
 	$(INSTALLER) --wr_fuse_e=0xff

@@ -1,0 +1,16 @@
+README (tree_routing_test_pc)
+=============================
+
+Compile: make clean && make
+
+Run: ./tree_routing_test_pc.exe -n <sos_server_ip:port>
+
+Description:
+This tool connects to the sossrv program and monitors the packets coming
+into the PC from the sensor network.
+If the packet is dispatched using the tree routing protocol, then the
+tool processes the packet and maintains statistics of packets received.
+For each node it maintains three bits of information:
+1. Number of packets received from that node.
+2. Number of packets missed from that node (These could be lost in the nw)
+3. Sequence no. of the last packet received from the node.

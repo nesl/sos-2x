@@ -114,17 +114,17 @@ $(PLATFORM): $(PROCESSOR) $(PROJ).sos $(PROJ).i $(SFIDEPS) $(MELFDEPS)
 all:
 	@echo "make [$(SUPPORTLIST)]"
 
-install: $(PROJ).sos 
-	cp $< $(ROOTDIR)/tools/modules/
+install: $(PROJ).mlf 
+	cp $< $(ROOTDIR)/modules/build/
 
 install2: $(PROJ).sos
-	cp $< $(ROOTDIR)/tools/modules/
+	cp $< $(ROOTDIR)/modules/build/
 
 installmelf: $(PROJ).mlf
-	cp $< $(ROOTDIR)/tools/modules/
+	cp $< $(ROOTDIR)/modules/build/
 
-installsbx: $(PROJ).sbx
-	cp $< $(ROOTDIR)/tools/modules/
+installsbx: $(PROJ).sbx.mlf
+	cp $< $(ROOTDIR)/modules/build/
 
 setup:
 	$(INSTALLER) --wr_fuse_l=0xff
