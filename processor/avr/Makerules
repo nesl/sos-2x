@@ -66,7 +66,8 @@ ifeq ($(MODE), sfi)
 SRCS += memmap_checker_const.c sfi_jumptable.c
 #SRCS += memmap_checker_proc.c 
 ASMSRCS += memmap_checker_proc_asm.S cross_domain_cf_asm.S sfi_jumptable_proc.S
-#CFLAGS += -ffixed-r2 -ffixed-r3 -fnew-ra
+CFLAGS += -ffixed-r2 -ffixed-r3 -ffixed-r4
+#-fnew-ra
 LDSCRIPT = -Wl,-T $(ROOTDIR)/processor/avr/sos_sfi_avr5.x
 SFIJMPTBL_START = -Wl,--section-start=.sfijmptbl=0x1D600
 else

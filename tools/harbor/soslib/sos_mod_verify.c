@@ -11,40 +11,51 @@
 #include <avrinstr.h>
 #include <sos_mod_verify.h>
 #include <cross_domain_cf.h>
+#include <sfi_jumptable.h>
 
 #ifdef MINIELF_LOADER
 #include <melfloader.h>
 
 //---------------------------------------------------
 // STATIC FUNCTIONS
-static inline int8_t verify_instr(avr_instr_t instr);
-static inline int8_t patch_instr(avr_instr_t instr, codemem_t h, uint16_t code_offset, 
-				 uint16_t init_offset, uint16_t code_size, uint16_t mod_start_word_addr);
+static inline int8_t verify_instr(avr_instr_t instr, codemem_t h, uint16_t code_offset, 
+				  uint16_t mod_lb, uint16_t mod_ub);
 //---------------------------------------------------
 int8_t ker_verify_module(codemem_t h)
 {
-  uint16_t init_offset, code_size, code_offset;
+  uint16_t code_offset;
   avr_instr_t instr;
-  uint16_t mod_start_word_addr;
+  mod_header_ptr pmhdr;
+  uint16_t mod_start_word_addr, mod_handler_sfi_word_addr, mod_handler_word_addr;
   melf_desc_t mdesc;
   Melf_Shdr progshdr;
+  uint16_t mod_ub;
+
 
   melf_begin(&mdesc, h);
+  mod_start_word_addr = (mdesc.base_addr >> 1); // Module begins here (Word Addr)
   melf_read_progbits_shdr(&mdesc, &progshdr);
-  init_offset = (uint16_t)(progshdr.sh_offset);
-  code_size = (uint16_t)(progshdr.sh_size);
+  mod_ub = mod_start_word_addr + (uint16_t)(progshdr.sh_offset >> 1) 
+    + (uint16_t)(progshdr.sh_size >> 1); // Module .text section ends here (Word Addr)
 
-  mod_start_word_addr = (ker_codemem_get_start_address(h) >> 1);
+  pmhdr = ker_codemem_get_header_address(h);
+  mod_handler_sfi_word_addr = sos_read_header_ptr(pmhdr, offsetof(mod_header_t, module_handler));
+  mod_handler_word_addr = sfi_modtable_get_real_addr(mod_handler_sfi_word_addr); // Module .text starts here (mod_lb)
+  
 
   // Single pass patch and verify
-  for (code_offset = init_offset; code_offset < (init_offset + code_size); code_offset += sizeof(avr_instr_t)){
+  for (code_offset = (mod_handler_word_addr - mod_start_word_addr) * sizeof(avr_instr_t); 
+       code_offset < (progshdr.sh_offset + progshdr.sh_size); 
+       code_offset += sizeof(avr_instr_t)){
     ker_codemem_read(h, KER_DFT_LOADER_PID, &instr, sizeof(avr_instr_t), code_offset);
-    if (verify_instr(instr) != SOS_OK){
+    if (verify_instr(instr, h, code_offset, mod_handler_word_addr, mod_ub) != SOS_OK){
       return -EINVAL;
     }
+    /*
     if (patch_instr(instr, h, code_offset, init_offset, code_size, mod_start_word_addr) != SOS_OK){
       return -EINVAL;
     }
+    */
     watchdog_reset();
   }
   // Flush final result
@@ -52,31 +63,111 @@ int8_t ker_verify_module(codemem_t h)
   return SOS_OK;
 }
 //---------------------------------------------------
-static inline int8_t verify_instr(avr_instr_t instr)
+static inline int8_t verify_instr(avr_instr_t instr, codemem_t h, uint16_t code_offset, 
+				  uint16_t mod_lb, uint16_t mod_ub)
 {
-  static uint8_t twowordinstr = 0;
+#define TWO_WORD_FLAG                 0x01 //00000001
+#define CALL_FLAG                     0x02 //00000010
+#define JMP_FLAG                      0x04 //00000100
+  static uint8_t verify_state = 0;
+  uint16_t writeval;
+  
+  // Check for two word instructions
+  if (verify_state & TWO_WORD_FLAG){
+    // Check for JUMP instruction
+    if (verify_state & JMP_FLAG){
+      writeval = (uint16_t)(ker_restore_ret_addr);
+      if (KER_RET_CHECK_CODE == instr.rawVal){
+	ker_codemem_write(h, KER_DFT_LOADER_PID, &writeval, 
+			  sizeof(avr_instr_t), code_offset);
+	goto verify_success;
+      }
+      if (writeval != instr.rawVal) return -EINVAL;
+    }  
+    
+    // Check for CALL instruction
+    if (verify_state & CALL_FLAG){
+      // Check if call is internal to module
+      if ((instr.rawVal >= mod_lb) && (instr.rawVal < mod_ub)){
+	// Ram - TODO - Add check to see if the call target is a call to save_ret_addr
+	// Also - Add a similar check for RCALL
+	goto verify_success;
+      }
+      // Check if call is into the system jump table
+      if (((instr.rawVal*sizeof(avr_instr_t)) >= SYS_JUMP_TBL_START) &&
+	  ((instr.rawVal*sizeof(avr_instr_t)) < (SYS_JUMP_TBL_START + (SYS_JUMP_TBL_SIZE * 64)))){ 
+	goto verify_success;
+      }
 
-  // Mark two work instr.
-  if (twowordinstr){
-    twowordinstr = 0;
+      // MEMMAP XPTR
+      writeval = (uint16_t)(ker_memmap_perms_check_xptr);
+      if (KER_MEMMAP_PERMS_CHECK_X_CODE == instr.rawVal){
+	ker_codemem_write(h, KER_DFT_LOADER_PID, &writeval, 
+			  sizeof(avr_instr_t), code_offset);
+	goto verify_success;
+      }
+      if (instr.rawVal == writeval) goto verify_success;
+
+      // MEMMAP YPTR
+      writeval = (uint16_t)(ker_memmap_perms_check_yptr);
+      if (KER_MEMMAP_PERMS_CHECK_Y_CODE == instr.rawVal){
+	ker_codemem_write(h, KER_DFT_LOADER_PID, &writeval, 
+			  sizeof(avr_instr_t), code_offset);
+	goto verify_success;
+      }
+      if (instr.rawVal == writeval) goto verify_success;
+
+      // MEMMAP ZPTR
+      writeval = (uint16_t)(ker_memmap_perms_check_zptr);
+      if (KER_MEMMAP_PERMS_CHECK_Z_CODE == instr.rawVal){
+	ker_codemem_write(h, KER_DFT_LOADER_PID, &writeval, 
+			  sizeof(avr_instr_t), code_offset);
+	goto verify_success;
+      }
+      if (instr.rawVal == writeval) goto verify_success;
+
+      // INTERNAL CALL - SAVE RET ADDR TO SAFE STACK
+      writeval = (uint16_t)(ker_save_ret_addr);
+      if (KER_INTCALL_CODE == instr.rawVal){
+	ker_codemem_write(h, KER_DFT_LOADER_PID, &writeval, 
+			  sizeof(avr_instr_t), code_offset);
+	goto verify_success;
+      }
+      if (instr.rawVal == writeval) goto verify_success;
+
+      // ICALL_CHECK
+      writeval = (uint16_t)(ker_icall_check);
+      if (KER_ICALL_CHECK_CODE == instr.rawVal){
+	ker_codemem_write(h, KER_DFT_LOADER_PID, &writeval, 
+			  sizeof(avr_instr_t), code_offset);
+	goto verify_success;
+      }
+      if (instr.rawVal == writeval) goto verify_success;
+      return -EINVAL;
+    }
+  verify_success:
+    verify_state = 0;
     return SOS_OK;
   }
+
   switch (instr.rawVal & OP_TYPE10_MASK){
   case OP_JMP:
+    verify_state = TWO_WORD_FLAG | JMP_FLAG;
+    return SOS_OK;
   case OP_CALL:
-    twowordinstr = 1;
+    verify_state = TWO_WORD_FLAG | CALL_FLAG;
     return SOS_OK;
   }
   // LDS Ok, STS Not allowed
   switch (instr.rawVal & OP_TYPE19_MASK){
   case OP_LDS:
     {
-      twowordinstr = 1;
+      verify_state = TWO_WORD_FLAG;
       return SOS_OK;
     }
   case OP_STS:
     {
-      twowordinstr = 1;
+      verify_state = TWO_WORD_FLAG;
       return -EINVAL;
     }
   }
@@ -105,10 +196,15 @@ static inline int8_t verify_instr(avr_instr_t instr)
   case OP_ICALL:
     return -EINVAL;
   }
+  verify_state = 0;
   // Allow this instruction
   return SOS_OK;
 }
 //---------------------------------------------------
+
+
+
+/*
 static inline int8_t patch_instr(avr_instr_t instr, codemem_t h, uint16_t code_offset, 
 				 uint16_t init_offset, uint16_t code_size, uint16_t mod_start_word_addr)
 {
@@ -229,6 +325,7 @@ static inline int8_t patch_instr(avr_instr_t instr, codemem_t h, uint16_t code_o
 
   return SOS_OK;
 }
+*/
 
 #else
 //---------------------------------------------------

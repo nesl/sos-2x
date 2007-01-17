@@ -23,7 +23,9 @@
  * \ingroup runtimechecker
  * \brief Assembly routine to check validity of memory accesses made by modules.
  */
-void ker_memmap_perms_check(void* x);
+void ker_memmap_perms_check_xptr(void* x);
+void ker_memmap_perms_check_yptr(void* x);
+void ker_memmap_perms_check_zptr(void* x);
 #endif
 
 

@@ -35,9 +35,16 @@
 //----------------------------------------------------------------------------
 // DEFINES
 //#define SBX_FIX_REGS        //! For binary re-writes assuming fixed registers
-#define AVR_REG_0       R0
-#define AVR_FIXED_REG_1 R26   //! Used by the memmap checker routine to store  
-#define AVR_FIXED_REG_2 R27   //! the write address
+#ifdef SBX_FIX_REGS
+#define AVR_SCRATCH_REG       R4
+#define AVR_FIXED_REG_1       R2
+#define AVR_FIXED_REG_2       R3
+#else
+#define AVR_SCRATCH_REG       R0
+#define AVR_FIXED_REG_1       R26   //! Used by the memmap checker routine to store  
+#define AVR_FIXED_REG_2       R27   //! the write address
+#endif
+
 #define AVR_SREG        0x3F  //! AVR IO address of processor status register
 #define BLOCK_SLACK_BYTES 40  //! Slack due to control flow changes 
 #define	Flip_int16(type)  (((type >> 8) & 0x00ff) | ((type << 8) & 0xff00))
@@ -371,9 +378,9 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
   printf("Number of instructions sandboxed: %d\n", sandboxcnt);
   printf("Output written to file: %s\n", outFileName);
 #ifdef SBX_FIX_REGS
-  printf("Sandbox using fixed reg. pair\n");
+  printf("Sandbox using fixed registers.\n");
 #else
-  printf("Sandbox using PUSH/POP of reg. pair.\n");
+  printf("Sandbox using PUSH/POP of registers.\n");
 #endif
   printf("Registers Used: ");
   printreg(AVR_FIXED_REG_1); printf("and ");
@@ -393,9 +400,9 @@ static int avr_get_sandbox_desc(avr_instr_t* instr, sandbox_desc_t* sndbx)
     int numnewinstr;
   } st_sbx_desc_t;
   #define LUT_SIZE 9
-  static const st_sbx_desc_t st_sbx[LUT_SIZE] = {{OP_ST_X, 5}, {OP_ST_Y, 10}, {OP_ST_Z, 10},
-						 {OP_ST_X_INC, 6}, {OP_ST_Y_INC, 11}, {OP_ST_Z_INC, 11},
-						 {OP_ST_X_DEC, 6}, {OP_ST_Y_DEC, 11}, {OP_ST_Z_DEC, 11}};
+  static const st_sbx_desc_t st_sbx[LUT_SIZE] = {{OP_ST_X, 5}, {OP_ST_Y, 5}, {OP_ST_Z, 5},
+						 {OP_ST_X_INC, 6}, {OP_ST_Y_INC, 6}, {OP_ST_Z_INC, 6},
+						 {OP_ST_X_DEC, 6}, {OP_ST_Y_DEC, 6}, {OP_ST_Z_DEC, 6}};
   static int twowordinstr = 0;
   static avr_instr_t previnstr;
 
@@ -457,7 +464,7 @@ static int avr_get_sandbox_desc(avr_instr_t* instr, sandbox_desc_t* sndbx)
     {
       sndbx->sbxtype = ST_SBX_TYPE;
       sndbx->optype = OP_TYPE14;
-      sndbx->numnewinstr = 11;
+      sndbx->numnewinstr = 7;
       return 0;
     }
   }
@@ -521,18 +528,22 @@ static void avr_gen_st_sandbox(basicblk_t* sandboxblk, sandbox_desc_t* sndbx){
     {
       srcreg = get_optype4_dreg(&sndbx->instr);
       switch (sndbx->instr.rawVal & OP_TYPE4_MASK){
-      case OP_ST_X: skippushpop = 1; addrreg = R26; addrmode = ADDR_NO_CHANGE; break;
-      case OP_ST_X_INC: skippushpop = 1; addrreg = R26; addrmode = ADDR_POST_INC; break;
-      case OP_ST_X_DEC: skippushpop = 1; addrreg = R26; addrmode = ADDR_PRE_DEC; break;
-      case OP_ST_Y: skippushpop = 0; addrreg = R28; addrmode = ADDR_NO_CHANGE; break;
-      case OP_ST_Y_INC: skippushpop = 0; addrreg = R28; addrmode = ADDR_POST_INC; break;
-      case OP_ST_Y_DEC: skippushpop = 0; addrreg = R28; addrmode = ADDR_PRE_DEC; break;
-      case OP_ST_Z: skippushpop = 0; addrreg = R30; addrmode = ADDR_NO_CHANGE; break;
-      case OP_ST_Z_INC: skippushpop = 0; addrreg = R30; addrmode = ADDR_POST_INC; break;
-      case OP_ST_Z_DEC: skippushpop = 0; addrreg = R30; addrmode = ADDR_PRE_DEC; break;
+      case OP_ST_X: addrreg = R26; addrmode = ADDR_NO_CHANGE; break;
+      case OP_ST_X_INC: addrreg = R26; addrmode = ADDR_POST_INC; break;
+      case OP_ST_X_DEC: addrreg = R26; addrmode = ADDR_PRE_DEC; break;
+      case OP_ST_Y: addrreg = R28; addrmode = ADDR_NO_CHANGE; break;
+      case OP_ST_Y_INC: addrreg = R28; addrmode = ADDR_POST_INC; break;
+      case OP_ST_Y_DEC: addrreg = R28; addrmode = ADDR_PRE_DEC; break;
+      case OP_ST_Z: addrreg = R30; addrmode = ADDR_NO_CHANGE; break;
+      case OP_ST_Z_INC: addrreg = R30; addrmode = ADDR_POST_INC; break;
+      case OP_ST_Z_DEC: addrreg = R30; addrmode = ADDR_PRE_DEC; break;
 
       break;
       }
+      if (AVR_FIXED_REG_1 == addrreg)
+	skippushpop = 1;
+      else
+	skippushpop = 0;
       break;
     }
   case OP_TYPE14:
@@ -557,32 +568,41 @@ static void avr_gen_st_sandbox(basicblk_t* sandboxblk, sandbox_desc_t* sndbx){
     }
   };
   
+#ifndef SBX_FIX_REGS
+  // PUSH AVR_SCRATCH_REG
+  sandboxblk->instr[i].rawVal = create_optype4(OP_PUSH, AVR_SCRATCH_REG);
+  i++;
+#endif
+  // MOV AVR_SCRATCH_REG, Rsrc
+  sandboxblk->instr[i].rawVal = create_optype1(OP_MOV, AVR_SCRATCH_REG, srcreg);
+  i++;
 
-  // PUSH R0
-  sandboxblk->instr[i].rawVal = create_optype4(OP_PUSH, AVR_REG_0);
-  i++;
-  // MOV R0, Rsrc
-  sandboxblk->instr[i].rawVal = create_optype1(OP_MOV, AVR_REG_0, srcreg);
-  i++;
+#if 0 // No push pop of address registers required
 #ifndef SBX_FIX_REGS
   if (!skippushpop){
-    // PUSH R26
+    // PUSH AVR_FIXED_REG_1
     sandboxblk->instr[i].rawVal = create_optype4(OP_PUSH, AVR_FIXED_REG_1);
     i++;
-    // PUSH R27
+    // PUSH AVR_FIXED_REG_1
     sandboxblk->instr[i].rawVal = create_optype4(OP_PUSH, AVR_FIXED_REG_2);
     i++;
   }
 #endif
-
+#endif 
   
   switch (addrmode){
   case ADDR_CONST:
     {
-      // LDI R26, lo8(sts_addr)
+      // PUSH AVR_FIXED_REG_1
+      sandboxblk->instr[i].rawVal = create_optype4(OP_PUSH, AVR_FIXED_REG_1);
+      i++;
+      // PUSH AVR_FIXED_REG_1
+      sandboxblk->instr[i].rawVal = create_optype4(OP_PUSH, AVR_FIXED_REG_2);
+      i++;
+      // LDI AVR_FIXED_REG_1, lo8(sts_addr)
       sandboxblk->instr[i].rawVal = create_optype3(OP_LDI, AVR_FIXED_REG_1, (uint8_t)(sts_addr));
       i++;
-      // LDI R27, hi8(sts_addr)
+      // LDI AVR_FIXED_REG_2, hi8(sts_addr)
       sandboxblk->instr[i].rawVal = create_optype3(OP_LDI, AVR_FIXED_REG_2, (uint8_t)((uint16_t)(sts_addr >> 8)));
       i++;
       break;
@@ -590,11 +610,13 @@ static void avr_gen_st_sandbox(basicblk_t* sandboxblk, sandbox_desc_t* sndbx){
   case ADDR_NO_CHANGE:
   case ADDR_POST_INC:
     {
+#if 0 // No more moves of address regs. required
       if (!skippushpop){
-	// MOVW R26, (Y or Z)
+	// MOVW AVR_FIXED_REG_1, (Y or Z)
 	sandboxblk->instr[i].rawVal = create_optype16(OP_MOVW, AVR_FIXED_REG_1, addrreg);
 	i++;
       }
+#endif
       break;
     }
   case ADDR_PRE_DEC:
@@ -602,54 +624,106 @@ static void avr_gen_st_sandbox(basicblk_t* sandboxblk, sandbox_desc_t* sndbx){
       // SBIW (X/Y/Z), 1
       sandboxblk->instr[i].rawVal = create_optype2(OP_SBIW, addrreg, 1);
       i++;
+#if 0 // No more moves of address regs. required
       if (!skippushpop){
-	// MOVW R26, (Y or Z)
+	// MOVW AVR_FIXED_REG_1, (Y or Z)
 	sandboxblk->instr[i].rawVal = create_optype16(OP_MOVW, AVR_FIXED_REG_1, addrreg);
 	i++;
       }
+#endif
       break;
     }
   case ADDR_OFFSET:
     {
-      if (!skippushpop){
-	// MOVW R26, (Y or Z)
-	sandboxblk->instr[i].rawVal = create_optype16(OP_MOVW, AVR_FIXED_REG_1, addrreg);
-	i++;
-      }
-      // ADIW R26, offset
-      sandboxblk->instr[i].rawVal = create_optype2(OP_ADIW, AVR_FIXED_REG_1, addroffset);
+      // ADIW (X/Y/Z), offset
+      sandboxblk->instr[i].rawVal = create_optype2(OP_ADIW, addrreg, addroffset);
       i++;
+#if 0 // No more moves of address regs. required
+      // MOVW AVR_FIXED_REG_1, (X/Y/Z)
+      sandboxblk->instr[i].rawVal = create_optype16(OP_MOVW, AVR_FIXED_REG_1, addrreg);
+      i++;
+#endif      
       break;
     }
   }
 
   // CALL ker_memmap_perms_check
-  callinstr = create_optype10(OP_CALL, KER_MEMMAP_PERMS_CHECK_CODE);
+  switch (addrreg){
+  case R26:
+    {
+      callinstr = create_optype10(OP_CALL, KER_MEMMAP_PERMS_CHECK_X_CODE);
+      break;
+    }
+  case R28:
+    {
+      callinstr = create_optype10(OP_CALL, KER_MEMMAP_PERMS_CHECK_Y_CODE);
+      break;
+    }
+  case R30:
+    {
+      callinstr = create_optype10(OP_CALL, KER_MEMMAP_PERMS_CHECK_Z_CODE);
+      break;
+    }
+  default:
+    {
+      fprintf(stderr, "Invalid pointer register being sandboxed.\n");
+      exit(EXIT_FAILURE);
+    }
+  }
   sandboxblk->instr[i].rawVal = (uint16_t)(callinstr>>16);
   i++;
   sandboxblk->instr[i].rawVal = (uint16_t)(callinstr);
   i++;
 
-  if (ADDR_POST_INC == addrmode){
-    // ADIW (X/Y/Z), 1
-    sandboxblk->instr[i].rawVal = create_optype2(OP_ADIW, addrreg, 1);
-    i++;
+
+  switch (addrmode){
+  case ADDR_POST_INC:
+    {
+      // ADIW (X/Y/Z), 1
+      sandboxblk->instr[i].rawVal = create_optype2(OP_ADIW, addrreg, 1);
+      i++;
+      break;
+    }
+  case ADDR_OFFSET:
+    {
+      // SBIW (X/Y/Z), offset
+      sandboxblk->instr[i].rawVal = create_optype2(OP_SBIW, addrreg, addroffset);
+      i++;
+      break;
+    }
+  case ADDR_CONST:
+    {
+      // POP AVR_FIXED_REG_2
+      sandboxblk->instr[i].rawVal = create_optype4(OP_POP, AVR_FIXED_REG_2);
+      i++;
+      // POP AVR_FIXED_REG_1
+      sandboxblk->instr[i].rawVal = create_optype4(OP_POP, AVR_FIXED_REG_1);
+      i++;
+      break;
+    }
+  default:
+    break;
   }
 
-
+  
+#if 0
 #ifndef SBX_FIX_REGS
   if (!skippushpop){
-    // POP R27
+    // POP AVR_FIXED_REG_2
     sandboxblk->instr[i].rawVal = create_optype4(OP_POP, AVR_FIXED_REG_2);
     i++;
-    // POP R26
+    // POP AVR_FIXED_REG_1
     sandboxblk->instr[i].rawVal = create_optype4(OP_POP, AVR_FIXED_REG_1);
     i++;
   }
 #endif
-  // POP R0
-  sandboxblk->instr[i].rawVal = create_optype4(OP_POP, AVR_REG_0);
+#endif
+
+#ifndef SBX_FIX_REGS
+  // POP AVR_SCRATCH_REG
+  sandboxblk->instr[i].rawVal = create_optype4(OP_POP, AVR_SCRATCH_REG);
   i++;
+#endif
 
   sandboxblk->size = i * (sizeof(avr_instr_t));
   return;
@@ -890,12 +964,12 @@ static void avr_fix_branch_instr(avr_instr_t* instrin, basicblk_t* cblk, uint16_
   int k;
   instr = instrin;
   curraddr = cblk->newsize + cblk->newaddr - sizeof(avr_instr_t);
-  instr->rawVal = create_optype13(OP_IN, AVR_REG_0, AVR_SREG);
+  instr->rawVal = create_optype13(OP_IN, AVR_SCRATCH_REG, AVR_SREG);
 
   instr++;
   cblk->newsize += sizeof(avr_instr_t);
   curraddr += sizeof(avr_instr_t);
-  instr->rawVal = create_optype6(opcode & OP_TYPE6_MASK, AVR_REG_0, bitpos);
+  instr->rawVal = create_optype6(opcode & OP_TYPE6_MASK, AVR_SCRATCH_REG, bitpos);
   
   instr++;
   cblk->newsize += sizeof(avr_instr_t);
