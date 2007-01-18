@@ -74,15 +74,13 @@ gps_t gps_loc = {
     .unit  = NODE_GPS_Z_UNIT,
     .z     = NODE_GPS_Z,
 };
-#ifndef QUALNET_PLATFORM
+
 #ifdef NODE_ADDR
 uint16_t node_address = NODE_ADDR;
 #else
 uint16_t node_address = 1;
 #endif
-#else
-uint16_t node_address;
-#endif
+
 
 
 #ifdef NODE_GROUP_ID

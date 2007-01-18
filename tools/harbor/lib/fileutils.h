@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <libelf.h>
+#include <inttypes.h>
 
 /**
  * \brief Input file types supported
