@@ -22,7 +22,7 @@ jmp ker_led                ; 16
 jmp ker_sys_get_module_state ; 17
 jmp ker_sys_fntable_subscribe ; 18
 jmp ker_sys_change_own     ; 19
-jmp 0                      ; 20
+jmp ker_sys_fnptr_from_ker_call ; 20
 jmp 0                      ; 21
 jmp 0                      ; 22
 jmp 0                      ; 23

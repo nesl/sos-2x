@@ -50,8 +50,15 @@ typedef struct func_cb {
  * @{
  */
 #ifdef SYS_JUMP_TBL_START
+
+#if defined(SOS_SFI) && !defined(_MODULE_)
+#define SOS_CALL(fnptrptr,type, args...)  \
+(((type)(SYS_JUMP_TBL_START + SYS_JUMP_TBL_SIZE*20))((fnptrptr), ##args))
+#else
 #define SOS_CALL(fnptrptr,type, args...)  \
 (((type)(SYS_JUMP_TBL_START))((fnptrptr), ##args))
+#endif //SOS_SFI && !_MODULE_
+
 #else
 #define SOS_CALL(fnptrptr,type, args...)  \
 ((type)(ker_sys_enter_func(fnptrptr)))((fnptrptr), ##args); ker_sys_leave_func()

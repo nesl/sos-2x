@@ -16,7 +16,7 @@
 //#define CODEMEM_START_PAGE 192 // Ram - Should be even numbered
 #define CODEMEM_END_PAGE   469 // Ram - Should be odd numbered
 #endif
-	
+#define KERNEL_DOM_ID  7	
 #define WORDS_PER_FLASH_PAGE 128	
 #define CODEMEM_CONST_STORE_PAGES 32
 #define SFI_KERTBL_START_PAGE (CODEMEM_END_PAGE + 1)  // Ram - Should be an even numbered page. Should be greater than 256
@@ -68,6 +68,20 @@ ker_cross_domain_call_mod_handler:
 	brcc ker_cross_domain_call
 	ijmp
 
+
+;;; Brief: Checks icalls originating from the kernel
+;;; Just check for a cross domain call
+.global ker_icall_from_kernel_check
+ker_icall_from_kernel_check:
+#ifdef SFI_DOMS_2
+	ldi xptr_h, SFI_UP_BND_WORDH
+	cp zptr_h, xptr_h
+	brcc label_ker_icall_check_fail
+#endif	
+	ldi xptr_h, SFI_MODTBL_START_WORDH
+	cp  zptr_h, xptr_h
+	brcc ker_cross_domain_call
+	ijmp
 	
 ;;; Brief: Checks icall target address
 ;;; Description: icall target address always resides in register pair zptr_h:zptr_l
