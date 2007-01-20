@@ -60,8 +60,9 @@ label_store_curr_pid:
 		sts  (curr_pid), temp_reg1;
 		out  __SREG__, temp_reg0 ;  leave critical section
 	clr  temp_reg1      ; clear R1 for gcc 
-	ret                 ;
-
+	ret
+				;
+#ifdef SOS_SFI
 ;;; Replicate above function for the time begin !!
 .global ker_sys_fnptr_from_ker_call
 ker_sys_fnptr_from_ker_call:
@@ -108,6 +109,6 @@ label_store_curr_pid_sfi:
 		out  __SREG__, temp_reg0 ;  leave critical section
 	clr  temp_reg1      ; clear R1 for gcc 
 	ret                 ;
-
+#endif
 	
 ;;; End of file
