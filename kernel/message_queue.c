@@ -415,8 +415,8 @@ void msg_dispose(Message *m)
 			DEBUG("MQ: free %x of item %d\n", (unsigned int)itr, m - itr->pool);
 			if( (itr->alloc == 0) && (itr != (&msg_pool))) {
 				DEBUG("MQ: free one pool\n");
+				prev->next = itr->next;
 				ker_free(itr);
-				prev->next = NULL;
 			}
 			LEAVE_CRITICAL_SECTION();
 			return;
