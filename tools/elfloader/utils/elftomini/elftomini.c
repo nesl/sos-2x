@@ -160,7 +160,12 @@ static int convElfToMiniFile(char* elffilename, char* melffilename)
   }
 
   // Verify if the ELF is AVR specific
-  if (ehdr->e_machine != EM_AVR && ehdr->e_machine != EM_MSP430){
+  
+  // EM_MSP430 is causing compile problems for many users.  Commented out for
+  // now by Roy Shea.
+  // if (ehdr->e_machine != EM_AVR && ehdr->e_machine != EM_MSP430){
+
+  if (ehdr->e_machine != EM_AVR){
     fprintf(stderr, "This ELF binary is not supported.\n");
     exit(EXIT_FAILURE);
   }
