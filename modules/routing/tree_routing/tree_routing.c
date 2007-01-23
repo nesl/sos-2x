@@ -629,11 +629,7 @@ static int8_t tr_send_data(tree_route_state_t *s, uint8_t msg_len, uint16_t sadd
   
   if(dup == false) {
 	hdr->hopcount = s->gbCurrentHopCount;
-	if(my_id != entohs(hdr->originaddr)){
-	  hdr->seqno = ehtons(s->gCurrentSeqNo++); 
-	} else {
-	  hdr->seqno = ehtons(s->gCurrentSeqNo); 
-	}
+	hdr->seqno = ehtons(s->gCurrentSeqNo++); 
 	post_net(TREE_ROUTING_PID, TREE_ROUTING_PID,
 			 MSG_TR_DATA_PKT, msg_len, hdr,     
 			 SOS_MSG_RELEASE, s->gpCurrentParent->id);
