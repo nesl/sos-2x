@@ -5,6 +5,27 @@
  */
 #ifndef _AVR_SANDBOX_H_
 #define _AVR_SANDBOX_H_
+//----------------------------------------------------------------------------
+// TYPEDEFS
+
+enum 
+  {
+    ST_SBX_TYPE = 0,
+    RET_SBX_TYPE,
+    ICALL_SBX_TYPE,
+  };
+
+/**
+ * Sandbox Type Descriptor
+ */
+typedef struct _str_sandbox_type {
+  int sbxtype;           //! Type of sandbox code to be generated
+  int optype;            //! Opcode type of the instr to be sandbox
+  int numnewinstr;       //! No. of sandbox instr. added
+  avr_instr_t instr;     //! Instruction to sandbox
+  avr_instr_t nextinstr; //! Next instruction to sandbox
+} sandbox_desc_t;
+
 
 //----------------------------------------------------------------------------
 // DEFINES
@@ -33,6 +54,10 @@
 #else
 #define DEBUG(arg...)
 #endif
+
+// Sandbox API
+int avr_get_sandbox_desc(avr_instr_t* instr, sandbox_desc_t* sndbx);
+void avr_gen_sandbox(basicblk_t* sandboxblk, sandbox_desc_t* sndbx, uint16_t calladdr);
 
 // Control flow update API
 void avr_update_cf(bblklist_t* blist, uint32_t startaddr);
