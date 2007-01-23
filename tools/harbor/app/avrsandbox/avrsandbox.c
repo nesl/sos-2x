@@ -85,16 +85,24 @@ typedef struct _str_sandbox_type {
 // STATIC FUNCTIONS
 static void printusage();
 static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr, uint16_t calladdr);
+
+
 static int avr_get_sandbox_desc(avr_instr_t* instr, sandbox_desc_t* sndbx);
 static void avr_gen_sandbox(basicblk_t* sandboxblk, sandbox_desc_t* sndbx, uint16_t calladdr);
 static void avr_gen_st_sandbox(basicblk_t* sandboxblk, sandbox_desc_t* sndbx);
 static void avr_gen_ret_sandbox(basicblk_t* sandboxblk, sandbox_desc_t* sndbx);
 static void avr_gen_icall_sandbox(basicblk_t* sandboxblk, sandbox_desc_t* sndbx);
+
+
+static void avr_dataflow_basic_block(basicblk_t* cblk);
+
 static void avr_update_cf(bblklist_t* blist, uint32_t startaddr);
 static void avr_update_cf_instr(avr_instr_t* instr, basicblk_t* cblk, int* cfupdateflag);
 static void avr_fix_branch_instr(avr_instr_t* instrin, basicblk_t* cblk, uint16_t opcode, uint8_t bitpos);
 static void avr_fix_cpse(avr_instr_t* instrin, basicblk_t* cblk);
 static void avr_fix_skip_instr(avr_instr_t* instrin, basicblk_t* cblk);
+
+
 static void avr_write_binfile(bblklist_t* blist, char* outFileName, file_desc_t *fdesc, uint32_t startaddr);
 static void avr_write_elffile(bblklist_t* blist, char* outFileName, file_desc_t* fdesc, uint32_t startaddr);
 static void avr_create_new_elf_header(Elf32_Ehdr *ehdr, Elf32_Ehdr *nehdr);
@@ -174,7 +182,11 @@ int main(int argc, char** argv)
 // Top level function
 static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr, uint16_t calladdr)
 {
+  // Stats
   int sandboxcnt ;         // Count of number of instructions sandboxed for stats
+  int stsandboxcnt;        // Number of sandbox of type Store
+  int bStInstr;            // Flag to indicate that store instructions are present in a basic block
+
   bblklist_t* blist;       // List of basic blocks in the program
   basicblk_t* cblk;        // Basic block interator
   basicblk_t sandboxblk;   // Basic block used to store the sandbox instructions
@@ -189,6 +201,7 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
   // Code introduced by sandboxing is stored in a basic block
   // Initialize that basic block
   sandboxcnt = 0;
+  stsandboxcnt = 0;
   if ((sandboxblk.instr = malloc(MAX_SANDBOX_BLK_SIZE)) == NULL){
     fprintf(stderr, "avrsandbox: malloc -> Out of memory.\n");
     exit(EXIT_FAILURE);
@@ -201,7 +214,7 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
   // Traverse all the basic blocks in the program
   for (cblk = blist->blk_st; cblk != NULL; cblk = (basicblk_t*)cblk->link.next){
     int i, j;
-
+    bStInstr = 0;
     cblk->newsize = 0;
 
 #ifdef DBGMODE    
@@ -233,6 +246,10 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
       if (avr_get_sandbox_desc((avr_instr_t*)&(cblk->instr[i]), &sndbx) ==  0){
 	cblk->newsize += sndbx.numnewinstr * sizeof(avr_instr_t);
 	sandboxcnt++;
+	if (ST_SBX_TYPE == sndbx.sbxtype){
+	  stsandboxcnt++;
+	  bStInstr = 1;
+	}
 #ifdef DBGMODE
 	printf("\n Sandbox Size: %d\n", sndbx.numnewinstr);
 	// Generate the sandbox instructions for pretty print
@@ -255,6 +272,11 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
     DEBUG("*** New Size: %d ****\n", (int)cblk->newsize);
 #endif
 
+    // If we encountered a store instruction, then perform dataflow analysis on the basic block
+    if (bStInstr)
+      avr_dataflow_basic_block(cblk);
+
+    
     // We have a slack to introduce some extra control flow instructions
     if ((cblk->newinstr = malloc(cblk->newsize + BLOCK_SLACK_BYTES)) == NULL){
       fprintf(stderr,"avr_sandbox: malloc -> out of memory\n");
@@ -376,6 +398,7 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
 
   printf("==== SANDBOX DONE ======\n");
   printf("Number of instructions sandboxed: %d\n", sandboxcnt);
+  printf("   Number of STORE instructions: %d\n", stsandboxcnt);
   printf("Output written to file: %s\n", outFileName);
 #ifdef SBX_FIX_REGS
   printf("Sandbox using fixed registers.\n");
@@ -761,6 +784,12 @@ static void avr_gen_icall_sandbox(basicblk_t* sandboxblk, sandbox_desc_t* sndbx)
   i++;
   
   sandboxblk->size = i * (sizeof(avr_instr_t));
+  return;
+}
+//-------------------------------------------------------------------
+static void avr_dataflow_basic_block(basicblk_t* cblk)
+{
+  
   return;
 }
 //-------------------------------------------------------------------
