@@ -13,7 +13,8 @@ INCDIR += -I. -I../../lib -I$(SOSROOT)/kernel/include -I../../soslib
 INCDIR += -I../../../elfloader/elflib -I../../../elfloader/minielf
 SRCS += avrregs.c avrinstmatch.c avrbinparser.c basicblock.c 
 SRCS += sos_mod_header_patch.c dispinstr.c elfdisplay.c elfhelper.c
-SRCS += fileutils.c avr_sbx.c avr_control_flow.c avr_file_write.c $(PROJ).c
+SRCS += fileutils.c avr_sbx.c avr_dataflow.c
+SRCS += avr_control_flow.c avr_file_write.c $(PROJ).c
 OBJS += $(SRCS:.c=.o)
 
 # For obtaining definition of mod_header_t

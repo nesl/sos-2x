@@ -59,6 +59,9 @@ typedef struct _str_sandbox_type {
 int avr_get_sandbox_desc(avr_instr_t* instr, sandbox_desc_t* sndbx);
 void avr_gen_sandbox(basicblk_t* sandboxblk, sandbox_desc_t* sndbx, uint16_t calladdr);
 
+// Dataflow API
+void avr_dataflow_basic_block(basicblk_t* cblk);
+
 // Control flow update API
 void avr_update_cf(bblklist_t* blist, uint32_t startaddr);
 

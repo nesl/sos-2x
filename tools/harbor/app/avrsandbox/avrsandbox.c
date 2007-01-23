@@ -36,12 +36,6 @@
 static void printusage();
 static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr, uint16_t calladdr);
 
-static void avr_dataflow_basic_block(basicblk_t* cblk);
-
-
-
-
-
 //----------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
@@ -316,9 +310,10 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
     */
   }
 
-
+  // Update Control Flow
   avr_update_cf(blist, startaddr);
 
+  // Write sandbox binary to file
   if (BIN_FILE == fdesc->type)
     avr_write_binfile(blist, outFileName, fdesc, startaddr);
   else
@@ -339,25 +334,6 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
   printf("\n");
   printf("========================\n");
   return 0;
-}
-//-------------------------------------------------------------------
-
-typedef struct _str_ptr_reg {
-  int binit;
-  int lvalue;
-  int uvalue;
-  int cvalue;
-} ptr_reg_t;
-
-static void avr_dataflow_basic_block(basicblk_t* cblk)
-{
-  ptr_reg_t x, y, z;
-  x.binit = 0; x.lvalue = 0; x.uvalue = 0; x.cvalue = 0;
-  y.binit = 0; y.lvalue = 0; y.uvalue = 0; y.cvalue = 0;
-  z.binit = 0; z.lvalue = 0; z.uvalue = 0; z.cvalue = 0;
-
-  
-  return;
 }
 //-------------------------------------------------------------------
  static void printusage()
