@@ -14,12 +14,19 @@
 
 //-------------------------------------------------------------------
 // TYPEDEFS
+typedef enum _enum_val_type {
+  NO_VAL  = 0,
+  REG_VAL = 1,
+  MEM_VAL = 2,
+} valtype_t;
+
 typedef struct _str_ptr_reg {
-  int binit;
-  int reg;
-  int lvalue;
-  int uvalue;
-  int cvalue;
+  int regID;
+  valtype_t type;
+  union {
+    int regval;
+    int memAddr;
+  };
 } ptr_reg_t;
 
 //-------------------------------------------------------------------
@@ -47,8 +54,8 @@ void avr_dataflow_basic_block(basicblk_t* cblk)
 //-------------------------------------------------------------------
 static void init_ptr_reg(ptr_reg_t* ptr, int reg)
 {
-  ptr->binit = 0; ptr->lvalue = 0; ptr->uvalue = 0; ptr->cvalue = 0;
-  ptr->reg = reg;
+  ptr->type = NO_VAL;
+  ptr->regID = reg;
   return;
 }
 //-------------------------------------------------------------------
@@ -73,6 +80,6 @@ static void update_ptr_reg(ptr_reg_t* ptr, avr_instr_t* instr)
   // OPTYPE 19: LDS,
   // Bit and Bit-Test Instructions
   // OPTYPE 4: LSR, ROR, ASR, SWAP
-  // OPTYEP 6: BLD
+  // OPTYEP 6: BLD 
   return;
 }
