@@ -54,5 +54,25 @@ static void init_ptr_reg(ptr_reg_t* ptr, int reg)
 //-------------------------------------------------------------------
 static void update_ptr_reg(ptr_reg_t* ptr, avr_instr_t* instr)
 {
+  // Arithmetic and Logic Instructions
+  // OPTYPE 1: ADD, ADC, SUB, SBC, AND, OR, EOR,  
+  // OPTYPE 2: ADIW, SBIW
+  // OPTYPE 3: SUBI, SBCI, ANDI, ORI, SBR, 
+  // OPTYPE 4: COM, NEG, INC, DEC, 
+  // OPTYPE 18: SER
+  // Data Transfer Instructions
+  // OPTYPE 1: MOV,
+  // OPTYPE 3: LDI,
+  // OPTYPE 4: LD X, LD X+, LD -X, LD Y, LD Y+, LD -Y, LD Z, LD Z+, LD -Z
+  //           ST X+, ST -X, ST Y+, ST -Y, ST Z+, ST -Z, 
+  //           LPM_Z, LPM Z+, ELPM_Z, ELPM_Z+
+  //           POP
+  // OPTYPE 13: IN,
+  // OPTYPE 14: LDD Y+q, LDD Z+q,
+  // OPTYPE 16: MOVW,
+  // OPTYPE 19: LDS,
+  // Bit and Bit-Test Instructions
+  // OPTYPE 4: LSR, ROR, ASR, SWAP
+  // OPTYEP 6: BLD
   return;
 }
