@@ -93,10 +93,9 @@ LDFLAGS += -Wl,-r,-i,--unresolved-symbols=ignore-in-object-files
 ###############################################################
 # MEMORY PROTECTION OPTIONS
 ###############################################################
-#ifeq ($(MODE),sfi)
-#CFLAGS += -ffixed-r26 -ffixed-r27
-#CFLAGS += -ffixed-r2
-#endif
+ifeq ($(MODE),sfi)
+CFLAGS += -ffixed-r2 -ffixed-r3 -ffixed-r4
+endif
 
 LDFLAGS += -Wl,-T $(ROOTDIR)/processor/avr/mod.x -Wl,-Map=$(PROJ).map,--cref -nostartfiles -nodefaultlibs -nostdlib -lgcc -lc
 SFLAGS += $(STACK_START) -Wa,$(MCUFLAG),$(AS_DEBUG),-ahlms=$(notdir $(<:.S=.lst))
