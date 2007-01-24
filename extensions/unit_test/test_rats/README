@@ -1,0 +1,3 @@
+This is the unit test for RATS. Unfortunately, RATS can not be loaded as a module. Thus, you need to use the rats_app in $SOS_ROOT/config/ to see how RATS works. 
+
+

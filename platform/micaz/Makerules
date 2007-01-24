@@ -86,8 +86,10 @@ ifneq ($(PROG),jtag)
 	$(INSTALLER) --erase
 	sleep 2
 	$(INSTALLER) --upload if=$(PROJ).srec.out.$(ADDRESS)
+ifndef NO_VERIFY
 	sleep 2
 	$(INSTALLER) --verify if=$(PROJ).srec.out.$(ADDRESS)
+endif
 	rm -f $(PROJ).srec.out.$(ADDRESS)
 else
 	$(INSTALLER) --jtag $(PORT) --write-fuses ff9fbf

@@ -348,10 +348,10 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if( getenv("SOSROOT") == NULL ) {
-		fprintf(stderr, "Environment Variable SOSROOT is not set!\n");
-		fprintf(stderr, "Please add SOSROOT to your shell environment\n");
-		fprintf(stderr, "SOSROOT should point to the top level directory of SOS\n");
+	if( getenv("SOS_DIR") == NULL ) {
+		fprintf(stderr, "Environment Variable SOS_DIR is not set!\n");
+		fprintf(stderr, "Please add SOS_DIR to your shell environment\n");
+		fprintf(stderr, "SOS_DIR should point to the top level directory of SOS\n");
 		exit(1);
 	}
 	interrupt_init();

@@ -7,6 +7,8 @@ VPATH += $(ROOTDIR)/kernel
 VPATH += $(ROOTDIR)/modules
 
 INCDIR += -I$(ROOTDIR)/kernel/include
+INCDIR += -I$(ROOTDIR)/extensions
+INCDIR += -I$(ROOTDIR)/extensions/include
 INCDIR += -I$(ROOTDIR)/modules
 INCDIR += -I$(ROOTDIR)/modules/include
 INCDIR += -I$(ROOTDIR)/modules/interfaces

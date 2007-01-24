@@ -1,0 +1,12 @@
+
+SOSBASE is a SOS configuration that is intended for bridging your PC and motes.  
+Since SOS treats your PC just another node in the network, 
+your PC should have distinct node address.  This is by default to be 
+65534.  This means that UART_ADDR should be 65534 on the mote side.  
+If you intend to use modd_gw as your PC side module insertion tool, modd_gw 
+should run as 65534 as well.  
+
+When you change modd_gw address, please remember to change UART_ADDR in the 
+Makefile to the same number.  
+
+NOTE: if you decide to change modd_gw address, do not use 65533.

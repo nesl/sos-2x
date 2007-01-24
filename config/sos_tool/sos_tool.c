@@ -114,11 +114,11 @@ static void tool_lsdata(void)
 
 static void tool_help(void)
 {
-    printf("sos_tool [%s] --insmod=<module.sos> --rmmod=PID --send_message=<message> --lsmod --help\n",
+    printf("sos_tool [%s] --insmod=<module.mlf> --rmmod=PID --send_message=<message> --lsmod --help\n",
            sos_emu_short_opts);
     printf("[%s] are the sos_emu_short_opts.  sos_tool -h for more info.\n",sos_emu_short_opts);
     printf("sos_tool long options:\n");
-    printf("\tinsmod=<module.sos>: Install a module with the filename <module.sos>\n");
+    printf("\tinsmod=<module.mlf>: Install a module with the filename <module.mlf>\n");
     printf("\tsend_message=<message>: Send a network message <message>\n");
     printf("\t  <message> format: did sid daddr saddr type argc 0xbe 0xef ...\n");
     printf("\trmmod=<code_id>: Remove a module image with <code_id>, note code_id = 0 removes all modules on network\n");

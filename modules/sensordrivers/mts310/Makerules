@@ -1,0 +1,7 @@
+# -*- Makefile -*-
+#
+# Makerules for mts310 sensor board
+#
+DEFS += -DMTS310SB
+
+
