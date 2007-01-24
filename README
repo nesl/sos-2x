@@ -1,7 +1,3 @@
-Tool Installation
------------------
-
-To install tools, execute install.sh
 
 
 Overview of Directory Layout
@@ -39,12 +35,10 @@ TODO type lists sit directly in the doc directory.
 drivers
 ~~~~~~~
 
-include
-~~~~~~~
+Platform independent drivers are here.  This means that there are hardware 
+specific routines in the platform or processor directories.  
+The drivers are then made with these hardware specific routines.  
 
-SOS operating system include files.  These describe the core API provided by
-SOS.  Platform and processor specific include files are NOT included in this
-directory, but in the appropriate platform or processor directory.
 
 kernel
 ~~~~~~
@@ -70,6 +64,13 @@ processor
 
 Processor specific driver code.  Note that platform specific driver code is
 kept in a separate platform directory.
+
+extensions
+~~~~~~~~~~
+
+The non-loadable modules are here.  These modules extend kernel functionalities.
+For example, DVM (dynamic virtual machine) is in this directory.  
+
 
 tools
 ~~~~~
