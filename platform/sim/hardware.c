@@ -38,7 +38,7 @@ SOS_KER_TABLE(NULL);
  * global variables
  */
 
-char *topofile = "../../tools/admin/topo.def\0";
+char *topofile = "../../platform/sim/topo.def\0";
 uint16_t radio_pkt_success_rate = 100;  //!< 100%
 int uart_tcp_port = -1;
 //int server_tcp_port = -1;

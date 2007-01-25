@@ -20,6 +20,6 @@ include ../Makerules
 clean2:
 	rm -f *.sos
 
-vpath loader_pc.c $(ROOTDIR)/modules/management/loader/
+vpath loader_pc.c $(ROOTDIR)/extensions/loader/
 
 

@@ -19,7 +19,7 @@ SIM_SRCS += blink.c surge.c tree_routing.c
 
 include ../Makerules
 
-vpath loader.c $(ROOTDIR)/modules/management/loader/
+vpath loader.c $(ROOTDIR)/extensions/loader/
 vpath nic.c $(ROOTDIR)/modules/management/nic/
 vpath blink.c $(ROOTDIR)/modules/test_modules/blink/
 vpath surge.c $(ROOTDIR)/modules/test_modules/surge/

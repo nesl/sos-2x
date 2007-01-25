@@ -30,12 +30,12 @@ INCDIR += -I$(ROOTDIR)/tools/harbor/lib
 endif
 
 # Include simulated module 
-SIM_SRCS += blink.c surge.c tree_routing.c test_param.c
+#SIM_SRCS += blink.c surge.c tree_routing.c test_param.c
 INCDIR += -I$(ROOTDIR)/modules/sensordrivers/mts310/include/
 include ../Makerules
 
 
-vpath loader.c $(ROOTDIR)/modules/management/loader/
+vpath loader.c $(ROOTDIR)/extensions/loader/
 vpath blink.c $(ROOTDIR)/modules/test_modules/blink/
 vpath surge.c $(ROOTDIR)/modules/test_modules/surge/
 vpath test_param.c $(ROOTDIR)/modules/test_modules/test_param/

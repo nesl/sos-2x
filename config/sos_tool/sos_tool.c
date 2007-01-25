@@ -6,7 +6,7 @@
  */
 #include <sos.h>
 #include <unistd.h>
-#include <management/loader/loader.h>
+#include <loader/loader.h>
 #include <getopt.h>
 
 extern int sos_argc;
