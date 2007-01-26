@@ -274,7 +274,7 @@ void TC_Disable_Interrupt()
 	SETBITLOW(SREG,7);
 }
 
-static int16_t st_timestamp;		//remember the time when start receiving packet
+static uint16_t st_timestamp;		//remember the time when start receiving packet
 
 //ISR(INT6_vect) {
 //FIXED BY JONATHAN! MICAZ DOES NOT HAVE THIS SIGNAL (it's jumper-optioned to ADC1, but ships with jumper removed)
@@ -283,9 +283,10 @@ static int16_t st_timestamp;		//remember the time when start receiving packet
 SIGNAL(SIG_INTERRUPT6){
 //showbyte(0x0f);
 	if( TC_FIFOP_IS_SET )
-		if(_FIFOP_IS_SET_CALL) 
+		if(_FIFOP_IS_SET_CALL) {
 //			_FIFOP_IS_SET_CALL(timestamp);
 			_FIFOP_IS_SET_CALL(st_timestamp); //we want the timestamp when it receives the first byte
+		}
 //	SETBITLOW(PORTE,6);
 //	SETBITLOW(EIFR,7);
 //showbyte(0xf0);

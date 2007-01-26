@@ -293,7 +293,11 @@ static int8_t radio_msg_send(Message *msg)
 	//construct the packet
 	VMAC_PPDU ppdu;
 	vhal_data vd;
-	
+
+	if(msg->type == MSG_TIMESTAMP){
+		uint32_t timestp = ker_systime32();
+		memcpy(msg->data, (uint8_t*)(&timestp),sizeof(uint32_t));
+	}
 	sosmsg_to_mac(msg, &ppdu);
 
 	ppdu.mpdu.fcf = 1;		//doesn't matter, hardware supports it
@@ -408,6 +412,10 @@ void _MacRecvCallBack(int16_t timestamp)
 			return;
 		}
 		mac_to_sosmsg(&ppdu, msg);
+		if(msg->type == MSG_TIMESTAMP){
+			uint32_t timestp = ker_systime32();
+			memcpy(((uint8_t*)(msg->data) + sizeof(uint32_t)),(uint8_t*)(&timestp),sizeof(uint32_t));
+		}
 		timestamp_incoming(msg, ker_systime32());
 		handle_incoming_msg(msg, SOS_MSG_RADIO_IO);
 	}

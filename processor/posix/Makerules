@@ -21,7 +21,7 @@ endif
 
 CFLAGS += -g -O -Wno-char-subscripts
 
-LIBS += -lpthread
+LIBS += -lpthread -lm
 
 SRCS += led.c systime.c adc_proc.c flash.c crc.c timer.c exflash.c uart_hal.c uart.c uart_system.c interrupt.c
 SRCS += server.c

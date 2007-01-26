@@ -105,6 +105,7 @@ typedef struct
 
 typedef struct
 {
+  uint16_t saddr;
 	uint16_t old_period;
 	uint16_t new_period;
 } __attribute__ ((packed)) period_packet_t;
@@ -599,6 +600,7 @@ static int8_t module(void *state, Message *msg)
 				
 				#ifdef UART_DEBUG
 				period_packet_t * period_packet_ptr = ker_malloc(sizeof(period_packet_t), s->pid);
+				period_packet_ptr->saddr = msg->saddr;
 				period_packet_ptr->old_period = s->ts_packet.transmission_period;
 				period_packet_ptr->new_period = temp_transmission_period;
 				post_uart(s->pid, s->pid, UART_PERIOD_CHANGE, sizeof(period_packet_t), period_packet_ptr, SOS_MSG_RELEASE, UART_ADDRESS);
