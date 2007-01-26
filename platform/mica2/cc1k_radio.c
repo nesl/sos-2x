@@ -520,7 +520,6 @@ void radio_msg_alloc(Message *m)
 	ker_change_own(m->data, RADIO_PID);
   }
   ENTER_CRITICAL_SECTION();
-  currentRadioState = RadioState;
   if (bFlag.bTxBusy) {
 	mq_enqueue(&pq, m);
 	LEAVE_CRITICAL_SECTION();
@@ -533,6 +532,7 @@ void radio_msg_alloc(Message *m)
   sMacDelay = MacBackoff_initialBackoff();
   bFlag.bTxPending = TRUE;
   txmsgptr = m;
+  currentRadioState = RadioState;
   LEAVE_CRITICAL_SECTION();
   // if we're off, start the radio
   if (currentRadioState == POWER_DOWN_STATE) {
