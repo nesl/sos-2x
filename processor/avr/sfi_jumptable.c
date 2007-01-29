@@ -8,7 +8,6 @@
 #include <sfi_exception.h>
 #include <sos_module_types.h>
 #include <malloc.h>
-#include <avrinstr.h>
 #include <flash.h>
 #include <hardware.h>
 #include <cross_domain_cf.h>

@@ -64,7 +64,7 @@ void avr_dataflow_basic_block(basicblk_t* cblk)
   //  init_ptr_reg(&yh, R29);
   init_ptr_reg(&z, R30);
   //  init_ptr_reg(&zh, R31);
-  
+  DEBUG("====== DATAFLOW ANALYSIS ==========\n");
   for (i = 0; i < (int)(cblk->size/sizeof(avr_instr_t)); i++){
     DEBUG("0x%x :", (int)(cblk->addr + (i * sizeof(avr_instr_t))));
     update_ptr_reg(&x, &cblk->instr[i]);
@@ -75,6 +75,7 @@ void avr_dataflow_basic_block(basicblk_t* cblk)
     //    update_ptr_reg(&zh, &cblk->instr[i]);
     DEBUG("\n");
   }
+  DEBUG("=== REG. RANGES ===\n");
   print_ptr_reg(&x);
   print_ptr_reg(&y);
   print_ptr_reg(&z);
@@ -105,33 +106,35 @@ static void print_ptr_reg(ptr_reg_t* ptr)
 //-------------------------------------------------------------------
 static void ptr_reset(ptr_reg_t* ptr)
 {
+  DEBUG("Ptr. Reset: ");
+  print_ptr_reg(ptr);
   ptr->coffset = 0;
-  if (ptr->st_active == 0) return;
-  if (MAX_RANGES == ptr->num_ranges){
-    fprintf(stderr, "ptr_update_ranges: Max. limit reached.\n");
-    exit(EXIT_FAILURE);
-  }
-  ptr->ranges[ptr->num_ranges].min = ptr->crange.min;
-  ptr->ranges[ptr->num_ranges].max = ptr->crange.max;
-  ptr->num_ranges++;
   ptr->st_active = 0;
   return;
 }
 //-------------------------------------------------------------------
 static void ptr_update_range(ptr_reg_t* ptr, int st_offset)
 {
+  DEBUG("Ptr. Update: ");
   if (0 == ptr->st_active){
-    ptr->crange.min = ptr->coffset + st_offset;
-    ptr->crange.max = ptr->coffset + st_offset;
+    ptr->num_ranges++;
+    if (ptr->num_ranges > MAX_RANGES){
+      fprintf(stderr, "ptr_update_range: Max. range limit exceeded.\n");
+      exit(EXIT_FAILURE);
+    }
+    ptr->ranges[ptr->num_ranges - 1].min = ptr->coffset + st_offset;
+    ptr->ranges[ptr->num_ranges - 1].max = ptr->coffset + st_offset; 
     ptr->st_active = 1;
+    print_ptr_reg(ptr);
     return;
   }
-  if ((ptr->coffset + st_offset) < ptr->crange.min){
-    ptr->crange.min = ptr->coffset + st_offset;
+  if ((ptr->coffset + st_offset) < ptr->ranges[ptr->num_ranges - 1].min){
+    ptr->ranges[ptr->num_ranges - 1].min = ptr->coffset + st_offset;
   }
-  if ((ptr->coffset + st_offset) > ptr->crange.max){
-    ptr->crange.max = ptr->coffset + st_offset;
+  if ((ptr->coffset + st_offset) > ptr->ranges[ptr->num_ranges - 1].max){
+    ptr->ranges[ptr->num_ranges - 1].max = ptr->coffset + st_offset;
   }
+  print_ptr_reg(ptr);
   return;
 }
 
@@ -173,33 +176,27 @@ static void update_ptr_reg(ptr_reg_t* ptr, avr_instr_t* instr)
     twowordinstr = 1;
     return;
   }
-
+  // ================================================
+  // New data into pointer regs
+  // ================================================
   // OPTYPE 1: ADD, ADC, SUB, SBC, AND, OR, EOR, MOV
   switch (instr->rawVal & OP_TYPE1_MASK){
   case OP_ADD: case OP_ADC: case OP_SUB: case OP_SBC:
   case OP_AND: case OP_OR: case OP_EOR: case OP_MOV:
-    {
-      if ((get_optype1_dreg(instr) == ptr->reg) || 
-	  (get_optype1_dreg(instr) == (ptr->reg + 1)))
-	{	  
-	  ptr_reset(ptr);
-	  return;
-	}
-    }
+    if ((get_optype1_dreg(instr) == ptr->reg) || 
+	(get_optype1_dreg(instr) == (ptr->reg + 1)))
+      ptr_reset(ptr);
+    break;
   default: break;
   } 
   // OPTYPE 3: SUBI, SBCI, ANDI, ORI, LDI
   switch (instr->rawVal & OP_TYPE3_MASK){
   case OP_SUBI: case OP_SBCI: case OP_ANDI:
   case OP_ORI: case OP_LDI:
-    {
-      if  ((get_optype3_dreg(instr) == ptr->reg) || 
-	   (get_optype3_dreg(instr) == (ptr->reg + 1)))
-	{
-	  ptr_reset(ptr);
-	  return;
-	}
-    }
+    if  ((get_optype3_dreg(instr) == ptr->reg) || 
+	 (get_optype3_dreg(instr) == (ptr->reg + 1)))
+      ptr_reset(ptr);
+    break;
   default: break;
   }
   // OPTYPE 4
@@ -215,95 +212,70 @@ static void update_ptr_reg(ptr_reg_t* ptr, avr_instr_t* instr)
   case OP_LPM_Z: case OP_LPM_Z_INC:
   case OP_ELPM_Z: case OP_ELPM_Z_INC:
   case OP_POP:
-    {
-      if  ((get_optype4_dreg(instr) == ptr->reg) || 
-	   (get_optype4_dreg(instr) == (ptr->reg + 1)))
-	{
-	  ptr_reset(ptr);
-	  return;
-	}
-    }
+    if  ((get_optype4_dreg(instr) == ptr->reg) || 
+	 (get_optype4_dreg(instr) == (ptr->reg + 1)))
+      ptr_reset(ptr);
+    break;
   default: break;
   }
   // OPTYPE 6: BLD
   switch (instr->rawVal & OP_TYPE6_MASK){
   case OP_BLD:
-    {
-      if  ((get_optype6_dreg(instr) == ptr->reg) || 
-	   (get_optype6_dreg(instr) == (ptr->reg + 1)))
-	{
-	  ptr_reset(ptr);
-	  return;
-	}
-    }
+    if  ((get_optype6_dreg(instr) == ptr->reg) || 
+	 (get_optype6_dreg(instr) == (ptr->reg + 1)))
+      ptr_reset(ptr);
+    break;
   default: break;
   }
   // OPTYPE 13: IN
   switch (instr->rawVal & OP_TYPE13_MASK){
   case OP_IN:
-    {
-      if  ((get_optype13_d(instr) == ptr->reg) || 
-	   (get_optype13_d(instr) == (ptr->reg + 1)))
-	{
-	  ptr_reset(ptr);
-	  return;
-	}
-    }
+    if  ((get_optype13_d(instr) == ptr->reg) || 
+	 (get_optype13_d(instr) == (ptr->reg + 1)))
+      ptr_reset(ptr);
+    break;
   default: break;
   }
   // OPTYPE 14: LDD Y+q, LDd Z+q
   switch (instr->rawVal & OP_TYPE14_MASK){
   case OP_LDD_Y: case OP_LDD_Z:
-    {
-      if  ((get_optype14_d(instr) == ptr->reg) || 
-	   (get_optype14_d(instr) == (ptr->reg + 1)))
-	{
-	  ptr_reset(ptr);
-	  return;
-	}
-    }
+    if  ((get_optype14_d(instr) == ptr->reg) || 
+	 (get_optype14_d(instr) == (ptr->reg + 1)))
+      ptr_reset(ptr);
+    break;
   default: break;
   }
   // OPTYPE 16: MOVW
   switch (instr->rawVal & OP_TYPE16_MASK){
   case OP_MOVW:
-    {
-      if  (get_optype16_d(instr) == ptr->reg) 
-	{
-	  ptr_reset(ptr);
-	  return;
-	}
-    }
+    if  (get_optype16_d(instr) == ptr->reg) 
+      ptr_reset(ptr);
+    break;
   default: break;
   }
   // OPTYPE 18: SER
   switch (instr->rawVal & OP_TYPE18_MASK){
   case OP_SER:
-    {
-      if  ((get_optype18_d(instr) == ptr->reg) || 
-	   (get_optype18_d(instr) == (ptr->reg + 1)))
-	{
-	  ptr_reset(ptr);
-	  return;
-	}
-    }
+    if  ((get_optype18_d(instr) == ptr->reg) || 
+	 (get_optype18_d(instr) == (ptr->reg + 1)))
+      ptr_reset(ptr);
+    break;
   default: break;
   }
   // OPTYPE 19: LDS
   switch (instr->rawVal & OP_TYPE19_MASK){
   case OP_LDS:
-    {
-      if  ((get_optype19_d(instr) == ptr->reg) || 
-	   (get_optype19_d(instr) == (ptr->reg + 1)))
-	{
-	  ptr_reset(ptr);
-	  return;
-	}
-    }
+    if  ((get_optype19_d(instr) == ptr->reg) || 
+	 (get_optype19_d(instr) == (ptr->reg + 1)))
+      ptr_reset(ptr);
+    break;
   default: break;
   }
 
 
+  // ================================================
+  // Arithmetic modifications to the pointer registers
+  // ================================================
   // OPTYPE 2: ADIW, SBIW
   if (get_optype2_dreg(instr) == ptr->reg){
     switch(instr->rawVal & OP_TYPE2_MASK){
@@ -316,155 +288,106 @@ static void update_ptr_reg(ptr_reg_t* ptr, avr_instr_t* instr)
     default:
       break;
     }
-    return;
   }
-
   // OPTYPE 4
   switch (instr->rawVal & OP_TYPE4_MASK){
   case OP_LD_X_INC:
-    {
-      if (R26 == ptr->reg){
-	ptr->coffset++;
-	return;
-      }
-    }
+    if (R26 == ptr->reg)
+      ptr->coffset++;
+    break;
   case OP_LD_X_DEC:
-    {
-      if (R26 == ptr->reg){
-	ptr->coffset--;
-	return;
-      }
-    }
+    if (R26 == ptr->reg)
+      ptr->coffset--;
+    break;
   case OP_LD_Y_INC:
-    {
-      if (R28 == ptr->reg){
-	ptr->coffset++;
-	return;
-      }
-    }
+    if (R28 == ptr->reg)
+      ptr->coffset++;
+    break;
   case OP_LD_Y_DEC:
-    {
-      if (R28 == ptr->reg){
-	ptr->coffset--;
-	return;
-      }
-    }
+    if (R28 == ptr->reg)
+      ptr->coffset--;
+    break;
   case OP_LD_Z_INC:
-    {
-      if (R30 == ptr->reg){
-	ptr->coffset++;
-	return;
-      }
-    }
+    if (R30 == ptr->reg)
+      ptr->coffset++;
+    break;
   case OP_LD_Z_DEC:
-    {
-      if (R30 == ptr->reg){
-	ptr->coffset--;
-	return;
-      }
-    }
+    if (R30 == ptr->reg)
+      ptr->coffset--;
+    break;
   case OP_LPM_Z_INC:
-    {
-      if (R30 == ptr->reg){
-	ptr->coffset++;
-	return;
-      }
-    }
+    if (R30 == ptr->reg)
+      ptr->coffset++;
+    break;
   case OP_ELPM_Z_INC:
-    {
-      if (R30 == ptr->reg){
-	ptr->coffset++;
-	return;
-      }
-    }
+    if (R30 == ptr->reg)
+      ptr->coffset++;
+    break;
   case OP_ST_X:
-    {
-      if (R26 == ptr->reg){
-	ptr_update_range(ptr, 0);
-	return;
-      }
-    }
+    if (R26 == ptr->reg)
+      ptr_update_range(ptr, 0);
+    break;
   case OP_ST_X_INC:
-    {
-      if (R26 == ptr->reg){
-	ptr_update_range(ptr, 0);
-	ptr->coffset++;
-	return;
-      }
+    if (R26 == ptr->reg){
+      ptr_update_range(ptr, 0);
+      ptr->coffset++;
     }
+    break;
   case OP_ST_X_DEC:
-    {
-      if (R26 == ptr->reg){
-	ptr->coffset--;
-	ptr_update_range(ptr, 0);
-	return;
-      }
+    if (R26 == ptr->reg){
+      ptr->coffset--;
+      ptr_update_range(ptr, 0);
     }
+    break;
   case OP_ST_Y:
-    {
-      if (R28 == ptr->reg){
-	ptr_update_range(ptr, 0);
-	return;
-      }
-    }
+    if (R28 == ptr->reg)
+      ptr_update_range(ptr, 0);
+    break;
   case OP_ST_Y_INC:
-    {
-      if (R28 == ptr->reg){
-	ptr_update_range(ptr, 0);
-	ptr->coffset++;
-	return;
-      }
+    if (R28 == ptr->reg){
+      ptr_update_range(ptr, 0);
+      ptr->coffset++;
     }
+    break;
   case OP_ST_Y_DEC:
-    {
-      if (R28 == ptr->reg){
-	ptr->coffset--;
-	ptr_update_range(ptr, 0);
-	return;
-      }
+    if (R28 == ptr->reg){
+      ptr->coffset--;
+      ptr_update_range(ptr, 0);
     }
+    break;
   case OP_ST_Z:
-    {
-      if (R30 == ptr->reg){
-	ptr_update_range(ptr, 0);
-	return;
-      }
+    if (R30 == ptr->reg){
+      ptr_update_range(ptr, 0);
     }
+    break;
   case OP_ST_Z_INC:
-    {
-      if (R30 == ptr->reg){
-	ptr_update_range(ptr, 0);
-	ptr->coffset++;
-	return;
-      }
+    if (R30 == ptr->reg){
+      ptr_update_range(ptr, 0);
+      ptr->coffset++;
     }
+    break;
   case OP_ST_Z_DEC:
-    {
-      if (R30 == ptr->reg){
-	ptr->coffset--;
-	ptr_update_range(ptr, 0);
-	return;
-      }
+    if (R30 == ptr->reg){
+      ptr->coffset--;
+      ptr_update_range(ptr, 0);
     }
+    break;
   default:
     break;
   }
-
+  // OPTYPE 14
   switch (instr->rawVal & OP_TYPE14_MASK){
   case OP_STD_Y:
-    {
-      if (R28 == ptr->reg){
-	ptr_update_range(ptr, get_optype14_q(instr));
-	return;
-      }
-    }
+    if (R28 == ptr->reg)
+      ptr_update_range(ptr, get_optype14_q(instr));
+    break;
   case OP_STD_Z:
-    {
-      if (R30 == ptr->reg){
-	ptr_update_range(ptr, get_optype14_q(instr));
-	return;
-      }
+    if (R30 == ptr->reg){
+      ptr_update_range(ptr, get_optype14_q(instr));
     }
+    break;
+  default:
+    break;
   }
 
   return;
