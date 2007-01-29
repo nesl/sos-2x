@@ -240,7 +240,7 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
     // If basic block ends in call or jump then it cannot end in RCALL
     if (cblk->size == 0) continue;
 
-    if (cblk->calljmpflag){
+    if ((cblk->flag & TWO_WORD_INSTR_FLAG)&&(cblk->flag & CALL_INSTR_FLAG)){
       // Basic Block ending in call implies that it is internal
       ndxlastinstr = (cblk->size/sizeof(avr_instr_t)) - 2;
       if ((cblk->instr[ndxlastinstr].rawVal & OP_TYPE10_MASK) != OP_CALL) continue;
@@ -282,14 +282,17 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
 
     if (cblk->size == 0) continue;
     // Compute index of last instruction
-    if (cblk->calljmpflag)
+    if (cblk->flag & TWO_WORD_INSTR_FLAG){
       ndxlastinstr = (cblk->size/sizeof(avr_instr_t)) - 2;
-    else
+      // Skip CALL Blocks
+      if ((cblk->instr[ndxlastinstr].rawVal & OP_TYPE10_MASK) == OP_CALL) continue;
+    }
+    else{
       ndxlastinstr = (cblk->size/sizeof(avr_instr_t)) - 1;
-    // Skip RCALL Blocks
-    if ((cblk->instr[ndxlastinstr].rawVal & OP_TYPE17_MASK) == OP_RCALL) continue;
-    // Skip CALL Blocks
-    if ((cblk->instr[ndxlastinstr].rawVal & OP_TYPE10_MASK) == OP_CALL) continue;
+      // Skip RCALL Blocks
+      if ((cblk->instr[ndxlastinstr].rawVal & OP_TYPE17_MASK) == OP_RCALL) continue;
+    }
+
 
     // Fun starts now
     branchblk = cblk->branch;

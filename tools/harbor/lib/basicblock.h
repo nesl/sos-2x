@@ -17,6 +17,13 @@
 // TYPEDEFS
 //--------------------------------------------------------------
 
+// Flag describing the last instruction of basic block
+#define TWO_WORD_INSTR_FLAG 0x00000001
+#define CALL_INSTR_FLAG     0x00000002
+#define RET_INSTR_FLAG      0x00000004
+#define JMP_INSTR_FLAG      0x00000008
+
+
 /**
  * \brief Basic Block Structure
  */
@@ -31,8 +38,7 @@ typedef struct _basicblk_str {
   avr_instr_t* instr;           //!< Array of instructions in the block
   avr_instr_t* newinstr;        //!< Array of sandbox instructions
   uint32_t* addrmap;            //!< Map of old addresses to new addresses (Offsets within block only)
-  uint8_t calljmpflag;          //!< Flag set if last instr. is JMP or CALL (Two word CF instr.)
-  uint8_t flag;                 //!< User Defined Flags
+  uint32_t flag;                 //!< User Defined Flags
 } basicblk_t;
 
 /**

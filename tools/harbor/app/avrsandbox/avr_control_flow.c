@@ -44,7 +44,7 @@ void avr_update_cf(bblklist_t* blist, uint32_t startaddr)
       int numinstr;
       numinstr = cblk->newsize/sizeof(avr_instr_t);
       if (NULL == cblk->branch) continue;
-      if (cblk->calljmpflag)
+      if (cblk->flag & TWO_WORD_INSTR_FLAG)
 	instr = &(cblk->newinstr[numinstr - 2]);
       else
 	instr = &(cblk->newinstr[numinstr-1]);

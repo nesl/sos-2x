@@ -32,7 +32,7 @@ typedef struct _succ_str {
   uint32_t branchaddr;
   uint8_t fallflag;
   uint32_t falladdr;
-  uint8_t calljmpflag;  // Flag set if last instr. is JMP or CALL (Two word CF instr.)
+  uint8_t flag;            // Same flag used in basic block
 } succ_t;
 
 #define	Flip_int16(type)  (((type >> 8) & 0x00ff) | ((type << 8) & 0xff00))
@@ -158,7 +158,7 @@ static void link_basic_blocks(file_desc_t* fdesc, bblklist_t* blist, uint32_t st
     
     if ((succ.branchflag == 1) || (succ.fallflag == 1)){
       // We have a successor
-      currblk->calljmpflag = succ.calljmpflag;
+      currblk->flag = succ.flag;
       if (succ.branchflag == 1){
 	if ((currblk->branch = find_block(blist, succ.branchaddr)) == NULL){
 	  fprintf(stderr, "Blist is not formed correctly.\n");
@@ -183,7 +183,7 @@ static void link_basic_blocks(file_desc_t* fdesc, bblklist_t* blist, uint32_t st
     
     if (nextblk->addr == currAddr){
       // We crossed a block boundary
-      currblk->calljmpflag = 0;
+      currblk->flag = 0;
       currblk->fall = nextblk;
       currblk->branch = NULL;
       fill_basic_block(fdesc, currblk, nextblk, currAddr);
@@ -257,7 +257,7 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
     previnstr.rawVal = instr.rawVal;
     succ->branchflag = 0;
     succ->fallflag = 0;
-    succ->calljmpflag = 0;
+    succ->flag = 0;
     return;
   }
 
@@ -270,7 +270,7 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
 	succ->branchaddr = (2 * get_optype10_k(&previnstr, &instr));
 	succ->branchflag = 1;
 	succ->fallflag = 0;
-	succ->calljmpflag = 1;
+	succ->flag = TWO_WORD_INSTR_FLAG | JMP_INSTR_FLAG;
 	return;
       }
     case OP_CALL:
@@ -285,7 +285,7 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
 	  succ->branchflag = 1;
 	  succ->falladdr = currAddr + 2;
 	  succ->fallflag = 1;
-	  succ->calljmpflag = 1;
+	  succ->flag = TWO_WORD_INSTR_FLAG | CALL_INSTR_FLAG;
 	  return;
 	}
 	DEBUG("Call into system jump table. Do not insert basic block boundary\n");
@@ -296,7 +296,7 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
     }   
     succ->branchflag = 0;
     succ->fallflag = 0;
-    succ->calljmpflag = 0;
+    succ->flag = 0;
     return;
   }
 
@@ -313,7 +313,7 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
       succ->branchflag = 1;
       succ->falladdr = currAddr + 2;
       succ->fallflag = 1;
-      succ->calljmpflag = 0;
+      succ->flag = 0;
       return;
     }
     
@@ -326,7 +326,7 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
       succ->branchflag = 1;
       succ->falladdr = currAddr + 2;
       succ->fallflag = 1;
-      succ->calljmpflag = 0;
+      succ->flag = 0;
       return;
     }
   default:
@@ -358,7 +358,7 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
       succ->branchflag = 1;
       succ->falladdr = currAddr + 2;
       succ->fallflag = 1;
-      succ->calljmpflag = 0;
+      succ->flag = 0;
       return;
     }
   default:
@@ -392,7 +392,7 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
       succ->branchflag = 0;
       succ->fallflag = 1;
       succ->falladdr = currAddr + 2;
-      succ->calljmpflag = 0;
+      succ->flag = RET_INSTR_FLAG;
       return;
     }
   default:
@@ -406,7 +406,7 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
       succ->branchaddr = currAddr + 2 + (2 * get_optype17_k(&instr));
       succ->branchflag = 1;
       succ->fallflag = 0;
-      succ->calljmpflag = 0;
+      succ->flag = JMP_INSTR_FLAG;
       return;
     }
   case OP_RCALL:
@@ -415,7 +415,7 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
       succ->branchflag = 1;
       succ->falladdr = currAddr + 2;
       succ->fallflag = 1;
-      succ->calljmpflag = 0;
+      succ->flag = CALL_INSTR_FLAG;
       return;
       }
   default:
@@ -424,7 +424,7 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
   
   succ->branchflag = 0;
   succ->fallflag = 0;
-  succ->calljmpflag = 0;
+  succ->flag = 0;
   return;
 }
 //--------------------------------------------------------------
