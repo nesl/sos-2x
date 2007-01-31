@@ -1,0 +1,12 @@
+usage: build-mspgcc install
+
+build-mspgcc downloads, extracts, builds, and installs binutils, gcc,
+and libc for the TI MSP430 microcontroller.  Run:
+
+  ./build-mspgcc install
+
+The default installation directory is ~/local.  Change this by
+setting the environment variable INSTALL_DIR before compiling and
+installing:
+
+  INSTALL_DIR=/usr/local/msp430 ./build-mspgcc install

@@ -8,13 +8,14 @@ VPATH += $(SOSELFROOT)/elflib/
 INCDIR += -I$(SOSELFROOT)/minielf/ 
 INCDIR += -I$(ROOTDIR)/kernel/include/ 
 INCDIR += -I$(SOSELFROOT)/elflib/
+INCDIR += -I$(SOSTOOLDIR)/include/
 
 #####################################
 # COMPILER TOOLCHAIN SETUP
 #####################################
 CC = gcc
 CFLAGS += -g -Wall -Werror
-LDFLAGS +=
+LDFLAGS += -L$(SOSTOOLDIR)/lib
 LIBS += -lelf
 
 ####################################

@@ -13,8 +13,8 @@ MCU = msp430x1611
 MCUFLAG += -mmcu=$(MCU)
 
 # we will use msp43_libc
-INCDIR += -I/usr/local/msp430/msp430/include
-INCDIR += -I/usr/local/msp430/msp430/include/sys
+INCDIR += -I$(SOSTOOLDIR)/msp430/include
+INCDIR += -I$(SOSTOOLDIR)/msp430/include/sys
 
 VPATH += $(ROOTDIR)/processor/$(PROCESSOR)
 
