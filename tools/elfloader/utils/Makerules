@@ -15,7 +15,6 @@ INCDIR += -I$(SOSTOOLDIR)/include/
 #####################################
 CC = gcc
 CFLAGS += -g -Wall -Werror
-LDFLAGS += -L$(SOSTOOLDIR)/lib
 LIBS += -lelf
 
 ####################################

@@ -8,15 +8,6 @@ echo PATH=$PATH
 wget http://www.mr511.de/software/libelf-0.8.6.tar.gz
 tar xvfz libelf-0.8.6.tar.gz
 
-# Build libelf
-cd libelf-0.8.6
-patch -p 0 < ../libelf-0.8.6.patch
-./configure --prefix=$PREFIX
-make
-make install
-echo "#include <libelf/libelf.h>" > $PREFIX/include/libelf.h
-cd ..
-
 # build elfloader
 cd $SOS_DIR/tools/elfloader/
 ./minielfinstall.sh
