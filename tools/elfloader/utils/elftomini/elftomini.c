@@ -21,8 +21,7 @@
 #include <sys/uio.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <libelf.h>
-
+#include <soself.h>
 #include <minielf.h>
 #include <minielflib.h>
 #include <elfhelper.h>
