@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <minielflib.h>
 #include <minielf.h>
-#include <libelf.h>
+#include <soself.h>
 #include <stringconst.h>
 #include <dispmelf.h>
 #include <elfhelper.h>

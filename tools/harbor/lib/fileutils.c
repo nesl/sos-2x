@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
-#include <libelf.h>
+#include <soself.h>
 
 
 #include <fileutils.h>

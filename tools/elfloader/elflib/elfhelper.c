@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <libelf.h>
+#include <soself.h>
 #include <elfhelper.h>
 
 //#define DBGMODE

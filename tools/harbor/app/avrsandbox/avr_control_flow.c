@@ -159,6 +159,7 @@ static void avr_update_cf_instr(avr_instr_t* instrin, basicblk_t* cblk, int* gcf
       k = (int)(((int)(cblk->branch->newaddr) - (int)(cblk->newaddr + cblk->newsize))/2);
       if ((k < -2048) || (k > 2047)){
 	fprintf(stderr, "OPTYPE17: Addr: 0x%x Branch: 0x%x k: %d.\n", (int)(cblk->newaddr + cblk->newsize), (int)cblk->branch->newaddr, k);
+	exit(EXIT_FAILURE);
       }
       newinstr = create_optype17(instr->rawVal & OP_TYPE17_MASK, (int16_t)k);
       instr->rawVal = newinstr;

@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
-#include <libelf.h>
+#include <soself.h>
 
 #include <avrinstr.h>
 #include <avrinstmatch.h>
@@ -107,7 +107,7 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
   // Stats
   int sandboxcnt ;         // Count of number of instructions sandboxed for stats
   int stsandboxcnt;        // Number of sandbox of type Store
-  int bStInstr;            // Flag to indicate that store instructions are present in a basic block
+  //  int bStInstr;            // Flag to indicate that store instructions are present in a basic block
 
   bblklist_t* blist;       // List of basic blocks in the program
   basicblk_t* cblk;        // Basic block interator
@@ -136,7 +136,7 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
   // Traverse all the basic blocks in the program
   for (cblk = blist->blk_st; cblk != NULL; cblk = (basicblk_t*)cblk->link.next){
     int i, j;
-    bStInstr = 0;
+    //    bStInstr = 0;
     cblk->newsize = 0;
 
 #ifdef DBGMODE    
@@ -170,7 +170,7 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
 	sandboxcnt++;
 	if (ST_SBX_TYPE == sndbx.sbxtype){
 	  stsandboxcnt++;
-	  bStInstr = 1;
+	  //  bStInstr = 1;
 	}
 #ifdef DBGMODE
 	printf("\n Sandbox Size: %d\n", sndbx.numnewinstr);
@@ -195,9 +195,10 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
 #endif
 
     // If we encountered a store instruction, then perform dataflow analysis on the basic block
+    /*
     if (bStInstr)
       avr_dataflow_basic_block(cblk);
-
+    */
     
     // We have a slack to introduce some extra control flow instructions
     if ((cblk->newinstr = malloc(cblk->newsize + BLOCK_SLACK_BYTES)) == NULL){

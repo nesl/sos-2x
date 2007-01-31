@@ -6,9 +6,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <libelf.h>
 #include <stringconst.h>
 
+#include <soself.h>
 #include <elfdisplay.h>
 #include <elfhelper.h>
 

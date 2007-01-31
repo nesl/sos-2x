@@ -9,7 +9,6 @@
 #define _FILEUTILS_H_
 
 #include <stdio.h>
-#include <libelf.h>
 #include <inttypes.h>
 
 /**

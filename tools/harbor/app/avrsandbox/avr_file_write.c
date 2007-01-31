@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include <string.h>
 
-#include <libelf.h>
+#include <soself.h>
 #include <basicblock.h>
 #include <fileutils.h>
 #include <elfhelper.h>

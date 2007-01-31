@@ -14,7 +14,7 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
-#include <libelf.h>
+#include <soself.h>
 #include <string.h>
 #include <sock_utils.h>
 #include <minielflib.h>

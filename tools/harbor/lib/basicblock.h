@@ -10,7 +10,7 @@
 
 #include <linklist.h>
 #include <avrinstr.h>
-#include <libelf.h>
+#include <soself.h>
 #include <fileutils.h>
 
 //--------------------------------------------------------------
