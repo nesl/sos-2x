@@ -2,7 +2,8 @@
 /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
 
 #include <module.h>
-#include <malloc.h>
+#include <sys_module.h>
+#include <string.h>
 
 #define LED_DEBUG
 #include <led_dbg.h>
@@ -67,7 +68,7 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 
 		case MSG_FINAL:
 			ker_sensor_disable(s->pid, H34C_ACCEL_0_SID);
-				ker_timer_stop(s->pid, ACCEL_TEST_APP_TID);
+			ker_timer_stop(s->pid, ACCEL_TEST_APP_TID);
 			break;
 
 		case MSG_TIMER_TIMEOUT:
@@ -124,11 +125,9 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 
 				LED_DBG(LED_GREEN_TOGGLE);
 
-				data_msg = ker_malloc ( UART_MSG_LEN, s->pid );
+				data_msg = sys_malloc ( UART_MSG_LEN );
 				if ( data_msg ) {
-					data_msg[0] = msg->data[0];
-					data_msg[1] = msg->data[2];
-					data_msg[2] = msg->data[1];
+					memcpy((void*)data_msg, (void*)msg->data, UART_MSG_LEN);
 
 					post_uart ( s->pid,
 							s->pid,
@@ -159,8 +158,9 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 	return SOS_OK;
 }
 
+#ifndef _MODULE_
 mod_header_ptr accel_test_get_header() {
 	return sos_get_header_address(mod_header);
 }
-
+#endif
 
