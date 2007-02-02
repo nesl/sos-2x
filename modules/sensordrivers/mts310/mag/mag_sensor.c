@@ -46,7 +46,7 @@ int8_t magnet_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, uint8_
 static int8_t magnet_msg_handler(void *state, Message *msg);
 static inline int8_t mag_callibrate(uint8_t x_or_y);
 
-static mod_header_t mod_header SOS_MODULE_HEADER = {
+static const mod_header_t mod_header SOS_MODULE_HEADER = {
   mod_id : MAG_SENSOR_PID,
   state_size : sizeof(magnet_sensor_state_t),
   num_timers : 2,

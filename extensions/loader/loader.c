@@ -375,6 +375,7 @@ static int8_t handle_fetcher_done( Message *msg )
 #endif
 		  mod_header_ptr p;
 #ifdef MINIELF_LOADER
+								
 		  // Link and load the module here
 		  melf_load_module(cam->fetcher.cm);
 #endif//MINIELF_LOADER		  
@@ -383,18 +384,18 @@ static int8_t handle_fetcher_done( Message *msg )
 
 		  // get processor type and platform type
 		  mcu_type = sos_read_header_byte(p, 
-										  offsetof( mod_header_t, processor_type )); 
+					offsetof( mod_header_t, processor_type ));
 #ifdef SOS_SIM
 		  if( (mcu_type == MCU_TYPE) )
 			// In simulation, we don't check for platform
 #else
 			plat_type = sos_read_header_byte(p, 
-											 offsetof( mod_header_t, platform_type )); 
+						offsetof( mod_header_t, platform_type ));
+
 		  if( (mcu_type == MCU_TYPE) && 
 			  ( plat_type == HW_TYPE || plat_type == PLATFORM_ANY) )
 #endif
 			{
-			  
 			  /*
 			   * If MCU is matched, this means we are using the same 
 			   * instruction set.
@@ -435,7 +436,6 @@ static int8_t handle_fetcher_done( Message *msg )
 #endif //SOS_SFI
 			  }
 			}
-
 		}
 		process_version_data( st.version_data, st.recent_neighbor);
 	} else {

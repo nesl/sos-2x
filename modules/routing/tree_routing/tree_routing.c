@@ -104,7 +104,7 @@ static void tr_debug(tree_route_state_t *s);
 //-------------------------------------------------------------
 // MODULE HEADER
 //-------------------------------------------------------------
-static mod_header_t mod_header SOS_MODULE_HEADER = {
+static const mod_header_t mod_header SOS_MODULE_HEADER = {
   .mod_id         =  TREE_ROUTING_PID,
   .state_size     =  sizeof(tree_route_state_t),
   .num_timers     =  2,

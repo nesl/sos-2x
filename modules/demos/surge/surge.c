@@ -92,7 +92,7 @@ int8_t surge_module(void *state, Message *msg);
 //-------------------------------------------------------------
 // MODULE HEADER
 //-------------------------------------------------------------
-static mod_header_t mod_header SOS_MODULE_HEADER = {
+static const mod_header_t mod_header SOS_MODULE_HEADER = {
   .mod_id        = SURGE_MOD_PID,
   .state_size    = sizeof(surge_state_t),
   .num_timers    = 2,

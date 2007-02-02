@@ -174,6 +174,7 @@ static int8_t codemem_cache_alloc( void )
 static inline void codemem_cache_flush( )
 {
 	if( flash_cache_page != NULL ) {
+		flash_erase( flash_cache_addr, FLASHMEM_PAGE_SIZE );
 		flash_write( flash_cache_addr, flash_cache_page, FLASHMEM_PAGE_SIZE );
 		ker_free( flash_cache_page );
 		flash_cache_page = NULL;
@@ -201,6 +202,7 @@ static void codemem_cache_write( uint32_t addr, uint8_t* buf, uint16_t nbytes )
 	
 	if( flash_cache_addr != start_addr ) {
 		if( flash_cache_addr != 0 ) {
+			flash_erase( flash_cache_addr, FLASHMEM_PAGE_SIZE );
 			flash_write( flash_cache_addr, flash_cache_page, FLASHMEM_PAGE_SIZE );
 		}
 		flash_cache_addr = start_addr;
@@ -336,6 +338,8 @@ codemem_t ker_codemem_alloc(uint16_t size, codemem_type_t type)
 	hdr->salt = codemem_salt;
 	hdr->flag = 0;
 	ret = ((uint16_t)i) | (((uint16_t)codemem_salt) << 8);
+	//flash_erase( hdr->start_addr , size );
+
 	ker_log( SOS_LOG_CMEM_ALLOC, ker_get_current_pid(), size );	
 	return ret;
 }

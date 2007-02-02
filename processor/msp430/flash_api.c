@@ -21,10 +21,10 @@ void flash_erase( uint32_t address, uint16_t len )
 {
 	uint16_t a     = (uint16_t) address;
 	uint16_t *addr = (uint16_t*) a;
-	uint16_t l     = (len + FLASHMEM_PAGE_SIZE - 1) / FLASHMEM_PAGE_SIZE;
+	uint16_t l      = (len + FLASHMEM_PAGE_SIZE - 1) / FLASHMEM_PAGE_SIZE;
 	HAS_CRITICAL_SECTION;
 	
-	while( len > 0 ) {
+	while( l > 0 ) {
 		ENTER_CRITICAL_SECTION();
 		FCTL2 = FWKEY + FSSEL1 + FN2;   // SMCLK / 5
 		FCTL3 = FWKEY;                  // Clear LOCK
@@ -48,7 +48,6 @@ void flash_write( uint32_t addr, uint8_t* buf, uint16_t len )
 	if( ((addr & 0x3F) != 0) || ((len % 64) != 0)) {
 		return;
 	}
-	
 	while( len != 0 ) {
 		flash_write_block( addr + i * 64, buf + i * 64, 64 );
 		len -= 64;

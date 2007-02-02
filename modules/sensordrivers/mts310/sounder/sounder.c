@@ -12,7 +12,7 @@ static int8_t sounder_control(func_cb_ptr cb, uint8_t cmd, uint8_t options);
 
 static int8_t sounder_msg_handler(void *state, Message *msg);
 
-static mod_header_t mod_header SOS_MODULE_HEADER = {
+static const mod_header_t mod_header SOS_MODULE_HEADER = {
   mod_id : BUZZER_SENSOR_PID,
   state_size : 0,
   num_timers : 0,

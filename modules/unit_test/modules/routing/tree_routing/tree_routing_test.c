@@ -46,7 +46,7 @@ int8_t tr_test_module(void *state, Message *msg);
 //-------------------------------------------------------------
 // MODULE HEADER
 //-------------------------------------------------------------
-static mod_header_t mod_header SOS_MODULE_HEADER = {
+static const mod_header_t mod_header SOS_MODULE_HEADER = {
   .mod_id        = TR_TEST_PID,
   .state_size    = sizeof(tr_test_state_t),
   .num_sub_func  = 1,

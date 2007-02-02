@@ -26,8 +26,8 @@
  * - The header contains global information about the file.
  */
 typedef struct{
-  Melf_Half     m_shnum;     //!< Number of entries in section table
   Melf_Word     m_modhdrndx; //!< Index of the SOS module header in the symbol table
+  Melf_Half     m_shnum;     //!< Number of entries in section table
   unsigned char pad;
 } __attribute__((packed)) Melf_Mhdr;
 
@@ -87,8 +87,8 @@ typedef struct {
 typedef struct {
   Melf_Addr r_offset;   //!< Offset from start of section
   Melf_Word r_symbol;   //!< Index into symbol table
-  unsigned char r_type; //!< Relocation Type
   Melf_Sword r_addend;  //!< Addend Value
+  unsigned char r_type; //!< Relocation Type
   unsigned char pad;
 } __attribute__((packed)) Melf_Rela;
 

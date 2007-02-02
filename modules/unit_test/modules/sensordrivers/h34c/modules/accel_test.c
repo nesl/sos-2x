@@ -36,7 +36,7 @@ typedef struct {
 
 static int8_t accel_test_msg_handler(void *state, Message *msg);
 
-static mod_header_t mod_header SOS_MODULE_HEADER = {
+static const mod_header_t mod_header SOS_MODULE_HEADER = {
 	.mod_id         = ACCEL_TEST_PID,
 	.state_size     = sizeof(app_state_t),
 	.num_timers     = 1,

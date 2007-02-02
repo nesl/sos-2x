@@ -48,7 +48,7 @@ int8_t phototemp_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, uin
 
 static int8_t phototemp_msg_handler(void *state, Message *msg);
 
-static mod_header_t mod_header SOS_MODULE_HEADER = {
+static const mod_header_t mod_header SOS_MODULE_HEADER = {
   mod_id : PHOTOTEMP_SENSOR_PID,
   state_size : sizeof(phototemp_state_t),
   num_timers : 0,

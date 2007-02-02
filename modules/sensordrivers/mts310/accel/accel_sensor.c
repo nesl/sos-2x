@@ -30,7 +30,7 @@ int8_t accel_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, uint8_t
 
 static int8_t accel_msg_handler(void *state, Message *msg);
 
-static mod_header_t mod_header SOS_MODULE_HEADER = {
+static const mod_header_t mod_header SOS_MODULE_HEADER = {
   mod_id : ACCEL_SENSOR_PID,
   state_size : sizeof(accel_sensor_state_t),
   num_timers : 0,
