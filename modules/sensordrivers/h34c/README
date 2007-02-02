@@ -1,1 +1,7 @@
-The H34C sensor board can currently only be used by the MicaZ mote. The sensor board is configured to use ADC1-3 for X, Y, and the Z-axis respectively. Since ADC1 is used for the CC1000 radio on the Mica2, it can not be used. Because of some strange reason, reconfiguring the sensorboard to use ADC4 for X adds an offset to the value and decreases the ADC sensitivity. This does not happen with ADC1 on the MicaZ.
+The H34C can be used with either Mica2 or MicaZ motes if the accelerometer outputs are configured for ADC 1-3. ADC4 is somehow broken on at least the MicaZ. They might work on the Mica2. Thus, we currently don't use Vref as an other ADC input to measure the 0g value.
+
+We also don't use tout, the temperature which the H34C chip provides. This might get included later on.
+
+If you want to build your own H34C sensor board, all the sources you need can be found here:
+https://projects.nesl.ucla.edu/projects/h34c/
+
