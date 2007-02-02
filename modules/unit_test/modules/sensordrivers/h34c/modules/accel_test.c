@@ -11,7 +11,7 @@
 #include <h34c.h>
 
 #define ACCEL_TEST_APP_TID 0
-#define ACCEL_TEST_APP_INTERVAL 512
+#define ACCEL_TEST_APP_INTERVAL 20
 
 #define ACCEL_TEST_PID DFLT_APP_ID0
 
