@@ -1,0 +1,68 @@
+Publications Related to SOS
+===========================
+
+Presentations
+-------------
+
+.Proceedings of the Third International Conference on Mobile Systems,
+Applications, And Services (Mobisys)
+Presented by Ram Kumar Rengaswamy.
+June, 2005.
+
+link:sos_mobisys_05_talk.ppt[Presentation (PPT)]
+
+
+.Sensor Networking with SOS
+Presented by Roy Shea.
+January, 2005.
+
+link:sos_cens_w_05.sxi[Presentation (SXI)] | link:sos_cens_w_05.ppt[Presentation (PPT)]
+
+
+.New Directions in Sensor Networking with SOS
+Chih-Chieh Han, Ram Kumar Rengaswamy, Roy Shea, Mani Srivastava and Eddie Kohler.
+November, 2004.
+
+link:sos_complete_fall_04.sxi[Presentation (SXI)] |
+link:sos_complete_fall_04.ppt[Presentation (PPT)]
+
+
+.Reconfigurable Sensor Networks with SOS</strong>
+Chih-Chieh Han, Ram Kumar Rengaswamy, Roy Shea and Mani Srivastava.
+CENS Research Review</em>, 2004.
+
+link:sos04eearr_poster.ppt[Poster (PPT)]
+
+
+.Building Sustainable Networks: An Overview of NESL Research 
+Activities (Selections From)
+Ram Kumar Rengaswamy and Mani Srivastava.
+Electrical Engineering Annual Research Review, 2004.
+
+link:EE-ARR-SOS-2004.ppt[Presentation (PPT)]
+
+
+Conference Papers and Technical Reports
+---------------------------------------
+
+.Estimating clock uncertainty for efficient duty-cycling in sensor networks
+Saurabh Ganeriwal, Deepak Ganesan, Hohyun Shim, Vlasios Tsiatsis, Mani B
+Srivastava, November 2005
+
+link:p130-ganeriwal.pdf[Paper (PDF)]
+
+.SOS: A dynamic operating system for sensor networks
+Chih-Chieh Han, Ram Kumar Rengaswamy, Roy Shea, Eddie Kohler and Mani
+Srivastava.
+Proceedings of the Third International Conference on Mobile Systems,
+Applications, And Services (Mobisys), 2005
+
+link:sos_mobisys_05.pdf[Paper (PDF)] |
+link:sos_mobisys_05_talk.pptc[Presentation (PPT)] | link:sos_mobisys_05.bib[BibTex]
+
+
+.Motivations Behind SOS
+Roy Shea, Chih-Chieh Han, and Ram Kumar Rengaswamy. 
+NESL Technical Report, 2004.
+
+link:motivation.pdf[Paper (PDF)] | link:motivation.bib[BibTex]
