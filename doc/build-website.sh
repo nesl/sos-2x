@@ -19,15 +19,9 @@ $ASCIIDOC_HTML --conf-file=../../${LAYOUT}.conf --attribute=styledir=../.. times
 cd ../..
 
 cd tutorial
-$ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute=styledir=.. module_prog_guide.txt
-cd ..
-
-cd tutorial
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute=styledir=.. blink.txt
-cd ..
-
-cd tutorial
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute=styledir=.. blink_avrora.txt
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute=styledir=.. blink_sim.txt
+$ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute=styledir=.. module_prog_guide.txt
 cd ..
 
