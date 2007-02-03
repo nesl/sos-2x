@@ -1,11 +1,15 @@
 Avrora Simulation of Blink
---------------------------
+==========================
 
-http://compilers.cs.ucla.edu/avrora/[Avrora] is a suite ofsimulation and
+http://compilers.cs.ucla.edu/avrora/[Avrora] is a suite of simulation and
 analysis tools used to examine AVR programs.  Using Avrora with SOS provides
 a high quality simulation of the actual code that runs on a Mica2 node.
 This allows for more in-depth testing and debugging of applications that do
-not quite do what they should. The http://compilers.cs.ucla.edu/avrora/[Avrora site] includes good instructions on installation and instructions on getting started with Avrora. While this provides a very brief overview of using Avrora with SOS, users are highly encouraged to look there for more help.
+not quite do what they should. The
+http://compilers.cs.ucla.edu/avrora/[Avrora website] includes good
+instructions on installation and instructions on getting started with
+Avrora. While this provides a very brief overview of using Avrora with SOS,
+users are highly encouraged to look there for more help.
 
 Since Avrora simulates the actual AVR chip, custom kernel configurations
 are not needed in this form of simulation.  As such the simulation will take
@@ -22,51 +26,49 @@ install these modules, and propagate the modules through the network.
 - Optionally one or more additional sensor nodes.
 
 Building the Parts
-~~~~~~~~~~~~~~~~~~
+------------------
 
 Building the Blink Module
-^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~
 As a first step the blink module needs to be compiled.  This is accomplished by going into the module's directory and building it for the platform that is going to be simulated:
 
 [c]
-source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ cd $SOSROOT/modules/test_modules/blink/
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ cd $SOSROOT/modules/demos/blink/
 $ make mica2
-source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 Building the Blank Kernel
-^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~
 Next a clean SOS kernel needs to be compiled.  This kernel is called the
-`blank` kernel image.  It is located in
-`$SOSROOT/config/blank/`.  This kernel is built specifically for the
-`avrora` target.  This target compiles the kernel for the AVR chipset
-and then uses `avr-objdump` to produce the `.od` file that
-Avrora takes as input. 
+`blank` kernel image.  It is located in `$SOSROOT/config/blank/`.  This
+kernel is to be built specifically for the `avrora` target.  This target
+compiles the kernel for the AVR chipset and then uses `avr-objdump` to
+produce the `.od` file that Avrora takes as input. 
 
 [c]
-source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 $ cd $SOSROOT/config/blank/
 $ make avrora
-source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Building the SOS Server for the PC
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 SOS uses a simple PC server to interface with nodes.  This same server can
 be used in simulation and real deployments.  The server needs to be built
 before it is used for the first time.  This is accomplished using:
 
 [c]
-source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 $ cd $SOSROOT/tools/sos_server/bin/
 $ make x86
-source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 Building the SOS Tool
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~
 
 The SOS tool is a Swiss Army knife of module management in SOS networks.
 Among other actions, it is used to insert modules into a network.  This tool
@@ -74,16 +76,19 @@ is actually a custom SOS kernel that runs the SOS core in addition to
 interfacing with the user.  It is built using: 
 
 [c]
-source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ cd $SOSROOT/config/sos_tool/
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ cd $SOSROOT/tools/sos_tool/
 $ make emu
-source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TIP: If you're using the install scripts to build the SOS environment,
+`sos_tool` should be compiled and installed already.
 
 Running the Simulation
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 Starting the Avrora Simulator
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Important flags for SOS simulation include:
 
 -platform=mica2:-
@@ -119,37 +124,38 @@ simulation will initialize and then wait for a connection to the port
 requested by the `serial` monitor:
 
 [c]
-source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 java -server avrora/Main -banner=false -colors=true -platform=mica2 \
     -simulation=sensor-network -monitors=serial,real-time \
     -sections=.data,.text,.sos_bls -update-node-id -nodecount=1 \
     $SOSROOT/config/blank/blank.od
-source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 Starting the SOS Server
-^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~
 Once Avrora is ready to accept a connection, the `sossrv.exe`
-program can be started to interface with it.  The server needs to be
-instructed to connect to the port provided by Avrora.  From a different
-terminal use:
+program can be started to interface with it.  Avrora not only simulates the
+AVR core but also its peripherals. In this case, Avrora simulates the AVR's
+serial port as a TCP connection. The SOS Server needs to be instructed to
+connect to the port provided by Avrora.  From a different terminal use:
 
 [c]
-source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ./sossrv.exe -n 127.0.0.1:2390
-source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 Inserting Modules
-^^^^^^^^^^^^^^^^^
-With the SOS server up and running, modules can now be inserted.  This is
-accomplished using the SOS tool:
+~~~~~~~~~~~~~~~~~
+With the SOS server connected to Avrora, modules can now be inserted.  This
+is accomplished using the SOS tool:
 
 [c]
-source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ cd $SOSROOT/config/sos_tool/
-$ ./sos_tool.exe --insmod=../../modules/test_modules/blink/blink.sos
-source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ cd $SOSROOT/tools/sos_tool/
+$ ./sos_tool.exe --insmod=../../modules/demos/blink/blink.sos
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After a short wait the module is loaded onto the simulated node and the
 Avrora simulator should be noting a blinking yellow LED.
