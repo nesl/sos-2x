@@ -1,0 +1,64 @@
+Module Programming Guide
+========================
+
+SOS modules are programmed in C. 
+However, the SOS system follows a lot of conventions that enable a module to
+be reolcated and dynamically loaded on a sensor node.
+This guide will describe the SOS programming concepts.
+The running example used in this guide is the Surge data collection module
+that is located at $SOSROOT/modules/demo/surge.
+The concepts are listed below.
+A new user is encouraged to read all the concepts.
+Familiar users can directly jump to the relevant section.
+
+1. Module Header
+2. Message Handler
+3. Module State
+4. System Calls
+5. Split Phase Calls
+6. Local Function Calls
+7. Function Pointer Pointer Calls
+
+Module Header
+-------------
+
+[c]
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+static const mod_header_t mod_header SOS_MODULE_HEADER = {
+  .mod_id        = SURGE_MOD_PID,
+  .state_size    = sizeof(surge_state_t),
+  .num_sub_func  = 1,
+  .num_prov_func = 0,
+  .platform_type  = HW_TYPE /* or PLATFORM_ANY */,
+  .processor_type = MCU_TYPE,
+  .code_id       = ehtons(SURGE_MOD_PID),
+  .module_handler = surge_module,
+  .funct = {
+	[0] = {error_8, "Cvv0", TREE_ROUTING_PID, MOD_GET_HDR_SIZE_FID},
+  },
+};
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Message Handler
+---------------
+
+Module State
+------------
+
+System Calls
+------------
+
+Split Phase Calls
+-----------------
+
+Local Function Calls
+--------------------
+
+Function Pointer Pointer Calls
+------------------------------
+	
+
+
+
+
