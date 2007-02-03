@@ -11,10 +11,6 @@
 //#undef _MODULE_
 
 #include <sys_module.h>
-
-//#define LED_DEBUG
-#include <led_dbg.h>
-
 #include "blink.h"
 
 #define BLINK_TIMER_INTERVAL	1024L

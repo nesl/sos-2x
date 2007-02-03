@@ -1,28 +1,33 @@
 Blink Module
 ============
 
-GSR Friedman captured the essance of sensor networks with his simple
-observation, ``Sensor networks are about making LEDs blink.''  This
-observation motivates this inital tutorial that gives you experince
-compiling modules and executing modules in SOS.  This tutorial will
-introduce: 
+GSR Friedman once described sensor networks with his observation, ``Sensor
+networks are about making LEDs blink.''  Sensor networks have much more to
+offer than blinking LEDs, but they do provide a good starting point.  This
+tutorial provides a high level walkthrough of a simple SOS module.  This
+tutorial will introduce: 
 
-- link:XXX[XXX]
-- link:XXX[XXX]
-- link:XXX[XXX]
+- link:<module_tour>[Blink Module Tour]
+- link:<installing_and_running>[Installing and Running Blink]
+- link:<challenge>[SOS Challenge Problems]
 
 This tutorial assumes that you have a full installation of SOS up and
 running on your computer.  For more information on this look at the SOS
 link:../install.html[Installation Guide].  Source for this tutorial is
 available in `$SOSROOT/modules/demos/blink`.
 
-Includes and State
-------------------
+anchor:module_tour
+
+Blink Module Tour
+-----------------
 
 User applications in SOS take the form of one or more modules. Each module
 acts as a message handler that can communicate with other modules and the
 kernel. Modules can be inserted, updated, and removed from sensor nodes at
 runtime.  Modules are written using standard C. 
+
+Includes and State
+~~~~~~~~~~~~~~~~~~
 
 All modules should include `sys_module.h` that defines the kernel functions
 available to SOS modules.  Documentation for the API provided by this file
@@ -43,7 +48,7 @@ source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 Module Header
--------------
+~~~~~~~~~~~~~
 
 SOS modules include a header used at insertion time to help link the module into
 the running system.  This SOS header should be included in all modules.
@@ -67,7 +72,7 @@ source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 There is more information on the link:XXX[XXX] available.
 
 Message Handler
----------------
+~~~~~~~~~~~~~~~
 
 The main function in a module is the message handler that uses a switch
 statment to dispatch incoming messages to module specific message handlers.
@@ -94,341 +99,54 @@ The MSG_TIMER_TIMEOUT handler updates the module's state and turns on or off the
 green LED based on the state value. 
 
 SOS System API
---------------
+~~~~~~~~~~~~~~
 
 The blink module uses three system functions: `sys_led`, `sys_timer_start`, and
 `sys_timer_stop`.  These functions are used to manipulate LEDs, start
 timers, and stop timers respectivly.  More information on the system API
 provided by SOS can be found at link:XXX[XXX].
 
-////////////////////////////////////////
 Header Grabber
+~~~~~~~~~~~~~~
 
-The header grabber is a special function that allows modules to be compiled
-into a customized SOS kernel. These custom kernels are very useful for
-simulation and debugging. The header grabber is ignored when a module is
-compiled as a module. This header grabber function simply returns the address
-of the mod_header for the function. This is obtained by calling the function
-sos_get_header. The header grabber for SOS is:
+Modules can be compiled into custom SOS kernels to ease simulation and
+debugging.  A header grabber function is a stylized way used in SOS modules
+to expose the SOS module header information for a file to the SOS kernel for
+static compilation.  The header grabber for blink is:
 
+[c]
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifndef _MODULE_
 mod_header_ptr blink_get_header()
 {
   return sos_get_header_address(mod_header);
 }
 #endif
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+anchor:installing_and_running
 
 Installing and Running Blink
+----------------------------
 
-    * Running blink in the SOS simulator
-    * Running blink in the Avrora simulator
-    * Running blink on a Mica2 node
+Modules are run as applications ontop of the SOS kernel.  Users can run do
+this within an easy to use simulator provided within SOS, a cycle accurate
+simulator with the help of Avrora, or on actual hardware including the Mica2
+node.  The following links provide more deatails on each of these options.
 
+- link:blink_sim.html[Running blink in the SOS simulator]
+- link:blink_avrora.html[Running blink in the Avrora simulator]
+- link:blink_mica2.html[Running blink on a Mica2 node]
 
-Simulation of Blink in SOS
+anchor:challenge
 
-Simulation of SOS modules using the simulation framework included in SOS
-provides an easy way to play with SOS without installing a cross-compiler. For
-more complex applications, the SOS simulation framework provides a nice
-mechanism for debugging protocol layer bugs.
-Preparing SOS Modules to be Wrapped
+SOS Challenge Problems
+----------------------
 
-To run one or more modules in simulation, we create a custom simulation kernel
-that includes the modules that are to be tested. This monolithic kernel image
-allows SOS to simulate the loading and removal of modules without having to
-dynamically link in modules on a PC.
+Extend the blink module the blink the LED at a rate of once every 500ms.
+Try taking a look at link:XXX[XXX] for more informatino on the timer API.
 
-The first step in this process is writing a function that exposes a module's
-header. Open $SOSROOT/modules/test_modules/blink/blink.c. At the end of file
-you will see a small block of code as following:
-
-#ifndef _MODULE_
-mod_header_ptr blink_get_header()
-{
-    return sos_get_header_address(mod_header);
-}           
-#endif   
-
-This simple wrapper returns the address of the module header. Other
-applications can then use this address to register the module. With access to
-the header of the module that we wish to simulate, we can continue by
-constructing the software image for simulation.
-Wrapping SOS Modules in a Custom Kernel Configuration
-
-The $SOSROOT/config/ directory is used store the custom kernel configurations
-used for simulation. The kernel configuration used for the blink module is
-located in $SOSROOT/config/blink/. Examining the blink_app.c configuration
-located in this directory we see:
-
-mod_header_ptr blink_get_header();
-void sos_start(void)
-{
-    ker_register_module(blink_get_header());
-}
-
-The function sos_start(void) is a pre-defined function called by the SOS
-kernel after SOS has initialized all hardware drivers and software services.
-It is being used to explicitly start the blink module in this custom kernel by
-calling ker_register_module(blink_get_header()), which registers a module
-given the module's header. Multiple calls to ker_register_module can be used
-to simulate more than one module within a custom kernel.
-
-The custom kernel configuration is now almost ready for compilation. The final
-step is adding the source files for simulated modules into the compilation
-process. This is done in a Makefile specific to the configuration. Open
-$SOSROOT/config/blink/Makefile for an example:
-
-PROJ = blink_app
-ROOTDIR = ../..
-
-SRCS += blink.c
-
-include ../Makerules
-
-vpath blink.c $(ROOTDIR)/modules/test_modules/blink/
-
-The file blink.c is added into SRCS and a vpath is added to help locate this
-file. The custom kernel configuration can now be built using make sim
-EMU_PLATFORM=mica2. Specifying the sim target informs the make system that we
-intend for the target to be simulated. EMU_PLATFORM is used to specify the
-platform that we wish to emulate. This defaults to mica2 if it is not
-specified.
-Running the SOS Simulation
-
-A single node can be simulated using the command: SOSROOT="~/mote/sos-1.x/"
-./blink_app.exe -n 1. Note that the environment variable SOSROOT must be set
-before running the application. This value is specific to each installation of
-SOS. More details on using this simulated file can be found by passing it the
---help option.
-
-Output from the simulation can be generated using the macro DEBUG_PID which
-takes as input the module's ID and a string. When a module is compiled for an
-embedded system the macro is set to be a NoOp. When compiled for simulation
-the macro generates output. The blink module uses this macro to display LED
-status while the simulation is running. An example run of the blink module is
-listed below:
-
-k$ SOSROOT="~/mote/sos-1.x/" ./blink_app.exe -n 1
-Using topology file ../../tools/admin/topo.def
-[1]SOS booted
-[1][128]Blink Start
-[1][128]Blink Yellow ON
-[1][128]Blink Yellow OFF
-[1][128]Blink Yellow ON
-[1][128]Blink Yellow OFF
-[1][128]Blink Yellow ON
-
-
-Avrora Simulation of Blink
-
-Avrora is a suite of simulation and analysis tools used to examine AVR
-programs. Using Avrora with SOS provides a high quality simulation of the
-actual code that runs on a Mica2 node. This allows for more in-depth testing
-and debugging of applications that do not quite do what they should. The
-Avrora site includes good instructions on installation and instructions on
-getting started with Avrora. While this provides a very brief overview of
-using Avrora with SOS, users are highly encouraged to look there for more
-help.
-
-Since Avrora simulates the actual AVR chip, custom kernel configurations are
-not needed in this form of simulation. As such the simulation will take on a
-form more similar to what is seen in an actual deployment. This involves:
-
-    * A micro server that loads modules into the deployed sensor network using
-    * the suite of tools provided with the SOS distribution.
-    * At least one node with a connection to a micro server. This node is able
-    * to receive modules from the micro server (typically over its UART),
-    * install these modules, and propagate the modules through the network.
-    * Optionally one or more additional sensor nodes.
-
-Building the Parts
-Building the Blink Module
-
-As a first step the blink module needs to be compiled. This is accomplished by
-going into the module's directory and building it for the platform that is
-going to be simulated:
-
-$ cd $SOSROOT/modules/test_modules/blink/
-$ make mica2
-
-Building the Blank Kernel
-
-Next a clean SOS kernel needs to be compiled. This kernel is called the blank
-kernel image. It is located in $SOSROOT/config/blank/. This kernel is built
-specifically for the avrora target. This target compiles the kernel for the
-AVR chipset and then uses avr-objdump to produce the .od file that Avrora
-takes as input.
-
-$ cd $SOSROOT/config/blank/
-$ make avrora
-
-Building the SOS Server for the PC
-
-SOS uses a simple PC server to interface with nodes. This same server can be
-used in simulation and real deployments. The server needs to be built before
-it is used for the first time. This is accomplished using:
-
-$ cd $SOSROOT/tools/sos_server/bin/
-$ make x86
-
-Building the SOS Tool
-
-The SOS tool is a Swiss Army knife of module management in SOS networks. Among
-other actions, it is used to insert modules into a network. This tool is
-actually a custom SOS kernel that runs the SOS core in addition to interfacing
-with the user. It is built using:
-
-$ cd $SOSROOT/config/sos_tool/
-$ make emu
-
-Running the Simulation
-Starting the Avrora Simulator
-
-Important flags for SOS simulation include:
-
--platform=mica2
-    Instructs the simulator to use the actual Mica2 hardware and peripherals,
-such as the on-board LEDs.
--simulation=sensor-network
-    Use Avrora to simulate an entire sensor network including simple radio
-propagation.
--monitors=serial,real-time
-    Avrora allows the node with ID zero to expose its UART via a TCP socket.
-This is enabled using the serial monitor. This also enables the real-time
-monitor so that the simulation runs approximately in real time.
--sections=.data,.text,.sos_bls
-    Specifies the memory sections needed from the program image. SOS creates a
-special memory section called '.sos_bls' to store module insertion routines.
--update-node-id
-    Attempt to give nodes unique IDs.
--nodecount=1
-    Number of nodes to simulate.
-$SOSROOT/config/blank/blank.od
-    Image to simulate.
-
-The following command starts the Avrora simulator for one node. The simulation
-will initialize and then wait for a connection to the port requested by the
-serial monitor:
-
-java -server avrora/Main -banner=false -colors=true -platform=mica2 \
-    -simulation=sensor-network -monitors=serial,real-time \
-    -sections=.data,.text,.sos_bls -update-node-id -nodecount=1 \
-    $SOSROOT/config/blank/blank.od
-
-Starting the SOS Server
-
-Once Avrora is ready to accept a connection, the sossrv.exe program can be
-started to interface with it. The server needs to be instructed to connect to
-the port provided by Avrora. From a different terminal use:
-
-./sossrv.exe -n 127.0.0.1:2390
-
-Inserting Modules
-
-With the SOS server up and running, modules can now be inserted. This is
-accomplished using the SOS tool:
-
-$ cd $SOSROOT/config/sos_tool/
-$ ./sos_tool.exe --insmod=../../modules/test_modules/blink/blink.sos
-
-After a short wait the module is loaded onto the simulated node and the Avrora
-simulator should be noting a blinking yellow LED. 
-
-
-
-Blink on a Mica2 Node
-
-Running the blink module on real hardware is very similar to running it in
-Avrora. Real hardware provides a number of benefits that do not exist in
-simulation. These include access to hardware that is not modeled by a
-simulator. Not to mention it has the ability to actually run code in a
-deployment!
-
-Running blink on a physical node will require:
-
-    * A micro server that loads modules into the deployed sensor network using
-    * the suite of tools provided with the SOS distribution.
-    * At least one node with a connection to a micro server. This node is able
-    * to receive modules from the micro server (typically over its UART),
-    * install these modules, and propagate the modules through the network.
-    * Optionally one or more additional sensor nodes.
-
-Building the Parts
-Building the Blink Module
-
-As a first step the blink module needs to be compiled. This is accomplished by
-going into the module's directory and building it for the platform that is
-going to be used:
-
-$ cd $SOSROOT/modules/test_modules/blink/
-$ make mica2
-
-Building the Blank Kernel
-
-Next a clean SOS kernel needs to be compiled. This kernel is called the blank
-kernel image. It is located in $SOSROOT/config/blank/. This kernel is built
-specifically for the mica2 target.
-
-$ cd $SOSROOT/config/blank/
-$ make mica2
-
-Building the SOS Server for the PC
-
-SOS uses a simple PC server to interface with nodes. This same server can be
-used in simulation and real deployments. The server needs to be built before
-it is used for the first time. This is accomplished using:
-
-$ cd $SOSROOT/tools/sos_server/bin/
-$ make x86
-
-Building the SOS Tool
-
-The SOS tool is a Swiss Army knife of module management in SOS networks. Among
-other actions, it is used to insert modules into a network. This tool is
-actually a custom SOS kernel that runs the SOS core in addition to interfacing
-with the user. It is built using:
-
-$ cd $SOSROOT/config/sos_tool/
-$ make emu
-
-Running Blink on a Node
-Loading Blank Image
-
-The following command instructs the make system to load an image onto a sensor
-node. Note that the make system assumes that you have a version of uisp
-supporting your hardware in the current PATH. For physical setup a node must
-be connected to a programming device that is in turn connected to the PC. For
-this example, assume that the programming device is a mib510 connected to the
-PC via /dev/ttyUSB0. Note that the USB programmers use a seperate interface
-for data communications. For this and other hardware, you need to specify the
-serial port that is carrying the data. To program the node use:
-
-$ cd $SOSROOT/config/blank/
-$ make mica2 install PROG=mib510 PORT=/dev/ttyUSB0
-
-This single command can be used to both build the blank image and program it
-onto the node.
-Starting the SOS Server
-
-Once the a kernel is installed on a node, the node is ready to accept
-connections over its UART. The sossrv.exe program can be started to interface
-with it. From a different terminal use:
-
-$ cd $SOSROOT/tools/sos_server/bin/
-$ ./sossrv.exe -s /dev/ttyUSB1
-
-Inserting Modules
-
-With the SOS server up and running, modules can now be inserted. This is
-accomplished using the SOS tool:
-
-$ cd $SOSROOT/config/sos_tool/
-$ ./sos_tool.exe --insmod=../../modules/test_modules/blink/blink.sos
-
-After a short wait the module is loaded onto the node and its yellow LED
-should begin to blink. 
-
-////////////////////////////////////////
-
-
+Modify the module to blink the green LED once every 3 seconds and the red
+LED once every 7 seconds by starting two independent timers.  Look at
+link:XXX[XXX] for more information on how to handle multiple timers.
 
