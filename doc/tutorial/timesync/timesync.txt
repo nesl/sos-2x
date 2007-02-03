@@ -42,6 +42,7 @@ execute `make sim`. This should generate an executable file called
 `test_rats_app.exe`. Now, execute this application with `./test_rats_app.exe
 -n 0`. You should see something like this:
 
+[c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 $ ./test_rats_app.exe -n 0
 Unable to open ../../platform/sim/topo.def
@@ -58,6 +59,7 @@ and 1 do not have a connection in the default topology file.]. After a short
 while you should see the `test_rats` module running and printing timestamp
 messages similar to this:
 
+[c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 [  2][128] RATS_TEST: Converted time 1189032 of current node to time 154 of node 0
 [  2][160] RATS: MSG_TIMESTAMP with type = 0
