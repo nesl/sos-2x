@@ -1,4 +1,4 @@
-ime Synchronization in SOS
+Time Synchronization in SOS
 ===========================
 
 SOS contains a powerful time synchronization mechanism called RATS. It was
@@ -123,7 +123,7 @@ MSG_TIMER_TIMEOUT::
   is the one the module started in the initial phase, then it prepares a
   RATS message to get the time at the sink for a local timestamp. A rats
   message has the following structure:
-
++
 [c]
 source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 typedef struct
@@ -137,13 +137,12 @@ typedef struct
    uint8_t msg_type;
 } __attribute__ ((packed)) rats_t;
 source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-::
-  The fields that need to be filled out are `mod_id` the ID of the module
-  sending the timesync request, `source_node_id` the node ID of the node
-  running that module, `target_node_id` the ID of the node we want our time
-  synchronized to, `time_at_source_node` the local time, and `msg_type` the type
-  of the message the module expects for a reply.
++
+The fields that need to be filled out are `mod_id` the ID of the module
+sending the timesync request, `source_node_id` the node ID of the node
+running that module, `target_node_id` the ID of the node we want our time
+synchronized to, `time_at_source_node` the local time, and `msg_type` the
+type of the message the module expects for a reply.
 
 MSG_REPLY::
   This is the message we get back from the RATS module when a timesync was
@@ -169,6 +168,10 @@ indicating the root node and the required precision of synchronization.
 [EXERCISE]
 .Modify Surge to Use RATS
 ========================================
-Modify the Surge module to use time stamping for their samples.
+Modify the Surge module to use time stamping for the samples.
+1. Add code to start RATS on the nodes.
+2. Store the local time when you receive the sample from the sensor.
+3. Convert the timestamp to global time.
+4. Modify the message header to include the timestamp.
 ========================================
 
