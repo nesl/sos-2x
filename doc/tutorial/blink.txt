@@ -7,16 +7,16 @@ offer than blinking LEDs, but they do provide a good starting point.  This
 tutorial provides a high level walkthrough of a simple SOS module.  This
 tutorial will introduce: 
 
-- link:<module_tour>[Blink Module Tour]
-- link:<installing_and_running>[Installing and Running Blink]
-- link:<challenge>[SOS Challenge Problems]
+- <<module_tour, Blink Module Tour>>
+- <<installing_and_running, Installing and Running Blink>>
+- <<challenge, SOS Challenge Problems>>
 
 This tutorial assumes that you have a full installation of SOS up and
 running on your computer.  For more information on this look at the SOS
 link:../install.html[Installation Guide].  Source for this tutorial is
 available in `$SOSROOT/modules/demos/blink`.
 
-anchor:module_tour
+[[module_tour]]
 
 Blink Module Tour
 -----------------
@@ -124,7 +124,7 @@ mod_header_ptr blink_get_header()
 #endif
 source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-anchor:installing_and_running
+[[installing_and_running]]
 
 Installing and Running Blink
 ----------------------------
@@ -138,7 +138,7 @@ node.  The following links provide more deatails on each of these options.
 - link:blink_avrora.html[Running blink in the Avrora simulator]
 - link:blink_mica2.html[Running blink on a Mica2 node]
 
-anchor:challenge
+[[challenge]]
 
 SOS Challenge Problems
 ----------------------

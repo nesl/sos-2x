@@ -1,0 +1,62 @@
+SOS Tutorial
+============
+
+The following guide provides a quick start for users new to the SOS
+operating system. This includes installing compiler tools used by SOS, an
+overview of how to write SOS modules, and examples of running a module in
+simulation or on a sensor node. It is recommended that new users work
+through these tutorials in sequential order. More advanced users can simply
+scan the tutorials for points of interest. 
+
+Installation
+------------
+
+Description of the tools required to use SOS. This includes a discussion of
+the tools needed to run SOS in simulation on a PC and of the tools used to
+cross-compile code to a specific hardware target. At the end of this
+tutorial you will:
+
+- Have tools required for SOS installed on your system.
+- Understand what a cross-compiler is.
+- Have a functioning AVR toolchain running on your system.
+- Know of simulation options for SOS.
+
+link:installation.html[Installation Guide]
+
+Blink Module
+------------
+
+Foundation concepts in SOS combined into a simple application. This tutorial
+walks you through a blinking LED SOS application and shows you different
+ways to run this application. At the end of this tutorial you will:
+
+- Understand the basic structure of an SOS module.
+- Run an application using the SOS simulation framework.
+- Run an application using the Avrora simulation framework.
+- Run an application on Mica2 nodes.
+
+link:blink.html[Blink Module]
+
+Surge Module
+------------
+
+A more complex application that uses multiple modules to sense data, form a
+routing tree, and send sensed data up the routing tree to a sink. This is a
+longer tutorial that covers a fair bit of SOS code and demonstrates many of
+the support programs used in SOS. At the end of this tutorial you will:
+
+- Gain a more detailed understanding of SOS modules.
+- Write a simple SOS application.
+- Know how to use basic sensors in SOS.
+- Know how to send data over the radio.
+- Know how to interact with other modules.
+
+link:surge.html[Surge Module]
+
+Other Documentation
+-------------------
+
+link:timesync/timesync.html[RATS]::
+    Time synchronization in SOS
+    
+
