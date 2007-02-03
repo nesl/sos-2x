@@ -1,0 +1,105 @@
+SOS Simulation of Blink
+-----------------------
+Simulation of SOS modules using the simulation framework included in SOS
+provides an easy way to play with SOS without installing a cross-compiler.
+For more complex applications, the SOS simulation framework provides a nice
+mechanism for debugging protocol layer bugs.
+
+Preparing SOS Modules to be Wrapped
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To run one or more modules in simulation, we create a custom simulation
+kernel that includes the modules that are to be tested.  This monolithic
+kernel image allows SOS to simulate the loading and removal of modules
+without having to dynamically link in modules on a PC.
+
+The first step in this process is writing a function that exposes a
+module's header.  Open `$SOSROOT/modules/test_modules/blink/blink.c`.
+At the end of file you will see a small block of code as following:
+
+[c]
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#ifndef _MODULE_
+mod_header_ptr blink_get_header()
+{
+    return sos_get_header_address(mod_header);
+}
+#endif
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This simple wrapper returns the address of the module header. Other
+applications can then use this address to register the module. With access
+to the header of the module that we wish to simulate, we can continue by
+constructing the software image for simulation.
+
+Wrapping SOS Modules in a Custom Kernel Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The `$SOSROOT/config/` directory is used store the custom kernel
+configurations used for simulation.The kernel configuration used for the
+blink module is located in `$SOSROOT/config/blink/`. Examining the
+`blink_app.c` configuration located in this directory we see:
+
+[c]
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void sos_start(void)
+{
+    ker_register_module(blink_get_header());
+}
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The function `sos_start(void)` is a pre-defined function called by the SOS
+kernel after SOS has initialized all hardware drivers and software services.
+It is being used to explicitly start the blink module in this custom kernel
+by calling `ker_register_module(blink_get_header())`, which registers a
+module given the module's header.  Multiple calls to `ker_register_module`
+can be used to simulate more than one module within a custom kernel.
+
+The custom kernel configuration is now almost ready for compilation.
+The final step is adding the source files for simulated modules into the
+compilation process.  This is done in a Makefile specific to the
+configuration.
+  Open `$SOSROOT/config/blink/Makefile` for an example:
+
+[c]
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ROOTDIR = ../..
+
+SRCS += blink.c
+
+include ../Makerules
+
+vpath blink.c $(ROOTDIR)/modules/test_modules/blink/
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The file `blink.c` is added into `SRCS` and a `vpath` is added to help
+locate this file.  The custom kernel configuration can now be built using
+`make sim EMU_PLATFORM=mica2`.  Specifying the `sim` target informs the make
+system that we intend for the target to be simulated.`EMU_PLATFORM` is used
+to specify the platform that we wish to emulate. This defaults to `mica2` if
+it is not specified.
+
+Running the SOS Simulation 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A single node can be simulated using the command: `SOSROOT="~/mote/sos-1.x/"
+./blink_app.exe -n 1`.  Note that the environment variable `SOSROOT` must be
+set before running the application.  This value is specific to each
+installation of SOS.  More details on using this simulated file can be found
+by passing it the `--help` option.
+
+Output from the simulation can be generated using the macro `DEBUG_PID`
+which takes as input the module's ID and a string.  When a module is
+compiled for an embedded system the macro is set to be a `NoOp`.  When
+compiled for simulation the macro generates output.  The blink module uses
+this macro to display LED status while the simulation is running.  An
+example run of the blink module is listed below:
+
+[c]
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ SOSROOT="~/mote/sos-1.x/" ./blink_app.exe -n 1
+Using topology file ../../tools/admin/topo.def 
+[1]SOS booted
+[1][128]Blink Start [1][128]Blink Yellow ON
+[1][128]Blink Yellow OFF
+[1][128]Blink Yellow ON [1][128]Blink Yellow OFF
+[1][128]Blink Yellow ON
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
