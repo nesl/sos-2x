@@ -1,0 +1,87 @@
+Time Synchronization in SOS
+===========================
+
+SOS contains a powerful time synchronization mechanism called RATS. It was
+developed by Saurabh Ganeriwal and implemented in SOS by Ilias Tsigkogiannis
+at NESL. For a detailed description on how it works see 
+
+'Estimating clock uncertainty for efficient duty-cycling in sensor
+networks', S. Ganeriwal et al. 
+
+An overview on how the implementation works can be found
+link:../../publications/RATS.pdf[here].
+
+RATS is implemented as an extension and can not be dynamically loaded as a
+module. Thus, you always need to include it into the kernel. The following
+code is an example application that includes RATS into the blank kernel. It
+can be found in `$SOSROOT/extensions/unit_test/rats/blank_rats`.
+
+[C]
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include <sos.h>
+
+mod_header_ptr rats_get_header();
+mod_header_ptr loader_get_header();
+
+void sos_start()
+{
+  ker_register_module(rats_get_header());
+  ker_register_module(loader_get_header());
+}
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This image doesn't do much, except that it provides the RATS extensions to
+possibly loaded modules. Such an example module can be found in
+`$SOSROOT/extensions/unit_test/rats/test_rats`. We will go over it in more
+details later on. 
+
+Unfortunately, the SIM target doesn't support module loading. Thus, we
+provide an application which packs the `test_rats` module directly into the
+kernel. Go to `$SOSROOT/extensions/unit_test/rats/test_rats_app`  and
+execute `make sim`. This should generate an executable file called
+`test_rats_app.exe`. Now, execute this application with `./test_rats_app.exe
+-n 0`. You should see something like this:
+
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ ./test_rats_app.exe -n 0
+Unable to open ../../platform/sim/topo.def
+Using topology file /home/thomas/projects/sos-2x/trunk/platform/sim/topo.def
+[  0][  0] SOS booted
+[  0][160] RATS: node 0 initializing
+[  0][128] RATS_TEST: Node 0 starting
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This means node 0 started up and is now waiting for connections. If we run
+an other instance of the same application with `./test_rats_app.exe -n
+2`[Note that we use address 2 and not 1. We have to do this because node 0
+and 1 do not have a connection in the default topology file.]. After a short
+while you should see the `test_rats` module running and printing timestamp
+messages similar to this:
+
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[  2][128] RATS_TEST: Converted time 1189032 of current node to time 154 of node 0
+[  2][160] RATS: MSG_TIMESTAMP with type = 0
+[  2][160] RATS: Receiving timestamp data from node 0
+[  2][160] RATS: Found entry for node 0
+[  2][160] RATS: est_error * SCALING_FACTOR = 0.000000
+[  2][160] RATS: LOWER_THRESHOLD * sync_precision = 0.750000
+[  2][160] RATS: New period (doubled): 4
+[  2][160] RATS: Current window size : 4
+[  2][160] RATS: new_period=min OR I am min_period_node => transmit new_period
+[  2][160] RATS: Accessed internal structure
+[  2][160] RATS: MSG_TIMESTAMP with type = 0
+[  2][160] RATS: Receiving timestamp data from node 0
+[  2][160] RATS: Found entry for node 0
+[  2][160] RATS: est_error * SCALING_FACTOR = 0.000000
+[  2][160] RATS: LOWER_THRESHOLD * sync_precision = 0.750000
+[  2][160] RATS: New period (doubled): 8
+[  2][160] RATS: Current window size : 4
+[  2][160] RATS: new_period=min OR I am min_period_node => transmit new_period
+[  2][160] RATS: Accessed internal structure
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Note the two different tags RATS and RATS_TEST. The first one are debug
+message from the RATS extension, the later one from the `test_rats` module.
+
+
