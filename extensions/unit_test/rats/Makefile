@@ -1,14 +1,13 @@
 
-PROJ = rats_app
+PROJ = blank_rats
 ROOTDIR = ../../..
 SRCS += rats.c
 SRCS += linear.c
-SRCS += test_rats.c
+SRCS += loader.c
 include $(ROOTDIR)/config/Makerules
 
 LDFLAGS += -lm
 
-%.o : $(ROOTDIR)/extensions/rats/%.c
-	$(CC) -c $(CFLAGS) $(INCDIR) $< -o $@ 
-%.o : %.c
-	$(CC) -c $(CFLAGS) $(INCDIR) $< -o $@ 
+vpath loader.c $(ROOTDIR)/extensions/loader/
+vpath rats.c $(ROOTDIR)/extensions/rats/
+vpath linear.c $(ROOTDIR)/extensions/rats
