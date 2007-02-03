@@ -28,7 +28,7 @@ Building the Blink Module
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 As a first step the blink module needs to be compiled.  This is accomplished by going into the module's directory and building it for the platform that is going to be simulated:
 
-[shell]
+[c]
 source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 $ cd $SOSROOT/modules/test_modules/blink/
 $ make mica2
