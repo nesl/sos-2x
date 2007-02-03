@@ -1,0 +1,19 @@
+SOS 2.x Home Page
+=================
+
+.{date}: SOS Release {revision} Released
+*************************************************************************
+We released version {revision} of SOS 2.x:
+
+*************************************************************************
+
+Introduction to SOS
+--------------------
+
+SOS is an operating system for mote-class wireless sensor networks
+eneveloped by the link:http://nesl.ee.ucla.edu[Networked and
+Embedded Systems Lab (NESL)] at UCLA.  SOS uses a common kernel
+that implements messaging, dynamic memory, module loading and
+unloading, and other services.  SOS uses dynamically loaded software
+modules to create a system supporting dynamic addition, modification,
+and removal of network services.
