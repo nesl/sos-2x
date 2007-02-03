@@ -14,6 +14,10 @@ cd publications
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute=styledir=.. publications.txt
 cd ..
 
+cd tutorial/timesync
+$ASCIIDOC_HTML --conf-file=../../${LAYOUT}.conf --attribute=styledir=../.. timesync.txt
+cd ../..
+
 cd tutorial
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute=styledir=.. blink.txt
 cd ..
