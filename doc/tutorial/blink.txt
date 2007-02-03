@@ -49,6 +49,7 @@ SOS modules include a header used at insertion time to help link the module into
 the running system.  This SOS header should be included in all modules.
 Here is the header used within the blink module:
 
+[c]
 source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 static mod_header_t mod_header SOS_MODULE_HEADER = {
     .mod_id         = DFLT_APP_ID0,
