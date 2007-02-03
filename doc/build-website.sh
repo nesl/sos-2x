@@ -4,8 +4,7 @@ VERS="2.0.0"
 DATE="2007-02-03"
 
 # Leave the desired layout uncommented.
-LAYOUT=layout1          # Tables based layout.
-#LAYOUT=layout2         # CSS based simulated frames layout.
+LAYOUT=layout          # Tables based layout.
 
 ASCIIDOC_HTML="asciidoc --unsafe --backend=xhtml11 --conf-file=${LAYOUT}.conf --attribute icons --attribute iconsdir=./images/icons --attribute=badges --attribute=revision=$VERS  --attribute=date=$DATE"
 
