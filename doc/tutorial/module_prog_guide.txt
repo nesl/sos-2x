@@ -6,7 +6,7 @@ However, the SOS system follows a lot of conventions that enable a module to
 be reolcated and dynamically loaded on a sensor node.
 This guide will describe the SOS programming concepts.
 The running example used in this guide is the Surge data collection module
-that is located at $SOSROOT/modules/demo/surge.
+that is located at `$SOSROOT/modules/demo/surge`.
 The concepts are listed below.
 A new user is encouraged to read all the concepts.
 Familiar users can directly jump to the relevant section.
@@ -21,23 +21,74 @@ Familiar users can directly jump to the relevant section.
 
 Module Header
 -------------
+Module header is a special record that contains all the necessary
+information used by the SOS tools for distributing, loading and linking a
+module into a sensor network.
 
+
+IMPORTANT: *'All modules are required to declare exactly one module header.'*
+
+
+Below is an example of the header used in Surge module using
+link:http://gcc.gnu.org/onlinedocs/gcc-3.4.3/gcc/Designated-Inits.html[designated initialization].
+
+.Surge Module Header
 [c]
 source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 static const mod_header_t mod_header SOS_MODULE_HEADER = {
-  .mod_id        = SURGE_MOD_PID,
-  .state_size    = sizeof(surge_state_t),
-  .num_sub_func  = 1,
-  .num_prov_func = 0,
+  .mod_id         = SURGE_MOD_PID,
+  .code_id        = ehtons(SURGE_MOD_PID),
+  .module_handler = surge_module,
+  .state_size     = sizeof(surge_state_t),
   .platform_type  = HW_TYPE /* or PLATFORM_ANY */,
   .processor_type = MCU_TYPE,
-  .code_id       = ehtons(SURGE_MOD_PID),
-  .module_handler = surge_module,
+  .num_sub_func   = 1,
+  .num_prov_func  = 0,
   .funct = {
 	[0] = {error_8, "Cvv0", TREE_ROUTING_PID, MOD_GET_HDR_SIZE_FID},
   },
 };
 source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TIP: Module header can be created by copying the header template and
+modifying the values as needed.
+
+Module header is declared as a static constant variable of type
+`mod_header_t`.
+Module headers are stored in program memory space.
+The compiler (e.g. avr-gcc) requires special directives to place the data
+structure in program memory space.
+These directives are platform specific and are encapsulated by the
+`SOS_MODULE_HEADER` macro.
+The fields in the module header are:
+
+mod_id::
+*Globally unique module identifier*. Module Ids are used for inter-module
+communication within a node and across the network. Thus module Ids are equivalent to a
+combination of process Ids and TCP Ports on a regular PC. 
+Simple modules that are being used for testing, debugging and prototyping
+are encouraged to use one of the pre-defined general module Ids.
+Modules implementing major components such as routing protocols are
+encouraged to pick a new and unique identity.
+A list of module Ids being used in a system is stored in `$SOSROOT/modules/include/mod_pid.h`.
+
+
+code_id::
+Code ID
+module_handler::
+Module Handler
+state_size::
+State size
+platform_type::
+Platform Type
+processor_type::
+Processor Type
+num_sub_func::
+Subscribed Functions
+num_prov_func::
+Provided Functions
+funct::
+Functions	
 
 
 Message Handler
