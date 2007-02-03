@@ -1,4 +1,4 @@
-Time Synchronization in SOS
+ime Synchronization in SOS
 ===========================
 
 SOS contains a powerful time synchronization mechanism called RATS. It was
@@ -10,6 +10,9 @@ networks', S. Ganeriwal et al.
 
 An overview on how the implementation works can be found
 link:../../publications/RATS.pdf[here].
+
+Introduction
+------------
 
 RATS is implemented as an extension and can not be dynamically loaded as a
 module. Thus, you always need to include it into the kernel. The following
@@ -34,6 +37,9 @@ This image doesn't do much, except that it provides the RATS extensions to
 possibly loaded modules. Such an example module can be found in
 `$SOSROOT/extensions/unit_test/rats/test_rats`. We will go over it in more
 details later on. 
+
+Simulating RATS with the SIM Target
+-----------------------------------
 
 Unfortunately, the SIM target doesn't support module loading. Thus, we
 provide an application which packs the `test_rats` module directly into the
@@ -86,4 +92,83 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Note the two different tags RATS and RATS_TEST. The first one are debug
 message from the RATS extension, the later one from the `test_rats` module.
 
+Now, let's have a look at the test module `test_rats.c`.
+
+Includes and State
+------------------
+
+The module's includes are all standard, except that it also includes the
+`rats.h` file. It also defines a `ROOT_ID` which identifies the node to
+which everyone will synchronize to. Additionally, the module uses a timer to
+simulate requests for synchronized time.
+
+The module does not have any internal state thus, the `app_state_t` type is
+very simple and contains only the modules process ID.
+
+Message Handler
+---------------
+
+The message handler processes 4 different messages.
+
+MSG_INIT::
+  The initialization phase depends on the node's ID. If it is root, then it
+  doesn't have to do anything. If it is not root, then it needs to start the
+  RATS protocol by sending a message to `RATS_TIMESYNC_PID` of type
+  `MSG_RATS_CLIENT_START`. The parameters of the short message are the
+  synchronization precision and the node id of the root node. The
+  initialization phase also starts a repeating timer with id `TIMER_ID`.
+
+MSG_TIMER_TIMEOUT::
+  The module receives this message every time the timer fires. If the timer
+  is the one the module started in the initial phase, then it prepares a
+  RATS message to get the time at the sink for a local timestamp. A rats
+  message has the following structure:
+
+[c]
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+typedef struct
+{
+   uint8_t mod_id;
+   uint16_t source_node_id;
+   uint16_t target_node_id;
+   uint32_t time_at_source_node; 
+   uint32_t time_at_target_node;
+   uint32_t error; //msec
+   uint8_t msg_type;
+} __attribute__ ((packed)) rats_t;
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
+  The fields that need to be filled out are `mod_id` the ID of the module
+  sending the timesync request, `source_node_id` the node ID of the node
+  running that module, `target_node_id` the ID of the node we want our time
+  synchronized to, `time_at_source_node` the local time, and `msg_type` the type
+  of the message the module expects for a reply.
+
+MSG_REPLY::
+  This is the message we get back from the RATS module when a timesync was
+  requested. The RATS module fills out the `time_at_target_node` which will
+  be the local time converted to the target node's time. This can then be
+  used to timestamp for example sensor data samples.
+
+MSG_FINAL::
+  This message is received before the module gets unloaded from a node. It
+  cleans up by sending a STOP message to the RATS module to indicate that we
+  don't need it anymore. It also stops the timer since it will not be used
+  anymore.
+
+[NOTE]
+.Quick Reference
+========================================
+1. At startup, send a `MSG_RATS_CLIENT_START` message to the RATS module
+indicating the root node and the required precision of synchronization.
+2. To get a conversion from local time to an other nodes time send a
+   `MSG_RATS_GET_TIME` message to the RATS module and wait for the reply.
+========================================
+
+[EXERCISE]
+.Modify Surge to Use RATS
+========================================
+Modify the Surge module to use time stamping for their samples.
+========================================
 
