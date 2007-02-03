@@ -1,6 +1,6 @@
 
 PROJ = blank_rats
-ROOTDIR = ../../..
+ROOTDIR = ../../../..
 SRCS += rats.c
 SRCS += linear.c
 SRCS += loader.c

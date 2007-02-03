@@ -35,6 +35,7 @@
  */
  
 #include <module.h>
+#include <sys_module.h>
 #define LED_DEBUG
 #include <led_dbg.h>
 #include <rats/rats.h>
@@ -58,7 +59,7 @@ typedef struct
 /*
  * Forward declaration of module 
  */
-static int8_t module(void *state, Message *e);
+static int8_t test_rats_msg_handler(void *state, Message *e);
 
 static mod_header_t mod_header SOS_MODULE_HEADER = 
 {
@@ -70,11 +71,11 @@ static mod_header_t mod_header SOS_MODULE_HEADER =
 	platform_type  : HW_TYPE /* or PLATFORM_ANY */,
 	processor_type : MCU_TYPE,
 	code_id        : ehtons(DFLT_APP_ID0),	
-	module_handler : module,	
+	module_handler : test_rats_msg_handler,	
 };
 
 
-static int8_t module(void *state, Message *msg)
+static int8_t test_rats_msg_handler(void *state, Message *msg)
 {
 	app_state_t *s = (app_state_t *) state;
 	MsgParam *p = (MsgParam*)(msg->data);
@@ -99,8 +100,7 @@ static int8_t module(void *state, Message *msg)
 			DEBUG("Sending MSG_RATS_CLIENT_START with node_id=%u, precision=%u\n", ROOT_ID, 1);
 			post_short(RATS_TIMESYNC_PID, s->pid, MSG_RATS_CLIENT_START, 1, ROOT_ID, 0);			
 			
-			ker_timer_init(s->pid, TIMER_ID, TIMER_REPEAT);
-			ker_timer_start(s->pid, TIMER_ID, TIMESYNC_PERIOD);
+			sys_timer_start(TIMER_ID, TIMESYNC_PERIOD, TIMER_REPEAT);
 			return SOS_OK;
 		}
 		case MSG_TIMER_TIMEOUT:
@@ -135,6 +135,7 @@ static int8_t module(void *state, Message *msg)
 		case MSG_FINAL:
 		{
 			post_short(RATS_TIMESYNC_PID, s->pid, MSG_RATS_CLIENT_STOP, 0, ROOT_ID, 0);			
+            sys_timer_stop(TIMER_ID);
 			return SOS_OK;
 		}
 		default:
