@@ -11,13 +11,15 @@ The concepts are listed below.
 A new user is encouraged to read all the concepts.
 Familiar users can directly jump to the relevant section.
 
-1. Module Header
-2. Message Handler
-3. Module State
-4. System Calls
-5. Split Phase Calls
-6. Local Function Calls
-7. Function Pointer Pointer Calls
+1. xref:module_header[Module Header]
+2. xref:msg_handler[Message Handler]
+3. xref:mod_state[Module State]
+4. xref:sys_calls[System Calls]
+5. xref:split_calls[Split Phase Calls]
+6. xref:local_calls[Local Function Calls]
+7. xref:fnptr_calls[Function Pointer Pointer Calls]
+
+[[<module_header>]]
 
 Module Header
 -------------
@@ -63,36 +65,159 @@ These directives are platform specific and are encapsulated by the
 The fields in the module header are:
 
 mod_id::
-*Globally unique module identifier*. Module Ids are used for inter-module
+*Module identifier*. Module Ids are used for inter-module
 communication within a node and across the network. Thus module Ids are equivalent to a
 combination of process Ids and TCP Ports on a regular PC. 
 Simple modules that are being used for testing, debugging and prototyping
-are encouraged to use one of the pre-defined general module Ids.
+are encouraged to pick one of the pre-defined general module Ids.
+e.g. `DFLT_APP_ID0, DFLT_APP_ID1, DFLT_APP_ID2, DFLT_APP_ID3`.
 Modules implementing major components such as routing protocols are
-encouraged to pick a new and unique identity.
+encouraged to define a new and unique identity.
 A list of module Ids being used in a system is stored in `$SOSROOT/modules/include/mod_pid.h`.
 
 
 code_id::
-Code ID
-module_handler::
-Module Handler
-state_size::
-State size
-platform_type::
-Platform Type
-processor_type::
-Processor Type
-num_sub_func::
-Subscribed Functions
-num_prov_func::
-Provided Functions
-funct::
-Functions	
+*Globally unique source code identifier*. SOS supports multiple instances of a module. The
+`code_id` is used to describe the module source code shared between these
+different instances. On a PC, this would be the program name. The `code_id`
+and `mod_id` are identical in a system that does not have multiple
+instances.
+A list of code Ids being used in a system is stored in `$SOSROOT/modules/include/mod_pid.h`.
+*`ehtons()`* is a macro that translates the host byte order (little-endian
+or big-endian) to SOS network byte order (little-endian). 
+Always store the `code_id` in the network byte order using the `ehtons()` macro.
 
+module_handler::
+*Message Handler of a module.* This field should be assigned to the message
+handler of the module. The declaration of the message handler function and
+its implementation is described in the xref:msg_handler[Message Handler] section.
+
+
+state_size::
+*Size of module state.* Each module can store its computation state. When a
+module is loaded, the SOS kernel allocates memory to store the state based
+upon the value specified here. A recommended practise is to set this value
+to `sizeof(app_state_t)`, assuming that the module state is stored in a
+data structure named `app_state_t`. Declaration of the module state is
+described in xref:mod_state[Module State] section.
+
+platform_type::
+*Target platform for module* Modules can be platform-independent
+(e.g. routing) or platform-specific (e.g. camera drivers for Cyclops).
+A list of supported platforms is given in `$SOSROOT/kernel/include/sos_info.h`.
+Using the macro `HW_TYPE` will set this field to the hardware type used at
+compile time.
+Using the value `PLATFORM_ANY` will create a platform-independent module.
+
+processor_type::
+*Target processor for module* Modules are distributed within the network as
+binary images. This field is used by the SOS kernel as a check for binary compatibility prior to
+loading a module. A list of suppported processors is given in
+`$SOSROOT/kernel/include/sos_info.h`. It is recommended to set this field to the
+macro `MCU_TYPE`. This will set the field to the processor type used at compile time.
+
+num_sub_func::
+*Number of functions subscribed by a module.* This field is described in
+detail in the xref:fnptr_call[Function Pointer Pointer Calls] section.
+
+
+num_prov_func::
+*Number of functions provided by a module.* This field is described in
+detail in the xref:fnptr_call[Function Pointer Pointer Calls] section.
+
+
+funct::
+*Record containing linking information for function pointer pointer calls.*
+This record is described in detail in the xref:fnptr_call[Function Pointer Pointer Calls] section.
+
+
+
+
+[[<msg_handler>]]
 
 Message Handler
 ---------------
+
+The message handler is the main function in a module. SOS uses message
+passing for communication between modules. The SOS kernel notifies a module
+about important events (e.g. Timer timeout) through messages.
+
+[IMPORTANT]
+=========================================================================
+- *'All modules are required to implement exactly one message
+handler.'* 
+- *'All message handlers are required to follow the prototype described
+below.'* 
+=========================================================================
+
+
+[c]
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+int8_t module_msg_handler(void *state, Message* msg);
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A snippet of the Surge message handler is shown below. 
+The details have been removed for clarity and only the structure has been
+preserved to explain the concepts.
+
+.Surge Message Handler
+[c]
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+int8_t surge_module_handler(void *state, Message *msg)
+{
+  surge_state_t *s = (surge_state_t*)state;
+
+  switch (msg->type){
+
+  case MSG_INIT:
+    {	
+     // Initialize module here
+     break;
+    }
+
+  case MSG_FINAL:
+   {
+    // Last msg from kernel before removing module
+    break;
+   }
+
+  case MSG_TIMER_TIMEOUT:
+   {
+    // Timeout event notification from kernel
+    break;
+   }
+  
+  case MSG_TR_DATA_PKT:
+   {
+    // Message from tree routing module
+    break;
+   }
+  
+  default:
+    // Return appropriate error codes
+    return -EINVAL;
+   
+  // Return SOS_OK upon success
+  return SOS_OK;
+ }
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The handler is invoked by the kernel whenever there is a message pending for
+the module in the queue. The message could arrive from other modules in the system or from the
+kernel. The message handler is declared as a function with return type
+`int8_t`. This function should return `SOS_OK` upon successful message
+handling or an appropriate return code. A list of error codes used within
+SOS is listed in `$SOSROOT/kernel/include/sos_types.h`. The message handler
+receives as an input, the pointer to the state of the module (the is
+maintained by the SOS kernel rather as a global variable) and a pointer to
+the message from the SOS scheduler. 
+
+
+
+
+
+
+
 
 Module State
 ------------
