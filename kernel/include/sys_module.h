@@ -1,3 +1,14 @@
+/**
+ * \mainpage [SOS System API]
+ *
+ * Provided here is the documentation for the system API provided by the SOS
+ * kernel for user modules.
+ *
+ * The link below will take you back to the main SOS documentation website:
+ *
+ * https://projects.nesl.ucla.edu/public/sos-2x/
+ */
+
 #ifndef __SYS_MODULE_H__
 #define __SYS_MODULE_H__
 
