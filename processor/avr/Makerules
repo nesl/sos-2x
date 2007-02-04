@@ -10,12 +10,8 @@ DEFS += -DAVR_MCU -DLLITTLE_ENDIAN -DSUPPORTS_PACKED
 MCU = atmega128
 MCUFLAG += -mmcu=$(MCU)
 
-VPATH  += $(ROOTDIR)/drivers/uart
-VPATH += $(ROOTDIR)/drivers/i2c
 VPATH += $(ROOTDIR)/processor/$(PROCESSOR)
 
-INCDIR += -I$(ROOTDIR)/drivers/uart/include
-INCDIR += -I$(ROOTDIR)/drivers/i2c/include
 INCDIR += -I$(ROOTDIR)/processor/$(PROCESSOR)/include
 INCDIR += -I$(ROOTDIR)/drivers/adc/include
 
