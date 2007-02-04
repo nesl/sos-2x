@@ -31,3 +31,7 @@ $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --att
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. surge_mica2.txt
 cd ..
 
+cd api
+doxygen doxyfile
+cd ..
+
