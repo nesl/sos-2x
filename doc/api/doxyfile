@@ -7,7 +7,17 @@ OUTPUT_DIRECTORY       =
 TAB_SIZE               = 4
 OPTIMIZE_OUTPUT_FOR_C  = YES
 SHOW_DIRECTORIES       = YES
-INPUT                  = ../../kernel/include/sys_module.h 
+INPUT                  = ../../kernel/include/sys_module.h \
+                         ../../kernel/include/codemem.h \
+                         ../../kernel/include/fntable_types.h \
+                         ../../kernel/include/sos_cam.h \
+                         ../../kernel/include/memmap.h          \   
+                         ../../processor/avr/include/memmap_conf.h  \
+                         ../../processor/avr/include/cross_domain_cf.h \
+                         ../../processor/avr/include/sfi_jumptable.h \
+                         ../../tools/elfloader/minielf/minielf.h \
+                         ../../tools/elfloader/minielf/minielflib.h
+FILE_PATTERNS          = *.c *.h *.dox
 RECURSIVE              = YES
 HTML_STYLESHEET        = 
 GENERATE_LATEX         = NO
