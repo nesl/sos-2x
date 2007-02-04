@@ -7,11 +7,18 @@ h1 {
   margin-top: 0.5em;
 }
 
+h2 {
+  margin-top: 0.5em;
+    color: white;
+  background: #ff9148;
+  padding: 0 0 0 7px;
+}
+
 #layout-banner {
-	background-color: #73a0c5;
+	background-color: #ff9148;
   color: white;
 	font-family: sans-serif;
-	text-align: left;
+	text-align: right;
   padding: 0.8em 20px;
 }
 
@@ -34,7 +41,7 @@ h1 {
   padding-top: 0.8em;
   padding-left: 20px;
   padding-right: 0.8em;
-	font-size: 1.1em;
+	font-size: 0.8em;
 	font-family: sans-serif;
 	font-weight: bold;
 }
@@ -45,6 +52,7 @@ h1 {
 #layout-menu a:link, #layout-menu a:visited, #layout-menu a:hover {
   color: #527bbd;
   text-decoration: none;
+  font-color: #FF9148;
 }
 #layout-menu a:hover {
 	color: navy;
