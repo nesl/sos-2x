@@ -144,3 +144,5 @@ how surge data would be routed through this network.
 By running each of the above commands in a different term, this can be
 made more clear.  A call to `pkill module_test_app` will stop the
 simulation.
+
+Next: link:surge_avrora.html[Running surge in the Avrora simulator]

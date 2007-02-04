@@ -136,3 +136,5 @@ Using topology file ../../platform/sim/topo.def
 [  1][128] LED: GREEN OFF
 [  1][128] LED: GREEN ON
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Next: link:blink_avrora.html[Running blink in the Avrora simulator]

@@ -29,6 +29,7 @@ $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --att
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. surge_sim.txt
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. blink_mica2.txt
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. surge_mica2.txt
+$ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. surge.txt
 cd ..
 
 cd api

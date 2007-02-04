@@ -124,3 +124,5 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After a short wait the module is loaded onto the node and its yellow LED
 should begin to blink. 
+
+Next: link:surge.html[Overview of surge module] 

@@ -160,3 +160,4 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 After a short wait the module is loaded onto the simulated node and the
 Avrora simulator should be noting a blinking yellow LED.
 
+Next: link:blink_mica2.html[Running blink on a Mica2 node]

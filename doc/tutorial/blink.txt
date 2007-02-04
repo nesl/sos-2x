@@ -150,3 +150,4 @@ Modify the module to blink the green LED once every 3 seconds and the red
 LED once every 7 seconds by starting two independent timers.  Look at
 link:XXX[XXX] for more information on how to handle multiple timers.
 
+Next: link:blink_sim.html[Running blink in the SOS simulator]

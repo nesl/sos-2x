@@ -187,3 +187,5 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After these modules load, the routing tree should form and sensor data
 will begin to stream out of the network. 
+
+Next: link:surge_mica2.html[Running surge on Mica2 nodes]
