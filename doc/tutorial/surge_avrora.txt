@@ -1,0 +1,189 @@
+Avrora Simulation of Surge
+==========================
+
+Building the Parts
+------------------
+
+Building the Modules
+~~~~~~~~~~~~~~~~~~~~
+The `surge` application uses three modules.  Each of these needs to be
+built for the simulation. Further, two of these modules will require minor
+code modifications.  The Avrora simulator begins the node count at 0, while
+SOS typically begins node IDs with 1.  The `tree routing` module and `surge`
+application define constant values to describe the "sink" node that data is
+to be routed to.  For simulation in Avrora this should change from 1 to 0.
+This is accomplished by changing both `BASE_STATION_ADDRESS` in
+`$SOSROOT/modules/routing/tree_routing/tree_routing.h` and
+`SURGE_BASE_STATION_ADDRESS` in `$SOSROOT/modules/demos/surge/surge.h` to
+the value 0.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/modules/test_modules/surge/
+make mica2
+cd $SOSROOT/modules/routing/tree_routing/
+make mica2
+cd $SOSROOT/modules/sensordrivers/micasb/photosensor/
+make mica2
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Building the Blank Kernel
+~~~~~~~~~~~~~~~~~~~~~~~~~
+As with most Avrora simulations, the blank kernel is built for simulation on
+the nodes.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ cd $SOSROOT/config/blank/
+$ make avrora
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Building the SOS Server for the PC
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The surge simulation will use the sos server to interact with the simulated
+network.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ cd $SOSROOT/tools/sos_server/bin/
+$ make x86
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Building the SOS Tool
+~~~~~~~~~~~~~~~~~~~~~
+The SOS tool will be put to more use in this simulation as multiple modules
+are installed into the network. 
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ cd $SOSROOT/tools/sos_tool/
+$ make emu
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Running the Simulation 
+----------------------
+
+Starting the Avrora Simulator
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+New flags for SOS simulation: 
+
+nodecount=5:-
+    Specify that 5 nodes should be simulated.
+
+update-node-id=true:-
+    Give each node a unique ID.  The count starts from zero.
++
+NOTE: The surge application defines the base station address to
+be 1.  For simulation in Avrora it is nice to redefine this to be 0 so that
+it corresponds with the first node. This definition is located in the
+`surge.h` file.
++
+
+topology=topo.def:-
+    Specification of the topology file.  The following is an
+example topology file in the format used by Avrora:
++
+[c]
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# simple topology specification
+#
+# this is a sample topology file
+# it contains a 4x4 grid in x-y direction
+#
+# syntax: nodeName x y z
+# nodeName: any string without space
+# coordinates: integer values,
+# one line per node
+# negative coordinates are welcome
+node0 0 0 0
+node1 0 15 0
+node2 0 30 0
+node3 0 45 0
+node4 15 0 0
+node5 15 15 0
+node6 15 30 0
+node7 15 45 0
+node8 30 0 0
+node9 30 15 0
+node10 30 30 0
+node11 30 45 0
+node12 45 0 0
+node13 45 15 0
+node14 45 30 0
+node15 45 45 0
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++
+
+sensor-data="light":2:light2.dat,...:- 
+    This specifies the simulated sensor data that should be given
+to each node. For more details on this look at the `sensor-network` help     provided within Avrora.  A sample sensor data file is:
++
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+999
+2 1000
+2 1001
+2 1005
+2 1003
+2 1002
+2 1000
+2 1003
+2 1004
+2 1005
+2 1006
+2 1015
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++
+
+The following command starts the Avrora simulator for the simulated
+nodes. The simulation will initialize and then wait for a connection to the
+port requested by the `serial` monitor: 
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+java -server avrora/Main -banner=false -colors=true -platform=mica2 \
+    -simulation=sensor-network -monitors=serial,real-time \
+    -report-seconds -seconds-precision=1 -seconds=3000.0 \
+    -nodecount=5 -update-node-id=true -sections=.data,.text,.sos_bls \
+    -topology=topo.def \
+    -sensor-data="light":2:light2.dat,"light":3:light3.dat,"light":4:light4.dat,"light":5:light5.dat
+\
+    $SOSROOT/config/blank/blank.od
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Starting the SOS Server
+~~~~~~~~~~~~~~~~~~~~~~~
+Once Avrora is ready to accept a connection, the `sossrv.exe`
+program can be started to interface with it.  The server needs to be
+instructed to connect to the port provided by Avrora.  From a different
+terminal use: 
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+./sossrv.exe -n 127.0.0.1:2390
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Inserting Modules
+~~~~~~~~~~~~~~~~~
+With the SOS server up and running, modules can now be inserted.  This
+is accomplished using the SOS tool:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/config/sos_tool/
+./sos_tool.exe --insmod
+../../modules/sensordrivers/micasb/photosensor/photosensor.sos
+./sos_tool.exe --insmod ../../modules/routing/tree_routing/tree_routing.sos
+./sos_tool.exe --insmod ../../modules/test_modules/surge/surge.sos
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After these modules load, the routing tree should form and sensor data
+will begin to stream out of the network. 
