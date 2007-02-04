@@ -1,10 +1,12 @@
 SOS 2.x Home Page
 =================
 
-.{date}: SOS Release {revision} Released
+.{date}: SOS Release {revision} soon
 *************************************************************************
-We released version {revision} of SOS 2.x:
-
+We were hard working today for a SOS release, but didn't quiet get there.
+But you can expect a first release soon. Also the website is still under
+construction since some of the tutorial files are missing and some of the
+instructions not 100% tested. This should happen within the next week.
 *************************************************************************
 
 Introduction to SOS

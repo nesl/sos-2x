@@ -53,6 +53,13 @@ the support programs used in SOS. At the end of this tutorial you will:
 
 link:surge.html[Surge Module]
 
+Module Programming Guide
+------------------------
+
+A detailed description of the programming concepts for modules in SOS.
+
+link:module_prog_guide.html[Module Programming Guide]
+
 Other Documentation
 -------------------
 
