@@ -165,6 +165,8 @@ indicating the root node and the required precision of synchronization.
    `MSG_RATS_GET_TIME` message to the RATS module and wait for the reply.
 ========================================
 
+SOS Challenge Problems
+----------------------
 [EXERCISE]
 .Modify Surge to Use RATS
 ========================================

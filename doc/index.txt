@@ -17,3 +17,70 @@ that implements messaging, dynamic memory, module loading and
 unloading, and other services.  SOS uses dynamically loaded software
 modules to create a system supporting dynamic addition, modification,
 and removal of network services.
+
+- System developers (in alphabetical order)
+  * 
+
+- Faculty advisers:
+  * Eddie Kohler
+  * Mani Srivastava
+
+- Former project members
+  * 
+
+Motivations Behind SOS
+----------------------
+
+Dynamic reconfigurability is one primary motivation and goal for SOS. In the
+domain of wireless sensor networking, reconfigurability is the ability to
+modify the software on individual nodes of a sensor network after the
+network has been deployed and initialized. This provides the ability to
+incrementally update the sensor network after it is deployed, add new
+software modules to a sensor node after deployment, and remove unused
+software modules when they are no longer needed. The growing tensions
+between large, hard-to-update networks and complex applications with
+incremental patches has made reconfigurability an issue that can no longer
+be ignored.
+
+Creating an expressive system that provides programmers with commonly needed
+services is a second primary goal for SOS. Many sensor network applications
+need access to the same primitives ranging from memory pools for easy data
+packet management to application diagnostic network services such as
+neighborhood discovery.
+
+To these ends, SOS takes traditional operating system ideas and transforms
+them into a form appropriate for the resource-constrained domain of wireless
+sensor nodes. This results in a flexible system that can be used to write
+clean and easy to maintain sensor network node systems. 
+
+Reasons To Use SOS
+------------------
+
+- Ability to reconfigure individual components of a deployed system.
+- Enables heterogeneous system deployments.
+- Easy program development:
+  * Programs written using standard C code and compilers.
+  * Kernel support for common services such as dynamic memory allocation,
+    simple garbage collection, and priority scheduling.
+- Truly modular system development. The modules that are used to create an
+  application remain modular when deployed in the network.
+- Debugging support via standard C code debuggers such as GDB. [Note that
+  JTAG support for debugging modules is a work in progress.]
+- Simulation support on PC using SOS code compiled to PC target or using
+  Avrora with SOS code compiled to AVR target.
+- Broad platform support including a wide range of the Crossbow Mica Mote
+  series and Moteiv Tmote Sky.
+
+Places To Go From Here
+----------------------
+
+- Download and install an SOS link:release.html[release].
+- Get started with the SOS link:tutorial/index.html[tutorial].
+- Read SOS link:publications/publications.html:[papers and presentations].
+- View the online
+  link:https://projects.nesl.ucla.edu/view/viewcvs.cgi/sos-2x/trunk[Subversion Code].
+- Check out the SOS
+  link:http://nesl.ee.ucla.edu/mailman/listinfo.cgi/sos-user[mailing list].
+
+
+

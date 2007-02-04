@@ -1,0 +1,6 @@
+You need the following tools in order to generate the HTML version of this documentation:
+
+- asciidoc 8.1.0
+- source-highlite 1.11
+- doxygen 1.4.7
+- graphviz 2.8

@@ -1,0 +1,33 @@
+Policy Guide
+============
+
+Following are some guidelines we want to follow:
+
+- We will try to make regular releases. Each release will be in the
+tags directory and should not be changed, unless a bug is critical and
+makes the release unusable!
+
+- New features and bug fixes get only added to trunk. The commit
+message of new features should be marked by a specific keyword (e.g.
+"feature: "), the one for bug fixes with "bugfix:". This way we can
+make an easy changelog for each release by parsing the log messages.
+
+- If we have a couple of new features and bug fixes in the trunk, then we
+are ready for a new release :)
+
+- If you make major changes on the system, branch it. This should be
+used for anything which will take longer than, let's say a week. Once
+the development is done, merge your branch back into trunk and rename
+the branch (i.e. use `svn mv`) to "xy-FINISHED" to prevent further commits.
+
+- Each developer can have its own branch, if he/she so desires. This can
+help his/her research by preventing other people changing files he/she is
+not aware of but not loosing the capabilities of logging his/her changes on
+the code.
+
+- We should start using the bug tracking system of Savane to track
+bugs
+(link:https://projects.nesl.ucla.edu/bugs/?group=sos-2x[https://projects.nesl.ucla.edu/bugs/?group=sos-2x]).
+The same counts for bigger tasks we want to assign to someone
+(link:https://projects.nesl.ucla.edu/task/?group=sos-2x[https://projects.nesl.ucla.edu/task/?group=sos-2x])
+
