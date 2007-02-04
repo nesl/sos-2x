@@ -129,17 +129,17 @@ requested by the `serial` monitor:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-cd $SOSROOT
-java -server -jar avrora.jar -banner=false -colors=true \
+cd $SOSROOT/avrora/bin
+java -server avrora/Main -banner=false -colors=true \
      -platform=mica2  -simulation=sensor-network \
      -monitors=serial,real-time \ 
      -sections=.data,.text,.sos_bls -update-node-id -nodecount=1 \
     $SOSROOT/config/blank/blank.od
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-NOTE: The above assumes that the avrora jar file is in your SOS root
-directory. If its not, grab a copy from the
-http://compilers.cs.ucla.edu/avrora/release.html[Avrora release page]
+NOTE: The above assumes that the avrora files are in your SOS root
+directory. If not, grab a copy from the Avrora CVS by following the
+instructions on http://compilers.cs.ucla.edu/avrora/cvs.html[Avrora CVS page]
 
 Starting the SOS Server
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -165,7 +165,8 @@ Loading $SOSROOT/config/blank/blank.od...
 =={ Simulation events }====================================================
 Node          Time   Event
 ---------------------------------------------------------------------------
-Waiting for serial connection on port 2390...connected to /127.0.0.1:48272
+Waiting for serial connection on port 2390...
+connected to 127.0.0.1:48272
    0            16  Yellow: on
    0            16  Green: on
    0            16  Red: on
@@ -177,15 +178,16 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Inserting Modules
 ~~~~~~~~~~~~~~~~~
 With the SOS server connected to Avrora, modules can now be inserted.  This
-is accomplished using the SOS tool:
+is accomplished using the SOS tool. In another terminal window, enter the
+following commands (and don't forget to set `SOSROOT`):
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/sos_tool/
-./sos_tool.exe --insmod=../../modules/demos/blink/blink.sos
+./sos_tool.exe --insmod=../../modules/demos/blink/blink.mlf
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After a short wait the module is loaded onto the simulated node and the
-Avrora simulator should be noting a blinking yellow LED.
+Avrora simulator should be noting a blinking green LED.
 
 Next: link:blink_mica2.html[Running blink on a Mica2 node]
