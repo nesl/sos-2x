@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [ -z "${SOS_DIR}" ]; then
-	echo "SOS_DIR environment variable is not defined"
-	echo "Please add SOS_DIR to environment variable and point to the top level"
+if [ -z "${SOSROOT}" ]; then
+	echo "SOSROOT environment variable is not defined"
+	echo "Please add SOSROOT to environment variable and point to the top level"
 	echo "SOS directory"
 	exit 1
 fi
@@ -17,4 +17,4 @@ java avrora/Main \
     -random-seed=151079 -random-start=[0,100000000] \
     -report-seconds -seconds-precision=2 -seconds=1800.0 \
     -topology=avrora_input_topology -nodecount=10 -update-node-id=true \
-    $SOS_DIR/config/blank/blank.od
+    $SOSROOT/config/blank/blank.od

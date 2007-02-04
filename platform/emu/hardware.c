@@ -239,7 +239,7 @@ void open_user_thread(void)
 		 * http://nesl.ee.ucla.edu/pipermail/sos-user/attachments/20050422/21fa90ba/redirect.bin
 		 * for original source code.
 		 * The source code and LICENSE associated are also stored in
-		 * $SOS_DIR/contrib/named_fifo
+		 * $SOSROOT/contrib/named_fifo
 		 */
 #if 0
 		FILE *fp;
@@ -302,10 +302,10 @@ int main(int argc, char **argv)
 	}
 	node_address = 0x8000;
 	//! parse the parameters
-	if( getenv("SOS_DIR") == NULL ) {
-		fprintf(stderr, "Environment Variable SOS_DIR is not set!\n");
-		fprintf(stderr, "Please add SOS_DIR to your shell environment\n");
-		fprintf(stderr, "SOS_DIR should point to the top level directory of SOS\n");
+	if( getenv("SOSROOT") == NULL ) {
+		fprintf(stderr, "Environment Variable SOSROOT is not set!\n");
+		fprintf(stderr, "Please add SOSROOT to your shell environment\n");
+		fprintf(stderr, "SOSROOT should point to the top level directory of SOS\n");
 		exit(1);
 	}
 

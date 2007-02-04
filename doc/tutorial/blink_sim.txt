@@ -108,8 +108,7 @@ we wish to emulate. This defaults to `mica2` if it is not specified.
 Running the SOS Simulation 
 --------------------------
 
-A single node can be simulated using the command: `SOSROOT="~/mote/sos-2x/"
-./blink_app.exe -n 1`.  Note that the environment variable `SOSROOT` must be
+A single node can be simulated using the command: `./blink_app.exe -n 1`.  Note that the environment variable `SOSROOT` must be
 set before running the application.  This value is specific to each
 installation of SOS.  More details on using this simulated file can be found
 by passing it the `--help` option.
@@ -123,7 +122,7 @@ example run of the blink module is listed below:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-SOS_DIR=$SOSROOT ./blink_app.exe -n 1
+./blink_app.exe -n 1
 
 Using topology file ../../platform/sim/topo.def
 [  1][  0] SOS booted

@@ -4,14 +4,14 @@
 # Author: Ram Kumar {ram@ee.ucla.edu}
 # Description: Install the tools required for Mini-ELF loader
 #*************************************************************
-if [ -z "${SOS_DIR}" ]; then
-	echo "SOS_DIR environment variable is not defined"
-	echo "Please add SOS_DIR to environment variable and point to the top level"
+if [ -z "${SOSROOT}" ]; then
+	echo "SOSROOT environment variable is not defined"
+	echo "Please add SOSROOT to environment variable and point to the top level"
 	echo "SOS directory"
 	exit 1
 fi
 
-SOSBIN=${SOS_DIR}/tools/bin/
+SOSBIN=${SOSROOT}/tools/bin/
 ####################################################################
 echo "=============================="
 echo "====={ Build ELF Reader }====="
