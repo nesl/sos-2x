@@ -75,7 +75,7 @@ EOF
 
 # env args interpereted by the kernel
 # general env vars 
-my @env_vars = qw(CFLAGS DEFS SRCS_FIRST SRCS OBJS);
+my @env_vars = qw(CFLAGS DEFS SRCS_FIRST SRCS OBJS INCDIR);
 # add any enviroment variables if passed in
 foreach my $env_var (@env_vars) {
   my $var_val = $ENV{"$env_var"};

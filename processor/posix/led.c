@@ -8,11 +8,6 @@
 #include <sos.h>
 #include <led.h>
 
-#ifndef SOS_DEBUG_LEDS
-#undef DEBUG
-#define DEBUG(...) 
-#endif
-
 uint8_t __red_led, __green_led, __yellow_led;
 
 int8_t ker_led(uint8_t action){

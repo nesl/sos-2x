@@ -86,7 +86,7 @@ static int8_t blink_msg_handler(void *state, Message *msg)
 	   * - Timer delay in
 	   * - Type of timer
 	   */
-	  DEBUG_PID(s->pid, "Blink Start\n");
+	  DEBUG("Blink Start\n");
 	  sys_timer_start(BLINK_TID, BLINK_TIMER_INTERVAL, TIMER_REPEAT);
 	  break;
 	}
@@ -103,7 +103,7 @@ static int8_t blink_msg_handler(void *state, Message *msg)
 	   * Stop the timer
 	   */
 	  sys_timer_stop(BLINK_TID);
-	  DEBUG_PID(s->pid, "Blink Stop\n");
+	  DEBUG("Blink Stop\n");
 	  break;
 	}
 

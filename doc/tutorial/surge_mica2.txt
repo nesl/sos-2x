@@ -1,0 +1,123 @@
+Surge on Mica2 Motes
+====================
+
+Building the Parts
+------------------
+
+
+Building the Modules
+~~~~~~~~~~~~~~~~~~~~
+The surge application uses three modules.  These can be built directly
+for the mica2 target.  
+NOTE: This tutorial assumes that the base station IDs in `$SOSROOT/modules/routing/tree_routing/tree_routing.h` and `$SOSROOT/modules/test_modules/surge/surge.h` are set to 1.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/modules/test_modules/surge/
+make mica2
+cd $SOSROOT/modules/routing/tree_routing/
+make mica2
+cd $SOSROOT/modules/sensordrivers/mts310/photosensor/
+make mica2
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Building and Installing the Blank Kernel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Build and install the blank kernel onto a few mica2 nodes.  This will
+require that different nodes be hooked up to the programmer.  Begin by
+attaching a mica2 node.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/config/blank/
+make mica2 install PROG=mib510 PORT=/dev/ttyUSB0 ADDRESS=3
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Remove the node from the programmer and attach a basic sensor board to
+the node.  Attach another mica2 node to the programmer. 
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+make mica2 install PROG=mib510 PORT=/dev/ttyUSB0 ADDRESS=2
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Remove the node from the programmer and attach a basic sensor board to
+the node.  Attach another mica2 node to the programmer.  This last node will
+be the sink of the network.  Note that it is given the special address of
+1.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+make mica2 install PROG=mib510 PORT=/dev/ttyUSB0 ADDRESS=1
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Leave this last node connected to the programmer.  In addition to acting
+as the sink of the surge network, this node is acting as a gateway between
+the PC and the rest of the network. 
+
+
+Building the SOS Server for the PC
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Build the SOS server to communicate with the gateway. 
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/tools/sos_server/bin/
+make x86
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Building the SOS Tool
+~~~~~~~~~~~~~~~~~~~~~
+Build the SOS tool to insert modules. 
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/tools/sos_tool/
+make emu
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Running Surge 
+-------------
+
+Start the Network 
+~~~~~~~~~~~~~~~~~
+
+Power on the three nodes that were just programmed.  They should be
+sitting within a few feet of each other so that radio connectivity is not a
+problem. 
+
+
+Starting the SOS Server
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Start the SOS server. 
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/tools/sos_server/bin/
+./sossrv.exe -s /dev/ttyUSB0
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Inserting Modules
+~~~~~~~~~~~~~~~~~
+
+With the SOS server up and running, modules can now be inserted.  This
+is accomplished using the SOS tool: 
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/config/sos_tool/
+./sos_tool.exe --insmod
+../../modules/sensordrivers/mts310/photosensor/photosensor.sos
+./sos_tool.exe --insmod ../../modules/routing/tree_routing/tree_routing.sos
+./sos_tool.exe --insmod ../../modules/demos/surge/surge.sos
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After these modules load, the routing tree should form and sensor data
+will begin to stream out of the network. 

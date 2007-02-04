@@ -94,11 +94,16 @@ vpath blink.c $(ROOTDIR)/modules/demos/blink/
 source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The file `blink.c` is added into `SRCS` and a `vpath` is added to help
-locate this file.  The custom kernel configuration can now be built using
-`make sim EMU_PLATFORM=mica2`.  Specifying the `sim` target informs the make
-system that we intend for the target to be simulated.`EMU_PLATFORM` is used
-to specify the platform that we wish to emulate. This defaults to `mica2` if
-it is not specified.
+locate this file.  The custom kernel configuration can now be built using:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+make sim EMU_PLATFORM=mica2  
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Specifying the `sim` target informs the make system that we intend for the
+target to be simulated.`EMU_PLATFORM` is used to specify the platform that
+we wish to emulate. This defaults to `mica2` if it is not specified.
 
 Running the SOS Simulation 
 --------------------------
@@ -118,14 +123,17 @@ example run of the blink module is listed below:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-SOSROOT="~/mote/sos-2x/" ./blink_app.exe -n 1
+SOS_DIR=$SOSROOT ./blink_app.exe -n 1
 
-Using topology file ../../platform/sim/topo.def 
-[1]SOS booted
-[1][128]Blink Start 
-[1][128]Blink Yellow ON
-[1][128]Blink Yellow OFF
-[1][128]Blink Yellow ON 
-[1][128]Blink Yellow OFF
-[1][128]Blink Yellow ON
+Using topology file ../../platform/sim/topo.def
+[  1][  0] SOS booted
+[  1][128] LED: RED ON
+[  1][128] Blink Start
+[  1][128] LED: GREEN ON
+[  1][128] LED: GREEN OFF
+[  1][128] LED: GREEN ON
+[  1][128] LED: GREEN OFF
+[  1][128] LED: GREEN ON
+[  1][128] LED: GREEN OFF
+[  1][128] LED: GREEN ON
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
