@@ -15,7 +15,12 @@ cp $SOSROOT/tools/elfloader/utils/elftomini/elftomini.exe $SOSTOOLDIR/bin
 
 # build sos server
 cd $SOSROOT/tools/sos_server/bin
-make x86
+if [ `uname` == Darwin ]
+then
+	make ppc
+else
+	make x86
+fi
 cp sossrv.exe $SOSTOOLDIR/bin
 
 # build sos tool

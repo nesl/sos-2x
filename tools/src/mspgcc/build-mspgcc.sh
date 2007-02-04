@@ -60,16 +60,36 @@ START_DIR=$PWD
 #   {package}_install
 # which take on defaults defined below if unspecified.
 
+if [ `uname -m` == i386 ]
+then
+	echo "Installing toolchain on an Intel Mac"
+	echo "Installation directory is $INSTALL_DIR"
+	echo "Make sure that $INSTALL_DIR/msp430/bin is added to the system PATH variable!"
+	cd $INSTALL_DIR
+	wget http://userfs.cec.wustl.edu/%7Ekak1/tinyos2_mac_install/msp430_tools-i686-apple-darwin.tar.gz
+	tar -zxvf msp430_tools-i686-apple-darwin.tar.gz
+	rm msp430_tools-i686-apple-darwin.tar.gz
+	cd $START_DIR
+else
 BINUTILS_URL="ftp://ftp.gnu.org/gnu/binutils/binutils-2.17.tar.bz2"
 GCC32_URL="ftp://ftp.gnu.org/gnu/gcc/gcc-3.2.3/gcc-core-3.2.3.tar.bz2"
-GCC33_URL="ftp://ftp.gnu.org/gnu/gcc/gcc-3.3.5/gcc-core-3.3.5.tar.bz2"
+GCC33_URL="ftp://ftp.gnu.org/gnu/gcc/gcc-3.3.6/gcc-core-3.3.6.tar.bz2"
+GCC34_URL="http://ftp.gnu.org/gnu/gcc/gcc-3.4.6/gcc-core-3.4.6.tar.bz2"
 MSPGCC_CVS_ARCHIVE=mspgcc-cvs.tar.gz
 MSPGCC_CVS_DATE="1 Aug 2006"   # "now" is an option, see 1 Jun 2005 discussion thread "[tinyos-msp430] msp430 compiler tools"
+#MSPGCC_CVS_DATE="now"   # "now" is an option, see 1 Jun 2005 discussion thread "[tinyos-msp430] msp430 compiler tools"
 LIBC_ARCHIVE="$MSPGCC_CVS_ARCHIVE"
 LIBC_DIR="mspgcc-cvs/msp430-libc/src"
 
-GCC_URL="$GCC32_URL"
-[ x$USE_GCC = x3.3 ] && GCC_URL="$GCC33_URL"
+# RB: HACKED TO USE GCC 3.3 for Intel Mac instead of GCC 3.2
+if [ `uname -m` == i386 ]
+then
+	GCC_URL="$GCC33_URL"
+else
+	GCC_URL="$GCC32_URL"
+	[ x$USE_GCC = x3.3 ] && GCC_URL="$GCC33_URL"
+fi
+
 
 ### --- binutils
 
@@ -87,11 +107,16 @@ GCC_build() {
   BUILD_BASE=$PWD
   builtin popd
   builtin popd
-  if [ x$USE_GCC = x3.3 ]
+  if [ `uname -m` == i386 ]
   then
-    cp -a "$BUILD_BASE"/mspgcc-cvs/gcc/gcc-3.4/* . || exit 1
+  	cp -R -L -p "$BUILD_BASE"/mspgcc-cvs/gcc/gcc-3.4/* . || exit 1
   else
-    cp -a "$BUILD_BASE"/mspgcc-cvs/gcc/gcc-3.3/* . || exit 1
+  	if [ x$USE_GCC = x3.3 ]
+  	then
+  	  cp -r "$BUILD_BASE"/mspgcc-cvs/gcc/gcc-3.4/* . || exit 1
+  	else
+  	  cp -r "$BUILD_BASE"/mspgcc-cvs/gcc/gcc-3.3/* . || exit 1
+  	fi
   fi
   GCC_SRCDIR="$PWD"
   GCC_OBJDIR="$PWD-obj"
@@ -286,7 +311,7 @@ process_package() {
 ### ---
 
 # Force path to something explicit to avoid seriously weird errors
-export PATH="$INSTALL_DIR/bin:/usr/local/bin:/usr/bin:/bin"
+export PATH="$INSTALL_DIR/bin:$PATH"
 if [ x$PACKAGE = x ]
 then
   process_package MSPGCC_CVS
@@ -297,3 +322,5 @@ else
   process_package $PACKAGE
 fi
 
+#The machine was either a PowerPC Mac or Unix
+fi
