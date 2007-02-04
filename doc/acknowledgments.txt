@@ -1,0 +1,30 @@
+Acknowledgements and Special Thanks
+===================================
+
+A number of groups and people have helped in the growth of SOS. The SOS team
+would like to especially thank:
+
+- All the many folks who have looked at SOS and provided valuable feed back
+  on directions that the project can go.
+ 
+- UCLA EE202a students for testing SOS and extending the modules available
+  for SOS.
+ 
+- TinyOS for a few portions of SOS that are a ports from the TinyOS code
+  base including:
+
+    * Radio stack for the CC1000 (AVR)
+
+    * Interfaces to off chip SPI and ADC components (AVR)
+
+    * Timer HAL (AVR)
+
+    * Timer driver (MSP430)
+
+    * Tree routing module (module)
+
+- ENALAB for helping develop drivers for the XYZ (ARM) version of SOS.
+
+- SOS is based in part on research funded through ONR AINS Minuteman
+  Project, the DARPA PAC/C Program, the NSF WHYNET Project, and CENS.
+
