@@ -42,7 +42,11 @@ int8_t ker_sys_change_own( void* ptr );
 #endif
 
 /**
- * \ingroup coreApi
+ * \defgroup system_api SOS System API
+ */
+
+/**
+ * \ingroup system_api
  * \defgroup malloc Memory Allocation
  * Functions for memory management
  * @{
@@ -51,8 +55,8 @@ int8_t ker_sys_change_own( void* ptr );
 /// \cond NOTYPEDEF
 typedef void *  (* sys_malloc_ker_func_t)( uint16_t size );
 /// \endcond
+
 /**
- *
  * Allocate memory
  *
  * \param size Number of bytes to allocate
@@ -81,8 +85,8 @@ static inline void *  sys_malloc( uint16_t size )
 /// \cond NOTYPEDEF
 typedef void *  (* sys_realloc_ker_func_t)( void *  ptr, uint16_t newSize );
 /// \endcond
+
 /**
- * 
  * Reallocate dynamic memory
  * 
  * \param ptr Pointer to the currently held block of memory
@@ -182,7 +186,7 @@ static inline void *  sys_msg_take_data( Message *  msg )
 
 
 /**
- * \ingroup coreAPi
+ * \ingroup system_api
  * \defgroup timer Timer
  * Functions to work with software timers in the system.
  *
@@ -276,12 +280,15 @@ static inline int8_t sys_timer_stop( uint8_t tid )
 
 
 /**
- * \ingroup coreApi
+ * \ingroup system_api
  * \defgroup message Messaging
  * Functions to send and receive SOS Messages
  * @{
  */
+
+/// \cond NOTYPEDEF                                             
 typedef int8_t (* sys_post_ker_func_t)( sos_pid_t dst_mod_id, uint8_t type, uint8_t size, void *  data, uint16_t flag );
+/// \endcond         
 
 /** Post a message with payload to a module
  *
@@ -436,6 +443,7 @@ static inline int8_t sys_post_link( sos_pid_t dst_mod_id, uint8_t type, uint8_t 
 
 /// \cond NOTYPEDEF                                             
 typedef int8_t (* sys_post_value_ker_func_t)( sos_pid_t dst_mod_id, uint8_t type, uint32_t data, uint16_t flag );
+/// \endcond
 
 /**
  *  Post up to 4 bytes by value
@@ -469,7 +477,7 @@ static inline int8_t sys_post_value( sos_pid_t dst_mod_id, uint8_t type, uint32_
 /* @} */
 
 /**
- * \ingroup coreApi
+ * \ingroup system_api
  * \defgroup nodeInfo Node Info
  * Functions that provide information about a node.
  * @{
@@ -537,7 +545,7 @@ static inline uint16_t sys_id( void )
 /* @} */
 
 /**
- * \ingroup coreApi
+ * \ingroup system_api
  * \defgroup random Random Numbers
  * Functions to generate random numbers.
  * @{
@@ -566,7 +574,7 @@ static inline uint16_t sys_rand( void )
 /* @} */
 
 /**
- * \ingroup coreApi
+ * \ingroup system_api
  * \defgroup sysTime System Time
  * Functions to access the node system time
  * @{
@@ -592,7 +600,7 @@ static inline uint32_t sys_time32( void )
 /* @} */
 
 /**
- * \ingroup coreApi
+ * \ingroup system_api
  * \defgroup sensing Sensing
  * Function to sample sensor readings
  *
@@ -616,17 +624,40 @@ static inline int8_t sys_sensor_get_data( uint8_t sensor_id )
 /* @} */
 
 /**
- * \ingroup coreApi
+ * \ingroup system_api
  * \defgroup leds LED functions
  *
  * @{
  */
+
 /// \cond NOTYPEDEF
 /**
  * Function for setting leds for debugging
  */
 typedef void (* sys_led_ker_func_t)( uint8_t op );
 /// \endcond
+
+/**
+ *
+ * LEDs
+ *
+ * \param op Bitmask used to turn on and off LEDs.
+ * \return Pseudo-random number
+ * 
+ * Legal values of op on the mica2 node incnlude:
+ * 
+ * \li LED_RED_ON
+ * \li LED_GREEN_ON
+ * \li LED_YELLOW_ON
+ * \li LED_RED_OFF
+ * \li LED_GREEN_OFF
+ * \li LED_YELLOW_OFF
+ * \li LED_RED_TOGGLE
+ * \li LED_GREEN_TOGGLE
+ * \li LED_YELLOW_TOGGLE
+ *
+ *
+ */
 static inline void sys_led( uint8_t op )
 {
 #ifdef SYS_JUMP_TBL_START
@@ -638,7 +669,7 @@ static inline void sys_led( uint8_t op )
 /* @} */
 
 /**
- * \ingroup coreApi
+ * \ingroup system_api
  * \defgroup modst Module State
  *
  * @{
@@ -661,7 +692,7 @@ static inline void* sys_get_state( void )
 /* @} */
 
 /**
- * \ingroup coreApi
+ * \ingroup system_api
  * \ingroup dymfunc
  * @{
  */
