@@ -15,9 +15,8 @@ Familiar users can directly jump to the relevant section.
 2. xref:msg_handler[Message Handler]
 3. xref:mod_state[Module State]
 4. xref:sys_calls[System Calls]
-5. xref:split_calls[Split Phase Calls]
-6. xref:local_calls[Local Function Calls]
-7. xref:fnptr_calls[Function Pointer Pointer Calls]
+5. xref:local_calls[Local Function Calls]
+6. xref:fnptr_calls[Function Pointer Pointer Calls]
 
 [[<module_header>]]
 
@@ -312,11 +311,32 @@ to `sizeof(app_state_t)`.
 System Calls
 ------------
 
-Split Phase Calls
------------------
+SOS kernel provides a varierty of services that are accessible through a
+system call API. Example of SOS kernel services are timer, dynamic memory,
+sensor access etc. System calls in SOS have a `sys_` prefix. The detailed
+SOS system call API documentation is available
+link:../api/html/group\__system\__api.html[here].
+Some of the system calls in SOS are split phase.
 
-Local Function Calls
---------------------
+
+Local Functions
+----------------
+
+SOS modules can implement their own local functions. These functions are not
+accessible to any other module in the system. SOS modules cannot have global
+or static variables. Therefore, care must be taken while implementing local
+functions in modules.
+
+[TIP]
+======================================================
+- If the local function is called only from the message handler, then pass
+the state pointer as an input.
+- `sys_get_state` API call returns a pointer to the module state. The
+returned pointer can be typecast to the module state type and used within
+the local function.
+======================================================
+
+
 
 Function Pointer Pointer Calls
 ------------------------------
