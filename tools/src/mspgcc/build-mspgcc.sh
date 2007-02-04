@@ -60,7 +60,24 @@ START_DIR=$PWD
 #   {package}_install
 # which take on defaults defined below if unspecified.
 
-if [ `uname -m` == i386 ]
+if [ ! -z "`echo \`uname\` | grep Darwin`" ]
+then
+	if [ ! -z "`echo \`uname -m\` | grep Power`" ]
+	then
+		INSTALL_PLATFORM=PowerPCMac
+	else
+		INSTALL_PLATFORM=IntelMac
+	fi
+else
+	if [ ! -z "`echo \`uname\` | grep CYGWIN`" ]
+	then
+		INSTALL_PLATFORM=Cygwin
+	else
+		INSTALL_PLATFORM=Unix
+	fi
+fi
+
+if [[ $INSTALL_PLATFORM == IntelMac ]]
 then
 	echo "Installing toolchain on an Intel Mac"
 	echo "Installation directory is $INSTALL_DIR"
@@ -68,27 +85,26 @@ then
 	cd $INSTALL_DIR
 	wget http://userfs.cec.wustl.edu/%7Ekak1/tinyos2_mac_install/msp430_tools-i686-apple-darwin.tar.gz
 	tar -zxvf msp430_tools-i686-apple-darwin.tar.gz
+	echo "Cleaning tarball"
 	rm msp430_tools-i686-apple-darwin.tar.gz
 	cd $START_DIR
 else
+
 BINUTILS_URL="ftp://ftp.gnu.org/gnu/binutils/binutils-2.17.tar.bz2"
 GCC32_URL="ftp://ftp.gnu.org/gnu/gcc/gcc-3.2.3/gcc-core-3.2.3.tar.bz2"
-GCC33_URL="ftp://ftp.gnu.org/gnu/gcc/gcc-3.3.6/gcc-core-3.3.6.tar.bz2"
+
+# Tried to use gcc-3.3.6 for Intel Mac but couldn't get it to compile
+# So, using a pre-compiled tarball from another source above
+# GCC33_URL="ftp://ftp.gnu.org/gnu/gcc/gcc-3.3.6/gcc-core-3.3.6.tar.bz2"
+
 GCC34_URL="http://ftp.gnu.org/gnu/gcc/gcc-3.4.6/gcc-core-3.4.6.tar.bz2"
 MSPGCC_CVS_ARCHIVE=mspgcc-cvs.tar.gz
 MSPGCC_CVS_DATE="1 Aug 2006"   # "now" is an option, see 1 Jun 2005 discussion thread "[tinyos-msp430] msp430 compiler tools"
-#MSPGCC_CVS_DATE="now"   # "now" is an option, see 1 Jun 2005 discussion thread "[tinyos-msp430] msp430 compiler tools"
 LIBC_ARCHIVE="$MSPGCC_CVS_ARCHIVE"
 LIBC_DIR="mspgcc-cvs/msp430-libc/src"
 
-# RB: HACKED TO USE GCC 3.3 for Intel Mac instead of GCC 3.2
-if [ `uname -m` == i386 ]
-then
-	GCC_URL="$GCC33_URL"
-else
-	GCC_URL="$GCC32_URL"
-	[ x$USE_GCC = x3.3 ] && GCC_URL="$GCC33_URL"
-fi
+GCC_URL="$GCC32_URL"
+[ x$USE_GCC = x3.3 ] && GCC_URL="$GCC33_URL"
 
 
 ### --- binutils
@@ -107,16 +123,11 @@ GCC_build() {
   BUILD_BASE=$PWD
   builtin popd
   builtin popd
-  if [ `uname -m` == i386 ]
+  if [ x$USE_GCC = x3.3 ]
   then
-  	cp -R -L -p "$BUILD_BASE"/mspgcc-cvs/gcc/gcc-3.4/* . || exit 1
+    cp -r "$BUILD_BASE"/mspgcc-cvs/gcc/gcc-3.4/* . || exit 1
   else
-  	if [ x$USE_GCC = x3.3 ]
-  	then
-  	  cp -r "$BUILD_BASE"/mspgcc-cvs/gcc/gcc-3.4/* . || exit 1
-  	else
-  	  cp -r "$BUILD_BASE"/mspgcc-cvs/gcc/gcc-3.3/* . || exit 1
-  	fi
+    cp -r "$BUILD_BASE"/mspgcc-cvs/gcc/gcc-3.3/* . || exit 1
   fi
   GCC_SRCDIR="$PWD"
   GCC_OBJDIR="$PWD-obj"

@@ -15,11 +15,13 @@ cp $SOSROOT/tools/elfloader/utils/elftomini/elftomini.exe $SOSTOOLDIR/bin
 
 # build sos server
 cd $SOSROOT/tools/sos_server/bin
-if [ `uname` == Darwin ]
+# test returns 0 when true (if length of string
+# is non-zero), which is opposite for 'if' statement
+if test -z `echo \`uname\` | grep Darwin`
 then
-	make ppc
-else
 	make x86
+else
+	make ppc
 fi
 cp sossrv.exe $SOSTOOLDIR/bin
 
