@@ -336,7 +336,7 @@ void sim_radio_init()
 		sosrootdir = getenv("SOSROOT");
 		strcpy(newtopofile, sosrootdir);
 		printf("Unable to open %s\n", topofile);
-		strcat(newtopofile, "/tools/admin/topo.def\0");
+		strcat(newtopofile, "/platform/sim/topo.def\0");
 		if((fid = fopen(newtopofile, "r")) == NULL){
 			printf("Unable to open %s\n", newtopofile);
 			exit(1);
