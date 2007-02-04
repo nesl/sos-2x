@@ -10,7 +10,7 @@ fi
 ## Script for running the blank kernel
 java avrora/Main \
     -simulation=sensor-network -sections=.data,.text,.sos_bls\
-    -monitors=sos.monitor.SOSPacketMonitor,sleep,serial\
+    -monitors=sleep,serial\
     -ports=1:0:8314 \
     -show-packets=true\
     -show-tree-packets=true \

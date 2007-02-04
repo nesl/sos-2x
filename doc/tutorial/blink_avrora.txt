@@ -38,6 +38,10 @@ cd $SOSROOT/modules/demos/blink/
 make mica2
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+HINT: The compilation process requires the `elftomini.exe` tool in
+`$SOSROOT/tools/elfloader/utils/elftomini/`. If the compilation process
+fails due to the absence of `elftomini.exe`, please follow the installation
+procedure in link:XXX[XXX].
 
 Building the Blank Kernel
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -125,12 +129,17 @@ requested by the `serial` monitor:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-java -server avrora/Main -banner=false -colors=true -platform=mica2 \
-    -simulation=sensor-network -monitors=serial,real-time \
-    -sections=.data,.text,.sos_bls -update-node-id -nodecount=1 \
+cd $SOSROOT
+java -server -jar avrora.jar -banner=false -colors=true \
+     -platform=mica2  -simulation=sensor-network \
+     -monitors=serial,real-time \ 
+     -sections=.data,.text,.sos_bls -update-node-id -nodecount=1 \
     $SOSROOT/config/blank/blank.od
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+NOTE: The above assumes that the avrora jar file is in your SOS root
+directory. If its not, grab a copy from the
+http://compilers.cs.ucla.edu/avrora/release.html[Avrora release page]
 
 Starting the SOS Server
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -142,9 +151,28 @@ connect to the port provided by Avrora.  From a different terminal use:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/tools/sos_server/bin
 ./sossrv.exe -n 127.0.0.1:2390
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Once SOS server connects to Avrora, it should output a bunch of messages
+that look like:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Loading $SOSROOT/config/blank/blank.od...
+[OK: 7.529 seconds]
+=={ Simulation events }====================================================
+Node          Time   Event
+---------------------------------------------------------------------------
+Waiting for serial connection on port 2390...connected to /127.0.0.1:48272
+   0            16  Yellow: on
+   0            16  Green: on
+   0            16  Red: on
+   0            17  Green: off
+   0            19  Red: off
+   0            21  Yellow: off
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Inserting Modules
 ~~~~~~~~~~~~~~~~~
