@@ -41,7 +41,7 @@
 
 
 #include <sys_module.h>
-#include <module.h>
+//#include <module.h>
 #include <led_dbg.h>
 #include "surge.h"
 #include <routing/tree_routing/tree_routing.h>
@@ -86,7 +86,7 @@ enum
 //-------------------------------------------------------------
 // STATIC FUNCTIONS
 //-------------------------------------------------------------
-int8_t surge_module(void *state, Message *msg);
+int8_t surge_module_handler(void *state, Message *msg);
 
 
 //-------------------------------------------------------------
@@ -95,13 +95,12 @@ int8_t surge_module(void *state, Message *msg);
 static const mod_header_t mod_header SOS_MODULE_HEADER = {
   .mod_id        = SURGE_MOD_PID,
   .state_size    = sizeof(surge_state_t),
-  .num_timers    = 2,
   .num_sub_func  = 1,
   .num_prov_func = 0,
   .platform_type  = HW_TYPE /* or PLATFORM_ANY */,
   .processor_type = MCU_TYPE,
   .code_id       = ehtons(SURGE_MOD_PID),
-  .module_handler = surge_module,
+  .module_handler = surge_module_handler,
   .funct = {
 	[0] = {error_8, "Cvv0", TREE_ROUTING_PID, MOD_GET_HDR_SIZE_FID},
   },
@@ -111,7 +110,7 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
 //-------------------------------------------------------------
 // MODULE IMPLEMENTATION
 //-------------------------------------------------------------
-int8_t surge_module(void *state, Message *msg)
+int8_t surge_module_handler(void *state, Message *msg)
 {
   surge_state_t *s = (surge_state_t*)state;
 
@@ -121,8 +120,7 @@ int8_t surge_module(void *state, Message *msg)
   case MSG_INIT:
 	{
 	  s->seq_no = 0;
-	  ker_timer_init(SURGE_MOD_PID, SURGE_BACKOFF_TID, TIMER_ONE_SHOT);
-	  ker_timer_start(SURGE_MOD_PID, SURGE_BACKOFF_TID, ker_rand() % 1024L);
+	  sys_timer_start(SURGE_BACKOFF_TID, ker_rand() % 1024L, TIMER_ONE_SHOT);
 	  s->dest_pid = SURGE_MOD_PID;
 	  break;
 	}
@@ -136,18 +134,16 @@ int8_t surge_module(void *state, Message *msg)
 		{
 		  s->timer_ticks++;
 		  if (s->timer_ticks % TIMER_GETADC_COUNT == 0){
-			if(ker_sensor_get_data(SURGE_MOD_PID, MTS310_PHOTO_SID) < 0){
+			if(sys_sensor_get_data(MTS310_PHOTO_SID) < 0){
 			  LED_DBG(LED_RED_TOGGLE);
-			  post_short(SURGE_MOD_PID, SURGE_MOD_PID, MSG_DATA_READY, 0, 0xffff, 0);
+			  sys_post_value(SURGE_MOD_PID, MSG_DATA_READY, 0xffff, 0);
 			}
 		  }
 		  return SOS_OK;
 		}
 	  case SURGE_BACKOFF_TID:
 		{
-		  ker_timer_release(SURGE_MOD_PID, SURGE_BACKOFF_TID);
-		  ker_timer_init(SURGE_MOD_PID, SURGE_TIMER_TID, TIMER_REPEAT);
-		  ker_timer_start(SURGE_MOD_PID, SURGE_TIMER_TID, INITIAL_TIMER_RATE);
+		  sys_timer_start(SURGE_TIMER_TID, INITIAL_TIMER_RATE, TIMER_REPEAT);
 		  return SOS_OK;
 		}
 	  default: return -EINVAL;
@@ -178,7 +174,7 @@ int8_t surge_module(void *state, Message *msg)
 			s->smsg->seq_no,
 			s->smsg->reading);
 	  s->seq_no++;
-	  post_long(TREE_ROUTING_PID, SURGE_MOD_PID, MSG_SEND_PACKET, hdr_size + sizeof(SurgeMsg), (void*)pkt, SOS_MSG_RELEASE);
+	  sys_post(TREE_ROUTING_PID, MSG_SEND_PACKET, hdr_size + sizeof(SurgeMsg), (void*)pkt, SOS_MSG_RELEASE);
 	  break;
 	}
 
@@ -193,18 +189,17 @@ int8_t surge_module(void *state, Message *msg)
 			entohs(smsg->originaddr),
 			entohl(smsg->seq_no),
 			entohs(smsg->reading));
-	  if (ker_id() == SURGE_BASE_STATION_ADDRESS){
+	  if (sys_id() == SURGE_BASE_STATION_ADDRESS){
 		uint8_t *payload;
 		uint8_t msg_len;
 		msg_len = msg->len;
-		payload = ker_msg_take_data(SURGE_MOD_PID, msg); 
-		post_uart(SURGE_MOD_PID,
-				  SURGE_MOD_PID,
-				  msg->type,
-				  msg_len,
-				  payload,
-				  SOS_MSG_RELEASE,
-				  BCAST_ADDRESS);
+		payload = sys_msg_take_data(msg); 
+		sys_post_uart(SURGE_MOD_PID,
+					  msg->type,
+					  msg_len,
+					  payload,
+					  SOS_MSG_RELEASE,
+					  BCAST_ADDRESS);
 		LED_DBG(LED_GREEN_TOGGLE);
 		return SOS_OK;
 	  }
@@ -214,7 +209,6 @@ int8_t surge_module(void *state, Message *msg)
 	//! Last message from SOS kernel before the module is kicked out
   case MSG_FINAL:
 	{
-	  ker_timer_release(SURGE_MOD_PID, SURGE_TIMER_TID);
 	  break;
 	}
 
