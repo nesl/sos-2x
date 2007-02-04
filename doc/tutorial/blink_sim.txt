@@ -41,9 +41,9 @@ blink by issuing the following commands:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ cd $SOSROOT/config
-$ mkdir blink
-$ cd blink
+cd $SOSROOT/config
+mkdir blink
+cd blink
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Within this directory, create a file named `blink_app.c` using your
@@ -118,7 +118,8 @@ example run of the blink module is listed below:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ SOSROOT="~/mote/sos-2x/" ./blink_app.exe -n 1
+SOSROOT="~/mote/sos-2x/" ./blink_app.exe -n 1
+
 Using topology file ../../platform/sim/topo.def 
 [1]SOS booted
 [1][128]Blink Start 

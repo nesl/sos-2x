@@ -35,8 +35,8 @@ the nodes.
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ cd $SOSROOT/config/blank/
-$ make avrora
+cd $SOSROOT/config/blank/
+make avrora
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -47,8 +47,8 @@ network.
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ cd $SOSROOT/tools/sos_server/bin/
-$ make x86
+cd $SOSROOT/tools/sos_server/bin/
+make x86
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -59,8 +59,8 @@ are installed into the network.
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ cd $SOSROOT/tools/sos_tool/
-$ make emu
+cd $SOSROOT/tools/sos_tool/
+make emu
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

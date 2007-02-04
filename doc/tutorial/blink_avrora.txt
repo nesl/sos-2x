@@ -34,8 +34,8 @@ As a first step the blink module needs to be compiled.  This is accomplished by 
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ cd $SOSROOT/modules/demos/blink/
-$ make mica2
+cd $SOSROOT/modules/demos/blink/
+make mica2
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -49,8 +49,8 @@ produce the `.od` file that Avrora takes as input.
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ cd $SOSROOT/config/blank/
-$ make avrora
+cd $SOSROOT/config/blank/
+make avrora
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Building the SOS Server for the PC
@@ -62,8 +62,8 @@ before it is used for the first time.  This is accomplished using:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ cd $SOSROOT/tools/sos_server/bin/
-$ make x86
+cd $SOSROOT/tools/sos_server/bin/
+make x86
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -77,8 +77,8 @@ interfacing with the user.  It is built using:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ cd $SOSROOT/tools/sos_tool/
-$ make emu
+cd $SOSROOT/tools/sos_tool/
+make emu
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TIP: If you're using the install scripts to build the SOS environment,
@@ -153,8 +153,8 @@ is accomplished using the SOS tool:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ cd $SOSROOT/tools/sos_tool/
-$ ./sos_tool.exe --insmod=../../modules/demos/blink/blink.sos
+cd $SOSROOT/tools/sos_tool/
+./sos_tool.exe --insmod=../../modules/demos/blink/blink.sos
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After a short wait the module is loaded onto the simulated node and the

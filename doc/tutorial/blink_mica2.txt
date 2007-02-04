@@ -1,0 +1,126 @@
+Blink on a Mica2 Node
+=====================
+
+Running the blink module on real hardware is very similar to running it
+in Avrora. Real hardware provides a number of benefits that do not exist in
+simulation. These include access to hardware that is not modeled by a
+simulator. Not to mention it has the ability to actually run code in a 
+deployment!
+
+Running blink on a physical node will require:
+
+- A micro server that loads modules into the deployed sensor network
+  using the suite of tools provided with the SOS distribution.
+
+- At least one node with a connection to a micro server.  This node
+  is able to receive modules from the micro server (typically over its UART),
+  install these modules, and propagate the modules through the network.
+
+- Optionally one or more additional sensor nodes.
+
+
+Building the Parts
+------------------
+
+Building the Blink Module
+~~~~~~~~~~~~~~~~~~~~~~~~~
+As a first step the blink module needs to be compiled. This is
+accomplished by going into the module's directory and building it for the
+platform that is going to be used:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/modules/test_modules/blink/
+make mica2
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Building the Blank Kernel
+~~~~~~~~~~~~~~~~~~~~~~~~~
+Next a clean SOS kernel needs to be compiled.  This kernel is called the
+`blank` kernel image.  It is located in `$SOSROOT/config/blank/`.  This kernel is built specifically for the `mica2` target.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/config/blank/
+make mica2
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Building the SOS Server for the PC
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+SOS uses a simple PC server to interface with nodes.  This same server
+can be used in simulation and real deployments.  The server needs to be
+built before it is used for the first time.  This is accomplished using:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/tools/sos_server/bin/
+make x86
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Building the SOS Tool
+~~~~~~~~~~~~~~~~~~~~~
+The SOS tool is a Swiss Army knife of module management in SOS networks.
+Among other actions, it is used to insert modules into a network.  This tool
+is actually a custom SOS kernel that runs the SOS core in addition to
+interfacing with the user.  It is built using: 
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/config/sos_tool/
+make emu
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Running Blink on a Node
+-----------------------
+
+Loading Blank Image
+~~~~~~~~~~~~~~~~~~~
+The following command instructs the make system to load an image onto a
+sensor node.  Note that the make system assumes that you have a version of
+`uisp` supporting your hardware in the current `PATH`.  For
+physical setup a node must be connected to a programming device that is in
+turn connected to the PC.  For this example, assume that the programming
+device is a `mib510` connected to the PC via `/dev/ttyUSB0`.  Note that
+the USB programmers use a seperate interface for data communications.  For
+this and other hardware, you need to specify the serial port that is
+carrying the data.  To program the node use:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/config/blank/
+make mica2 install PROG=mib510 PORT=/dev/ttyUSB0
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This single command can be used to both build the blank image and
+program it onto the node.
+
+
+Starting the SOS Server
+~~~~~~~~~~~~~~~~~~~~~~~
+Once the a kernel is installed on a node, the node is ready to accept
+connections over its UART.  The `sossrv.exe` program can be started
+to interface with it.  From a different terminal use:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/tools/sos_server/bin/
+./sossrv.exe -s /dev/ttyUSB1
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Inserting Modules
+~~~~~~~~~~~~~~~~~
+With the SOS server up and running, modules can now be inserted.  This
+is accomplished using the SOS tool:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/tools/sos_tool/
+./sos_tool.exe --insmod=../../modules/demos/blink/blink.sos
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After a short wait the module is loaded onto the node and its yellow LED
+should begin to blink. 

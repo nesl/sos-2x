@@ -91,11 +91,11 @@ The message handler takes as input the module's state that is maintained by
 the SOS kernel and a message from the SOS scheduler.  It dispatches the
 massege to the approapriate handler based on its type.
 
-The MSG_INIT handler initializes the module's state and timer.
+The `MSG_INIT` handler initializes the module's state and timer.
 
-The MSG_FINAL handler stops the timer used by the blink module.
+The `MSG_FINAL` handler stops the timer used by the blink module.
 
-The MSG_TIMER_TIMEOUT handler updates the module's state and turns on or off the
+The `MSG_TIMER_TIMEOUT` handler updates the module's state and turns on or off the
 green LED based on the state value. 
 
 SOS System API
