@@ -30,9 +30,11 @@ Includes and State
 ~~~~~~~~~~~~~~~~~~
 
 All modules should include `sys_module.h` that defines the kernel functions
-available to SOS modules.  Documentation for the API provided by this file
-is available at link:XXX[XXX].  Many projects will also include one or more
-local header files containing module specific structures and constants.
+available to SOS modules.  Look at the
+link:../api/html/group\__system\__api.html[SOS API] for more details on the
+functions provided by the SOS kernel.  Many projects will also include one
+or more local header files containing module specific structures and
+constants.
 
 Static state for a module is declared in advance in a single 'state'
 structure.  The state structure for the blink module notes it's process ID
@@ -69,7 +71,8 @@ static mod_header_t mod_header SOS_MODULE_HEADER = {
 };
 source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There is more information on the link:XXX[XXX] available.
+There is more information in the link:module_prog_guide.html[SOS programing
+guide] available.
 
 Message Handler
 ~~~~~~~~~~~~~~~
@@ -85,7 +88,7 @@ loaded, while `MSG_FINAL` is sent by the kernel immediatly before the module
 is unloaded.  A third message type used in this module is
 `MSG_TIMER_TIMEOUT` provided by the system timer.  More information on
 common messages used in SOS modules and how to declare module specific
-messages is available at link:XXX[XXX].
+messages is available at link:module_prog_guide.html[SOS programing].
 
 The message handler takes as input the module's state that is maintained by
 the SOS kernel and a message from the SOS scheduler.  It dispatches the
@@ -101,10 +104,11 @@ green LED based on the state value.
 SOS System API
 ~~~~~~~~~~~~~~
 
-The blink module uses three system functions: `sys_led`, `sys_timer_start`, and
-`sys_timer_stop`.  These functions are used to manipulate LEDs, start
+The blink module uses three system functions: `sys_led`, `sys_timer_start`,
+and `sys_timer_stop`.  These functions are used to manipulate LEDs, start
 timers, and stop timers respectivly.  More information on the system API
-provided by SOS can be found at link:XXX[XXX].
+provided by SOS can be found at
+link:../api/html/group\__system\__api.html[SOS API].
 
 Header Grabber
 ~~~~~~~~~~~~~~
@@ -144,10 +148,12 @@ SOS Challenge Problems
 ----------------------
 
 Extend the blink module the blink the LED at a rate of once every 500ms.
-Try taking a look at link:XXX[XXX] for more informatino on the timer API.
+Try taking a look at link:../api/html/group\__system\__api.html[SOS API] 
+for more informatino on the timer API.
 
 Modify the module to blink the green LED once every 3 seconds and the red
 LED once every 7 seconds by starting two independent timers.  Look at
-link:XXX[XXX] for more information on how to handle multiple timers.
+link:../api/html/group\__system\__api.html[SOS API] for more information on
+how to handle multiple timers.
 
 Next: link:blink_sim.html[Running blink in the SOS simulator]
