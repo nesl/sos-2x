@@ -27,6 +27,7 @@ Debian Linux (eg. Ubuntu)
 - Begin by installing some extra libraries used to compile the tool chain 
 and SOS tools.  The following command should do the trick under Ubuntu:
 
+[c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 apt-get install flex subversion cvs libc6-dev
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -34,6 +35,7 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Checkout the SOS 2.x source. Use the following command for anonymous
 checkout:
 
+[c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 svn co svn://projects.nesl.ucla.edu/sos-2x/trunk
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,6 +45,7 @@ scripts depend on these variables for correct functioning. Edit the file
 ~/.bashrc with your favorite editor (vim) and add the following line
 (you might have to change some paths depending on your setup):
 
+[c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SOSROOT points to the trunk directory of SOS 2.x downloaded on your system
 export SOSROOT=~/sos-2x/trunk
@@ -59,6 +62,7 @@ NOTE: Make sure that the environment variable is set by either closing and
 reopening your terminal or sourcing the file with source ~/.bashrc. Next, create 
 that folder with 
 
+[c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mkdir $SOSTOOLDIR.
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -74,7 +78,7 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		** avr-libc-1.4.5
 	* Make sure that you have defined the environment variable SOSTOOLDIR.
 	* To install the above tools, execute in terminal:
-	
+	[c]
 	code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	cd $SOSROOT/tools/src/avrgcc
 	source avrgcc.sh
