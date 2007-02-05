@@ -1,0 +1,86 @@
+Installation Instructions
+=========================
+
+This section will guide you through the process of downloading and installing 
+the toolchain required to use SOS on your system. These instructions have been 
+tested on the following systems:
+
+- Debian Linux (or some derivative like Ubuntu) 
+- Power PC based Mac (Mac OS X 10.4.*) 
+- Intel based Mac (Mac OS X 10.4.*)
+- Windows XP machine running Cygwin. 
+
+This document assumes that your system has basic build tools such as gcc 
+and a text editor (for instance, vi) already installed. 
+
+The installation process requires that you:
+
+- Obtain SOS 2.x
+- Install libraries and tools for cross compilation
+- Build and configure SOS utilities
+
+
+Debian Linux (eg. Ubuntu)
+-------------------------
+
+.Obtain SOS 2.x
+- Begin by installing some extra libraries used to compile the tool chain 
+and SOS tools.  The following command should do the trick under Ubuntu:
+
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+apt-get install flex subversion cvs libc6-dev
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Checkout the SOS 2.x source. Use the following command for anonymous
+checkout:
+
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+svn co svn://projects.nesl.ucla.edu/sos-2x/trunk
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Setup some environment variables before proceeding further. The installation
+scripts depend on these variables for correct functioning. Edit the file
+~/.bashrc with your favorite editor (vim) and add the following line
+(you might have to change some paths depending on your setup):
+
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SOSROOT points to the trunk directory of SOS 2.x downloaded on your system
+export SOSROOT=~/sos-2x/trunk
+
+# SOSTOOLDIR points to the directory where you want to install the toolchain.
+# Keeping it in your home directory removes the need to have administrator
+# (or root) privileges while installing the toolchain.
+export SOSTOOLDIR=~/local
+
+# Add the ./bin directory of the toolchain into the PATH
+export PATH=$SOSTOOLDIR/bin:$PATH
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+NOTE: Make sure that the environment variable is set by either closing and 
+reopening your terminal or sourcing the file with source ~/.bashrc. Next, create 
+that folder with 
+
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mkdir $SOSTOOLDIR.
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.Install Libraries for Cross-compilation
+- The AVR Tool Chain for Mica2 and Micaz
+	* You will now need to install the following tool chain for cross compiling SOS 
+	to the AVR target. Note that SOS tool chain is sensitive to versions. You are 
+	free to experiment with more recent versions of these tools, but the SOS team 
+	currently supports the versions listed below:
+		** binutils-2.15
+		** gcc-core-3.4.3
+		** avr-libc-1.4.5
+	* Make sure that you have defined the environment variable SOSTOOLDIR.
+	* To install the above tools, execute in terminal:
+	
+	code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	cd $SOSROOT/tools/src/avrgcc
+	source avrgcc.sh
+	code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	TIP: Open the avrgcc.sh script in a text editor to see the sequence of
+	commands followed to download, compile and install the required tools.
+	It also copies the correct pre-compiled binary of uisp which is 
+	required to program the embedded target.
+
