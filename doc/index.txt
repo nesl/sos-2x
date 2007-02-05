@@ -22,14 +22,14 @@ and removal of network services.
 
 - System developers (in alphabetical order)
   * link:http://nesl.ee.ucla.edu/people/rahul[Rahul Balani]
-  * link:http://nesl.ee.ucla.edu/people/akhilesh[Akhilesh Singhania]
   * link:http://nesl.ee.ucla.edu/people/zainul[Zainul Charbiwala]
   * link:http://nesl.ee.ucla.edu/people/han[Chih-Chieh "Simon" Han]
   * link:http://xml.ee.nd.edu/grad/grads.xsp?id=6e6b6f7474656e73[Nicholas
     Kottenstette]
   * link:http://www.ee.ucla.edu/~ram[Ram Kumar]
   * link:http://nesl.ee.ucla.edu/people/schmid[Thomas Schmid]
-  * link:http://nesl.ee.ucla.edu/people/sheaRoy Shea]
+  * link:http://nesl.ee.ucla.edu/people/shea[Roy Shea]
+  * link:http://nesl.ee.ucla.edu/people/akhilesh[Akhilesh Singhania]
 
 - Faculty advisers:
   * link:http://www.cs.ucla.edu/~kohler/[Eddie Kohler]
