@@ -15,23 +15,36 @@ and a text editor (for instance, vi) already installed.
 
 These instructions have been tested on the following systems:
 
-- Debian Linux (or some derivative like Ubuntu) 
-- Power PC based Mac (Mac OS X 10.4.*) 
-- Intel based Mac (Mac OS X 10.4.*)
-- Windows XP machine running Cygwin. 
+- <<linux, Debian Linux (or some derivative like Ubuntu)>> 
+- <<mac, Power PC based Mac (Mac OS X 10.4.*)>>
+- <<mac, Intel based Mac (Mac OS X 10.4.*)>>
 
+NOTE: We were not able to test installation on a Windows XP machine running 
+Cygwin, but if you need it, follow the instructions for Debian Linux. A
+few tips have been added at some places to help with the installation. Please
+submit a BUG report if the installation breaks somewhere.
+
+[[linux]]
 
 Debian Linux (eg. Ubuntu)
 -------------------------
 
-.Obtain SOS 2.x
+Obtain SOS 2.x
+~~~~~~~~~~~~~~
+
 - Begin by installing some extra libraries used to compile the tool chain 
-and SOS tools.  The following command should do the trick under Ubuntu:
+and SOS tools.  The following command should do the trick under Ubuntu. 
+Cygwin users should check the *Note* below.
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-apt-get install flex subversion cvs libc6-dev
+apt-get install wget flex subversion cvs libc6-dev
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+NOTE: For *Cygwin*, it is recommended to install a full version so that the above 
+packages (wget, flex, subversion, cvs and libc6-dev) get installed automatically. 
+Otherwise, you can install the following packages by invoking the Cygwin setup 
+again and choosing them from the setup wizard menu.
 
 - Checkout the SOS 2.x source. Use the following command for anonymous
 checkout:
@@ -69,7 +82,9 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mkdir $SOSTOOLDIR.
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.Install Libraries for Cross-compilation
+Install Libraries for Cross-compilation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 - The AVR Tool Chain for Mica2 and Micaz
 	* You will now need to install the following tool chain for cross compiling SOS 
 	to the AVR target. Note that SOS tool chain is sensitive to versions. You are 
@@ -78,13 +93,14 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		. binutils-2.15
 		. gcc-core-3.4.3
 		. avr-libc-1.4.5
-	* Make sure that you have defined the environment variable SOSTOOLDIR.
+	* Make sure that you have defined the environment variables SOSTOOLDIR and
+	SOSROOT.
 	* To install the above tools, execute in terminal:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/src/avrgcc
-sh avrgcc.sh
+source avrgcc.sh
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
 TIP: Open the avrgcc.sh script in a text editor to see the sequence of
@@ -92,4 +108,167 @@ commands followed to download, compile and install the required tools.
 It also copies the correct pre-compiled binary of uisp which is 
 required to program the embedded target.
 
-- 
+- The MSP430 Tool Chain for TMote Sky
+	* Make sure that you have defined the environment variable SOSTOOLDIR as described above.
+	* To install the toolchain, execute iin terminal:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/tools/src/mspgcc
+source build-mspgcc.sh install
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+NOTE: It is a modified copy of the msp430 build script from TinyOS 1.x.
+
+	* Link the msp430 software bootstrap loader (bsl) by executing the following command:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ln -s $SOSROOT/tools/src/mspgcc-pybsl/bsl.py $SOSTOOLDIR/bin/msp430-bsl
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Configure SOS Utilities
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- Execute in terminal:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/tools/src/
+./sostools.sh
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+[[mac]]
+
+PowerPC and Intel based Mac (Mac OS X 10.4.*)
+---------------------------------------------
+
+Suggested pre-requisites
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is suggested that you install the following tools before downloading
+SOS and building the tool chain. This will minimize the number of errors
+that might occur during installation and later use.
+
+- Download and install the latest version of *Xcode* from link:http://developer.apple.com/[here].
+This will ensure that you have the required development libraries for gcc.
+- Download and install *DarwinPorts* from link:http://darwinports.opendarwin.org/[here].
+It is a tool (like Fink) to provide an easy way to download, configure and install
+various open-source software products on the Darwin OS family. 
+
+Obtain SOS 2.x
+~~~~~~~~~~~~~~
+
+- Begin by installing some extra libraries used to compile the tool chain 
+and SOS tools. The following command should do the trick assuming you have
+Darwin Ports installed on your system:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sudo port install wget subversion
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Checkout the SOS 2.x source. Use the following command for anonymous
+checkout:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+svn co svn://projects.nesl.ucla.edu/sos-2x/trunk
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Setup some environment variables before proceeding further. The installation
+scripts depend on these variables for correct functioning. Edit the file
+~/.profile with your favorite editor (vim) and add the following line
+(you might have to change some paths depending on your setup):
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SOSROOT points to the trunk directory of SOS 2.x downloaded on your system
+export SOSROOT=~/sos-2x/trunk
+
+# SOSTOOLDIR points to the directory where you want to install the toolchain.
+# Keeping it in your home directory removes the need to have administrator
+# (or root) privileges while installing the toolchain.
+export SOSTOOLDIR=~/local
+
+# Add the ./bin directory of the toolchain into the PATH
+export PATH=$SOSTOOLDIR/bin:$PATH
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+NOTE: Make sure that the environment variables are set by either closing and 
+reopening your terminal or sourcing the file with source ~/.profile. Next, create 
+that folder with the following command: 
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mkdir $SOSTOOLDIR.
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Install Libraries for Cross-compilation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The AVR Tool Chain for Mica2 and Micaz
+	* You will now need to install the following tool chain for cross compiling SOS 
+	to the AVR target. Note that SOS tool chain is sensitive to versions. You are 
+	free to experiment with more recent versions of these tools, but the SOS team 
+	currently supports the versions listed below:
+		. binutils-2.15
+		. gcc-core-3.4.3
+		. avr-libc-1.4.5
+	* Make sure that you have defined the environment variables SOSTOOLDIR and
+	SOSROOT.
+	* To install the above tools, execute in terminal:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/tools/src/avrgcc
+source avrgcc.sh
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	
+TIP: Open the avrgcc.sh script in a text editor to see the sequence of
+commands followed to download, compile and install the required tools.
+It also copies the correct pre-compiled binary of uisp which is 
+required to program the embedded target. 
+
+- The MSP430 Tool Chain for TMote Sky
+	* Make sure that you have defined the environment variable SOSTOOLDIR as described above.
+	* To install the toolchain, execute iin terminal:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/tools/src/mspgcc
+source build-mspgcc.sh install
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+NOTE: It is a modified copy of the msp430 build script from TinyOS 1.x. For *Intel based Mac*, 
+it downloads a pre-compied binary of the tool chain from an 
+link:http://userfs.cec.wustl.edu/%7Ekak1/tinyos2_mac_install/[external website],
+and extracts it to $SOSTOOLDIR/msp430.
+
+	* Link the msp430 software bootstrap loader (bsl) by executing the following command:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ln -s $SOSROOT/tools/src/mspgcc-pybsl/bsl.py $SOSTOOLDIR/bin/msp430-bsl
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	* For *Intel based Mac* only, add this line to the file ~/.profile
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+export PATH=$SOSTOOLDIR/msp430/bin:$PATH 
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	
+Configure SOS Utilities
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- Execute in terminal:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/tools/src/
+./sostools.sh
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
