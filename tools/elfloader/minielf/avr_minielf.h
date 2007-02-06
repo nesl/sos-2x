@@ -7,7 +7,7 @@
 #ifndef _AVR_MINIELF_H_
 #define _AVR_MINIELF_H_
 
-#include <inttypes.h>
+#include <sos_inttypes.h>
 #include <sos_endian.h>
 
 typedef uint8_t  Melf_Half;
