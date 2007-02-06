@@ -9,31 +9,16 @@
 #include <VM/DVMEventHandler.h>
 
 typedef struct {
-	func_cb_ptr push_value;
-	func_cb_ptr push_operand;
-	func_cb_ptr push_buffer;
-	func_cb_ptr pop_operand;
-	func_cb_ptr get_opcode;
-	int32_t fl_post;			//for posting a int32_t/float directly
+  int32_t fl_post;			//for posting a int32_t/float directly
 } app_state;
 
-static void buffer_get(DvmDataBuffer *buffer, uint8_t numBytes, uint8_t bufferOffset, uint16_t *dest);
-static void buffer_set(DvmDataBuffer *buffer, uint8_t numBytes, uint8_t bufferOffset, uint32_t val); 
-static void buffer_clear(DvmDataBuffer *buffer); 
-static void buffer_append(DvmDataBuffer *buffer, uint8_t numBytes, uint16_t var); 
-static void buffer_concatenate(DvmDataBuffer *dst, DvmDataBuffer *src); 
-static int32_t convert_to_float(DvmStackVariable *arg1, DvmStackVariable *arg2);
-
-#ifndef _MODULE_                                                      
 
 static app_state dvm_buffer_state;
 int8_t dvm_buffer_init()
 {
-	return SOS_OK;
+  return SOS_OK;
 }
 
-#else
-static int8_t dvm_buffer(void *state, Message *msg);
 static int8_t buffer_execute(func_cb_ptr p, DvmState *eventState, DvmOpcode instr);
 static const mod_header_t mod_header SOS_MODULE_HEADER =              
 {                                                                     
