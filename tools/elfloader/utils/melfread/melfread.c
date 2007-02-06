@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <minielflib.h>
 #include <minielf.h>
-#include <libelf.h>
+#include <soself.h>
 #include <dispmelf.h>
 
 static int MelfReadFile(char* fname);
