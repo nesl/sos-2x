@@ -44,11 +44,7 @@ These instructions have been tested on the following systems:
 - <<linux, Debian Linux (or some derivative like Ubuntu)>> 
 - <<mac, Power PC based Mac (Mac OS X 10.4.*)>>
 - <<mac, Intel based Mac (Mac OS X 10.4.*)>>
-
-NOTE: We were not able to test installation on a Windows XP machine running 
-Cygwin, but if you need it, follow the instructions for Debian Linux. A
-few tips have been added at some places to help with the installation. Please
-submit a BUG report if the installation breaks somewhere.
+- <<windows, Windows XP>>
 
 [[linux]]
 
@@ -59,18 +55,12 @@ Obtain SOS 2.x
 ~~~~~~~~~~~~~~
 
 - Begin by installing some extra libraries used to compile the tool chain 
-and SOS tools.  The following command should do the trick under Ubuntu. 
-Cygwin users should check the *Note* below.
+and SOS tools.  The following command should do the trick under Ubuntu: 
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 apt-get install wget flex subversion cvs libc6-dev
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-NOTE: It is recommended to install a full version of *Cygwin* so that the above 
-packages (wget, flex, subversion, cvs and libc6-dev) get installed automatically. 
-Otherwise, you can install the following packages by invoking the Cygwin setup 
-again and choosing them from the setup wizard menu.
 
 - Checkout the SOS 2.x source. Use the following command for anonymous
 checkout:
@@ -297,4 +287,92 @@ cd $SOSROOT/tools/src/
 ./sostools.sh
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
+[[windows]]
+
+Windows XP
+----------
+
+Obtain SOS 2.x
+~~~~~~~~~~~~~~
+- Install link:http://www.cygwin.com/[cygwin].
+- Use the Cygwin _setup_ utility (same program used to install cygwin) to 
+update the installation with additional packages:
+	* Select _gcc_ from devel
+	* Select _make_ from devel
+	* Select _binutils_ from devel
+	* Select _perl_ from devel
+	* Select _subversion_ from devel
+	* Select _flex_ from devel
+	* Select _wget_ from web
+
+NOTE: This creates a basic build environment within Cygwin for development of C programs.	
+
+- Install link:http://winavr.sourceforge.net/[WinAVR]. 
+The main page links to the source forge page from which you can 
+download the WinAVR installer. This adds tools for cross compiling to 
+the AVR chip set used on Mica2 and MicaZ nodes. 
+
+NOTE: The following instructions are executed within cygwin, unless
+specified otherwise.
+
+- Checkout the SOS 2.x source. Use the following command for anonymous
+checkout:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+svn co svn://projects.nesl.ucla.edu/sos-2x/trunk
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Setup some environment variables in cygwin before proceeding further. The installation
+scripts depend on these variables for correct functioning. Edit the file
+~/.bashrc with your favorite editor and add the following line
+(you might have to change some paths depending on your setup):
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SOSROOT points to the trunk directory of SOS 2.x downloaded on your system
+export SOSROOT=~/sos-2x/trunk
+
+# SOSTOOLDIR points to the directory where you want to install the toolchain.
+# Keeping it in your home directory removes the need to have administrator
+# (or root) privileges while installing the toolchain.
+export SOSTOOLDIR=~/local
+
+# Add the ./bin directory of the toolchain into the PATH
+export PATH=$SOSTOOLDIR/bin:$PATH
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+NOTE: Make sure that the environment variables are set by either closing and 
+reopening your terminal or sourcing the file with source ~/.bashrc. Next, create 
+that folder with the following command: 
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mkdir $SOSTOOLDIR.
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Install Libraries for Cross-compilation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- AVR tool chain for Mica2 and Micaz
+	* Already installed with WinAVR above.
+	* Download a patched version of uisp from 
+	link:http://nesl.ee.ucla.edu/projects/sos-1.x/tutorial/winxp_uisp/uisp.exe[here].
+	This patched version is required for use of the CrossBow programming boards. 
+	Save the binary into the "/bin" directory of the Cygwin installation.
+
+- MSP430 tool chain
+	* Download and install mspgcc from 
+	link:http://mspgcc.sourceforge.net/manual/c49.html#windows-installation[here]. 
+
+Configure SOS Utilities
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- Execute in cygwin:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/tools/src/
+sh sostools.sh
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
