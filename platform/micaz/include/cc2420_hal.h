@@ -457,6 +457,7 @@ extern SIGNAL(SIG_INTERRUPT7);  //FIFO
 /**********************************************************************
  * define the cc2420_hardware_init function                           *
  **********************************************************************/
+#ifndef _MODULE_
 extern void cc2420_hardware_init();
 
 /**********************************************************************
@@ -477,6 +478,7 @@ extern void ker_radio_ack_disable();
  *****************************************************************/
 extern uint16_t host_to_net(uint16_t);
 extern uint16_t net_to_host(uint16_t);
+#endif
 
 #endif //_CC2420_HAL_H
 
