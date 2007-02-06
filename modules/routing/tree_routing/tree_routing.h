@@ -35,10 +35,11 @@ enum
 //-------------------------------------------------------------
 // MODULE MESSAGES
 //-------------------------------------------------------------
+#define TREE_ROUTING_MSG_START MOD_MSG_START
 enum {
-   MSG_BEACON_SEND = MOD_MSG_START,      //! beacon task
-   MSG_BEACON_PKT  = MOD_MSG_START + 1,  //! beacon packet type
-   MSG_TR_DATA_PKT = MOD_MSG_START + 2,  //! beacon packet type
+   MSG_BEACON_SEND = TREE_ROUTING_MSG_START,      //! beacon task
+   MSG_BEACON_PKT  = TREE_ROUTING_MSG_START + 1,  //! beacon packet type
+   MSG_TR_DATA_PKT = TREE_ROUTING_MSG_START + 2,  //! beacon packet type
 };
 
 //-------------------------------------------------------------
