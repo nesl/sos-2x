@@ -39,6 +39,8 @@
 #ifndef _SOS_CC1K_H
 #define _SOS_CC1K_H
 
+#ifndef _MODULE_
+
 /**
  * @brief CC1K timing helper functions
  */
@@ -101,6 +103,8 @@ extern int8_t radio_init();
 extern void radio_msg_alloc(Message *e);
 extern void ker_radio_ack_enable();
 extern void ker_radio_ack_disable();
+
+#endif//_MODULE_
 
 #endif // _SOS_CC1K_H
 
