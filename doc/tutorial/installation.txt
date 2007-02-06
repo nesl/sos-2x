@@ -41,7 +41,7 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 apt-get install wget flex subversion cvs libc6-dev
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-NOTE: For *Cygwin*, it is recommended to install a full version so that the above 
+NOTE: It is recommended to install a full version of *Cygwin* so that the above 
 packages (wget, flex, subversion, cvs and libc6-dev) get installed automatically. 
 Otherwise, you can install the following packages by invoking the Cygwin setup 
 again and choosing them from the setup wizard menu.
@@ -242,8 +242,8 @@ source build-mspgcc.sh install
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 NOTE: It is a modified copy of the msp430 build script from TinyOS 1.x. For *Intel based Mac*, 
-it downloads a pre-compied binary of the tool chain from an 
-link:http://userfs.cec.wustl.edu/%7Ekak1/tinyos2_mac_install/[external website],
+it downloads a pre-compied binary of the tool chain from an external website (thanks to 
+link:http://userfs.cec.wustl.edu/~kak1/Black_Site/Home.html[Kevin Klues]),
 and extracts it to $SOSTOOLDIR/msp430.
 
 	* Link the msp430 software bootstrap loader (bsl) by executing the following command:
