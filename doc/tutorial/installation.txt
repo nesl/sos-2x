@@ -295,6 +295,12 @@ Windows XP
 
 Obtain SOS 2.x
 ~~~~~~~~~~~~~~
+
+- Install link:http://winavr.sourceforge.net/[WinAVR]. 
+The main page links to the source forge page from which you can 
+download the WinAVR installer. This adds tools for cross compiling to 
+the AVR chip set used on Mica2 and MicaZ nodes. 
+
 - Install link:http://www.cygwin.com/[cygwin].
 - Use the Cygwin _setup_ utility (same program used to install cygwin) to 
 update the installation with additional packages:
@@ -306,15 +312,8 @@ update the installation with additional packages:
 	* Select _flex_ from devel
 	* Select _wget_ from web
 
-NOTE: This creates a basic build environment within Cygwin for development of C programs.	
-
-- Install link:http://winavr.sourceforge.net/[WinAVR]. 
-The main page links to the source forge page from which you can 
-download the WinAVR installer. This adds tools for cross compiling to 
-the AVR chip set used on Mica2 and MicaZ nodes. 
-
-NOTE: The following instructions are executed within cygwin, unless
-specified otherwise.
+NOTE: This creates a basic build environment within Cygwin for development of C programs. 
+The following instructions are executed within cygwin, unless specified otherwise.
 
 - Checkout the SOS 2.x source. Use the following command for anonymous
 checkout:
@@ -364,6 +363,12 @@ Install Libraries for Cross-compilation
 - MSP430 tool chain
 	* Download and install mspgcc from 
 	link:http://mspgcc.sourceforge.net/manual/c49.html#windows-installation[here]. 
+
+IMPORTANT: Both WinAVR and mspgcc also come with their own versions of cygwin1.dll
+file. This may not work correctly with the latest cygwin1.dll that comes with
+cygwin. So, you will probably get a fatal error while trying to execute msp430-gcc. 
+To avoid this, search for cygwin1.dll, and rename all the versions of
+this file, found in all the directories *EXCEPT* the one in cygwin/bin, to cygwin1_backup.dll.
 
 Configure SOS Utilities
 ~~~~~~~~~~~~~~~~~~~~~~~
