@@ -16,7 +16,7 @@ INCDIR += -I$(SOSTOOLDIR)/include/
 CC = gcc
 CFLAGS += -g -Wall -Werror
 LIBS += -lelf
-LDFLAGS += -L$(SOSTOOLDIR)/local/lib
+LDFLAGS += -L$(SOSTOOLDIR)/lib
 
 ####################################
 # TARGET ARCH SETUP
