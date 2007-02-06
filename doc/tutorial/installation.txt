@@ -2,22 +2,23 @@ Installation Instructions
 =========================
 
 This section will guide you through the process of downloading and installing 
-the toolchain required to use SOS on your system. These instructions have been 
-tested on the following systems:
-
-- Debian Linux (or some derivative like Ubuntu) 
-- Power PC based Mac (Mac OS X 10.4.*) 
-- Intel based Mac (Mac OS X 10.4.*)
-- Windows XP machine running Cygwin. 
-
-This document assumes that your system has basic build tools such as gcc 
-and a text editor (for instance, vi) already installed. 
+the toolchain required to use SOS on your system.
 
 The installation process requires that you:
 
 - Obtain SOS 2.x
 - Install libraries and tools for cross compilation
 - Build and configure SOS utilities
+
+This document assumes that your system has basic build tools such as gcc 
+and a text editor (for instance, vi) already installed. 
+
+These instructions have been tested on the following systems:
+
+- Debian Linux (or some derivative like Ubuntu) 
+- Power PC based Mac (Mac OS X 10.4.*) 
+- Intel based Mac (Mac OS X 10.4.*)
+- Windows XP machine running Cygwin. 
 
 
 Debian Linux (eg. Ubuntu)
@@ -58,9 +59,10 @@ export SOSTOOLDIR=~/local
 # Add the ./bin directory of the toolchain into the PATH
 export PATH=$SOSTOOLDIR/bin:$PATH
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-NOTE: Make sure that the environment variable is set by either closing and 
+
+NOTE: Make sure that the environment variables are set by either closing and 
 reopening your terminal or sourcing the file with source ~/.bashrc. Next, create 
-that folder with 
+that folder with the following command: 
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -73,18 +75,21 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	to the AVR target. Note that SOS tool chain is sensitive to versions. You are 
 	free to experiment with more recent versions of these tools, but the SOS team 
 	currently supports the versions listed below:
-		** binutils-2.15
-		** gcc-core-3.4.3
-		** avr-libc-1.4.5
+		. binutils-2.15
+		. gcc-core-3.4.3
+		. avr-libc-1.4.5
 	* Make sure that you have defined the environment variable SOSTOOLDIR.
 	* To install the above tools, execute in terminal:
-	[c]
-	code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	cd $SOSROOT/tools/src/avrgcc
-	source avrgcc.sh
-	code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	TIP: Open the avrgcc.sh script in a text editor to see the sequence of
-	commands followed to download, compile and install the required tools.
-	It also copies the correct pre-compiled binary of uisp which is 
-	required to program the embedded target.
 
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/tools/src/avrgcc
+sh avrgcc.sh
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	
+TIP: Open the avrgcc.sh script in a text editor to see the sequence of
+commands followed to download, compile and install the required tools.
+It also copies the correct pre-compiled binary of uisp which is 
+required to program the embedded target.
+
+- 
