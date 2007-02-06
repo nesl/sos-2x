@@ -10,7 +10,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
-#include <libelf.h>
+#include <soself.h>
 #include <stringconst.h>
 #include <elfdisplay.h>
 #include <elfhelper.h>
