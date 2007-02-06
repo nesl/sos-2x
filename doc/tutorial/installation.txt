@@ -2,15 +2,41 @@ Installation Instructions
 =========================
 
 This section will guide you through the process of downloading and installing 
-the toolchain required to use SOS on your system.
+the compiler toolchain required to use SOS on your system. The SOS system is 
+composed of two primary parts. The first is the core operating system kernel 
+loaded onto nodes in the network before deployment. The second consists of end user 
+applications that can be loaded on a deployed network at runtime. Both of 
+the parts are written in C. Application developers use the GCC toolchain to 
+compile SOS to the target of interest. This target may be a PC (used for 
+simulation and for running SOS code on a microserver) or a specific hardware 
+platform such as the Mica2 mote. 
+
+The GCC toolchain uses three bundles of tools. These are:
+
+*gcc-core*::
+	Base C compiler. 
+*binutils*::
+	Binary tools. Used to manipulate the binary images produced by the C compiler. 
+*libc*::
+	C library providing basic facilites used in C programs. 
+
+WARNING: Please beware that some older TinyOS distributions do not use the 
+versions of tools described above. Systems using older TinyOS distributions 
+will need to upgrade to current toolchains to use SOS.
+
+A cross-compiler toolchain is needed to run SOS on a sensor node. *Cross-compiling* 
+is the process of compiling a program to run on a machine of type Y using a 
+compiler on a machine of type X. This is important in SOS, where a desktop 
+computer compiles programs for various micro-controllers. More detailed 
+toolchain installation instructions are provided below.
 
 The installation process requires that you:
 
-- Obtain SOS 2.x
+- Obtain SOS 2.x distribution, either as a link:../downloads.html[release tarball]
 - Install libraries and tools for cross compilation
 - Build and configure SOS utilities
 
-This document assumes that your system has basic build tools such as gcc 
+This document assumes that your system has basic build tools such as GCC 
 and a text editor (for instance, vi) already installed. 
 
 These instructions have been tested on the following systems:

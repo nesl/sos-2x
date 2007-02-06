@@ -6,12 +6,12 @@ Releases
 
 Subversion Access
 -----------------
-You can find instructions on how to get access to the development version on
-the link:http://projects.nesl.ucla.edu/svn/?group=sos-2x[SOS projects site].
+Please follow the instructions given link:./tutorial/installation.html[here] 
+to download and install entire SOS 2.x using SVN, and the tool chain required to use it.
 You can also view the code online on the
 link:https://projects.nesl.ucla.edu/view/viewcvs.cgi/sos-2x/trunk/[viewcvs
-website]. One last possibility is to
+website]. Another possibility is to
 link:https://projects.nesl.ucla.edu/view/viewcvs.cgi/sos-2x/trunk.tar.gz?view=tar[download a tarball] of the trunk, i.e.,
 the latest developer version of SOS. Note that this tarball is not directly
 supported by the SOS team but bug reports and bugfixes against such a
-tarball are more than welcom.
+tarball are more than welcome.
