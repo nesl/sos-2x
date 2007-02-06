@@ -7,6 +7,10 @@ echo PATH=$PATH
 # get the files
 wget http://www.mr511.de/software/libelf-0.8.6.tar.gz
 tar xvfz libelf-0.8.6.tar.gz
+cd libelf-0.8.6
+./configure --prefix=$PREFIX
+make
+make install
 
 # build elfloader
 cd $SOSROOT/tools/elfloader/
