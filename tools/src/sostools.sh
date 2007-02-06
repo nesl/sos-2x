@@ -26,7 +26,7 @@ fi
 cp sossrv.exe $SOSTOOLDIR/bin
 
 # build sos tool
-cd $SOSROOT/config/sos_tool/
+cd $SOSROOT/tools/sos_tool/
 make emu
 cp sos_tool.exe $SOSTOOLDIR/bin
 
