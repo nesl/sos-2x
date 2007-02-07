@@ -32,7 +32,8 @@ toolchain installation instructions are provided below.
 
 The installation process requires that you:
 
-- Obtain SOS 2.x distribution, either as a link:../downloads.html[release tarball]
+- Obtain SOS 2.x distribution, either as a link:../downloads.html[release tarball],
+or using SVN as described below
 - Install libraries and tools for cross compilation
 - Build and configure SOS utilities
 
@@ -67,7 +68,7 @@ checkout:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-svn co svn://projects.nesl.ucla.edu/sos-2x/trunk
+svn co svn://projects.nesl.ucla.edu/sos-2x
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Setup some environment variables before proceeding further. The installation
@@ -80,10 +81,15 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SOSROOT points to the trunk directory of SOS 2.x downloaded on your system
 export SOSROOT=~/sos-2x/trunk
 
-# SOSTOOLDIR points to the directory where you want to install the toolchain.
+# SOSTOOLDIR points to the directory where you want to install the toolchain
+# (esp. the AVR tool chain).
 # Keeping it in your home directory removes the need to have administrator
 # (or root) privileges while installing the toolchain.
 export SOSTOOLDIR=~/local
+
+# SOSMSPTOOLDIR points to the directory where the MSP430 compiler
+# tool chain is installed. For linux, it is the same as SOSTOOLDIR. 
+export SOSMSPTOOLDIR=$SOSTOOLDIR
 
 # Add the ./bin directory of the toolchain into the PATH
 export PATH=$SOSTOOLDIR/bin:$PATH
@@ -143,6 +149,9 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ln -s $SOSROOT/tools/src/mspgcc-pybsl/bsl.py $SOSTOOLDIR/bin/msp430-bsl
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+	* Download the FTDI chip drivers from link:http://www.ftdichip.com/Drivers/VCP.htm[here].
+	Select the file relevant to your OS. These are used to program the TMote over USB.
+
 Configure SOS Utilities
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -190,13 +199,16 @@ checkout:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-svn co svn://projects.nesl.ucla.edu/sos-2x/trunk
+svn co svn://projects.nesl.ucla.edu/sos-2x
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Setup some environment variables before proceeding further. The installation
 scripts depend on these variables for correct functioning. Edit the file
-~/.profile with your favorite editor (vim) and add the following line
+~/.profile with your favorite editor (vim) and add the following lines
+depending on the processor type - PowerPC Vs Intel
 (you might have to change some paths depending on your setup):
+
+NOTE: The lines below are for *PowerPC* based Mac.
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -208,11 +220,35 @@ export SOSROOT=~/sos-2x/trunk
 # (or root) privileges while installing the toolchain.
 export SOSTOOLDIR=~/local
 
+# SOSMSPTOOLDIR points to the directory where the MSP430 compiler
+# tool chain is installed.  
+export SOSMSPTOOLDIR=$SOSTOOLDIR
+
 # Add the ./bin directory of the toolchain into the PATH
 export PATH=$SOSTOOLDIR/bin:$PATH
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-NOTE: Make sure that the environment variables are set by either closing and 
+NOTE: The lines below are for *Intel* based Mac.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SOSROOT points to the trunk directory of SOS 2.x downloaded on your system
+export SOSROOT=~/sos-2x/trunk
+
+# SOSTOOLDIR points to the directory where you want to install the toolchain.
+# Keeping it in your home directory removes the need to have administrator
+# (or root) privileges while installing the toolchain.
+export SOSTOOLDIR=~/local
+
+# SOSMSPTOOLDIR points to the directory where the MSP430 compiler
+# tool chain is installed. 
+export SOSMSPTOOLDIR=$SOSTOOLDIR/msp430
+
+# Add the ./bin directory of the toolchain into the PATH
+export PATH=$SOSTOOLDIR/bin:$SOSMSPTOOLDIR/bin:$PATH
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+IMPORTANT: Make sure that the environment variables are set by either closing and 
 reopening your terminal or sourcing the file with source ~/.profile. Next, create 
 that folder with the following command: 
 
@@ -269,13 +305,9 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ln -s $SOSROOT/tools/src/mspgcc-pybsl/bsl.py $SOSTOOLDIR/bin/msp430-bsl
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	* For *Intel based Mac* only, add this line to the file ~/.profile
+	* Download the FTDI chip drivers from link:http://www.ftdichip.com/Drivers/VCP.htm[here].
+	Select the file relevant to your OS. These are used to program the TMote over USB.
 
-[c]
-code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-export PATH=$SOSTOOLDIR/msp430/bin:$PATH 
-code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	
 Configure SOS Utilities
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -320,7 +352,7 @@ checkout:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-svn co svn://projects.nesl.ucla.edu/sos-2x/trunk
+svn co svn://projects.nesl.ucla.edu/sos-2x
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Setup some environment variables in cygwin before proceeding further. The installation
@@ -338,8 +370,14 @@ export SOSROOT=~/sos-2x/trunk
 # (or root) privileges while installing the toolchain.
 export SOSTOOLDIR=~/local
 
+# SOSMSPTOOLDIR points to the directory where the MSP430 compiler
+# tool chain is installed. This is assuming that you install
+# mspgcc in its default location (C:\mspgcc). The link
+# for downloading mspgcc is provided below.
+export SOSMSPTOOLDIR=/cygdrive/c/mspgcc
+
 # Add the ./bin directory of the toolchain into the PATH
-export PATH=$SOSTOOLDIR/bin:$PATH
+export PATH=$SOSTOOLDIR/bin:$SOSMSPTOOLDIR/bin:$PATH
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 NOTE: Make sure that the environment variables are set by either closing and 
@@ -358,7 +396,9 @@ Install Libraries for Cross-compilation
 	* Download a patched version of uisp from 
 	link:http://nesl.ee.ucla.edu/projects/sos-1.x/tutorial/winxp_uisp/uisp.exe[here].
 	This patched version is required for use of the CrossBow programming boards. 
-	Save the binary into the "/bin" directory of the Cygwin installation.
+	Save the binary into the "/usr/bin" directory of the Cygwin installation,
+	and modify its permissions to make it executable (chmod +x /usr/bin/uisp.exe), 
+	if required.
 
 - MSP430 tool chain
 	* Download and install mspgcc from 
@@ -369,6 +409,9 @@ file. This may not work correctly with the latest cygwin1.dll that comes with
 cygwin. So, you will probably get a fatal error while trying to execute msp430-gcc. 
 To avoid this, search for cygwin1.dll, and rename all the versions of
 this file, found in all the directories *EXCEPT* the one in cygwin/bin, to cygwin1_backup.dll.
+
+	* Download the FTDI chip drivers from link:http://www.ftdichip.com/Drivers/VCP.htm[here].
+	Select the file relevant to your OS. These are used to program the TMote over USB.
 
 Configure SOS Utilities
 ~~~~~~~~~~~~~~~~~~~~~~~
