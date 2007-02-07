@@ -68,6 +68,7 @@ static void  prettyPrintMELF(Melf* melfDesc);
 #endif
 
 static int e_machine;
+static  Elf* elf;
 
 int main(int argc, char** argv)
 {
@@ -104,7 +105,6 @@ int main(int argc, char** argv)
 static int convElfToMiniFile(char* elffilename, char* melffilename)
 {
   int fdelf, fdmelf, modhdrsymndx;
-  Elf* elf;
   Elf32_Ehdr *ehdr;
   Elf_Scn *relatextscn, *textscn, *symtabscn, *strtabscn;
   
@@ -646,9 +646,17 @@ static int addMelfSymbol(symbol_map_t* symmap, int elfsymndx)
     symmap->mtoemap[symmap->numM] = elfsymndx;
 #endif
 	idx_to_string = (symmap->esym[elfsymndx]).st_name;
-	printf("Add ELF Symbol to MELF: %s\n", &(symmap->strtab[idx_to_string]));
-    // Add this ELF symbol to the MELF symbol table
-    esym = &(symmap->esym[elfsymndx]);
+	if( ELF32_ST_TYPE((symmap->esym[elfsymndx]).st_info) == STT_SECTION ) {
+		char *sh_name = getELFSectionName(elf,
+				(symmap->esym[elfsymndx]).st_shndx);
+		printf("Add ELF Symbol to MELF: %s + %d\n",
+				sh_name,    
+				(symmap->esym[elfsymndx]).st_value);
+	} else {
+		printf("Add ELF Symbol to MELF: %s\n", &(symmap->strtab[idx_to_string]));
+	}
+	// Add this ELF symbol to the MELF symbol table
+	esym = &(symmap->esym[elfsymndx]);
     msym = &(symmap->msym[symmap->numM]);
     
     msym->st_value = (Melf_Addr)esym->st_value;
