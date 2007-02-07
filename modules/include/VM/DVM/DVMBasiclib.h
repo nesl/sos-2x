@@ -3,25 +3,17 @@
 
 #include <VM/Dvm.h>
 
-#ifndef PHOTO
-#define PHOTO 0
-#endif
 
-void rebooted( func_cb_ptr p )
-{ }
 
+void rebooted();
      
-int8_t execute( func_cb_ptr p, DvmState *  eventState )
-{ return -1; }
-
+int8_t execute(DvmState* eventState);
      
-int16_t lockNum( func_cb_ptr p, uint8_t instr )
-{ return -1; }
-
+int16_t lockNum(uint8_t instr);
      
-uint8_t bytelength( func_cb_ptr p, uint8_t opcode )
-{ return 0; }
+uint8_t bytelength(uint8_t opcode);
 
-int8_t execute_extlib(func_cb_ptr cb, uint8_t fnid, DvmStackVariable *arg, uint8_t size, DvmStackVariable *res)
-{ return -1; }
-#endif
+int8_t execute_extlib(uint8_t fnid, DvmStackVariable *arg, 
+		      uint8_t size, DvmStackVariable *res);
+
+#endif//_BASICLIB_H_INCL_
