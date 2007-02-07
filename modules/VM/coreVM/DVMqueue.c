@@ -4,7 +4,6 @@
  * \author Ram Kumar - Port to sos-2.x
  */
 
-#include <module.h>
 #include <VM/DVMqueue.h>
 
 //--------------------------------------------------------------------

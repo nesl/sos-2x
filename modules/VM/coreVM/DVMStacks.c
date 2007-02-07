@@ -7,7 +7,7 @@
  */
 
 #include <VM/DVMStacks.h>
-#include <VM/DVMScheduler.h>
+#include <VM/DVMScheduler.h> // For error function
 
 //-------------------------------------------------------------------
 int8_t resetStacks(DvmState *eventState) 
