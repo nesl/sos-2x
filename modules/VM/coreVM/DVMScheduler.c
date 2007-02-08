@@ -3,181 +3,120 @@
  * \author Rahul Balani
  * \author Ram Kumar - Port to sos-2.x
  */
-//------------------------------------------------------------------------
-// INCLUDES
-//------------------------------------------------------------------------
-#include <VM/DVMScheduler.h>
-#include <VM/DVMqueue.h>
-#include <VM/DVMConcurrencyMngr.h>
-#include <VM/DVMEventHandler.h>
-#include <VM/DVMBasiclib.h>
-
-//------------------------------------------------------------------------
-// TYPEDEFS
-//------------------------------------------------------------------------
-typedef int8_t (*execute_lib_func_t)(func_cb_ptr cb, DvmContext* context, DvmOpcode instr);
-
-typedef struct _str_dvm_state {
-  DVMScheduler_state_t sched_st;
-  DVMResourceManager_state_t resmgr_st;
-  DVMEventHandler_state_t evhdlr_st;
-  DVMConcurrencyMngr_state_t conmgr_st;
-} dvm_state_t;
 
 
 //------------------------------------------------------------------------
-// GLOBAL STATE
-//------------------------------------------------------------------------
-static DVMScheduler_state_t sched_state;
-//------------------------------------------------------------------------
-// STATIC FUNCTION PROTOTYPES
+// STATIC FUNCTION DECLARATIONS
 //------------------------------------------------------------------------
 static inline int8_t computeInstruction(DVMScheduler_state_t *s) ;
 static int8_t executeContext(DvmContext* context, DVMScheduler_state_t *s) ;
 static int8_t opdone(DVMScheduler_state_t *s) ;
-static int8_t vm_scheduler(void *state, Message *msg) ;
-//------------------------------------------------------------------------
-// MODULE HEADER
-//------------------------------------------------------------------------
-static const mod_header_t mod_header SOS_MODULE_HEADER = 
-  {
-    .mod_id         =   DVM_MODULE,
-    .code_id        =   ehtons(DVM_MODULE),
-    .platform_type  =   HW_TYPE,
-    .processor_type =   MCU_TYPE,
-    .state_size     =   sizeof(DVMScheduler_state_t),
-    .num_sub_func   =    4,
-    .num_prov_func  =    0,
-    .module_handler =    vm_scheduler,
-    .funct          = {
-      {error_8, "czy2", M_EXT_LIB, EXECUTE},
-      {error_8, "czy2", M_EXT_LIB, EXECUTE},
-      {error_8, "czy2", M_EXT_LIB, EXECUTE},
-      {error_8, "czy2", M_EXT_LIB, EXECUTE},
-    },
-  };
 
 //------------------------------------------------------------------------
-// STATIC FUNCTIONS
+// MESSAGE HANDLERS
 //------------------------------------------------------------------------
-// Ram - This is a super message handler that dispatches messages to the
-// rest of the message handlers in the VM system
-static int8_t vm_scheduler(void *state, Message *msg)
+//  case MSG_INIT: 
+int8_t dvmsched_init(dvm_state_t* dvm_st, Message *msg){
+  DVMScheduler_state_t *s = &(dvm_st->sched_st);  
+  s->flags.inErrorState = FALSE;
+  s->flags.halted = FALSE;
+  s->flags.taskRunning = FALSE;
+  s->flags.errorFlipFlop = 0;
+  s->libraries = 1;	             //Basic library is already there.
+  s->runningContext = NULL;
+  DEBUG("Scheduler manager initialized\n");
+  engineReboot(dvm_st);
+  return SOS_OK;
+}
+//------------------------------------------------------------------------
+// case MSG_FINAL:
+int8_t dvmsched_final(dvm_state_t* dvm_st, Message *msg)
 {
-  dvm_state_t* dvm_st = (dvm_state_t*)state; 
-  DVMScheduler_state_t *s = &dvm_st->sched_st;
-  switch (msg->type){
-  case MSG_INIT: 
-    {
-      DEBUG("Starting VM init\n");
-      resmanager_handler(&dvm_st->resmgr_st, msg);
-      event_handler(&dvm_st->evhdlr_st, msg);
-      concurrency_handler(&dvm_st->conhdlr_st, msg);      
-
-      s->flags.inErrorState = FALSE;
-      s->flags.halted = FALSE;
-      s->flags.taskRunning = FALSE;
-      s->flags.errorFlipFlop = 0;
-      s->libraries = 1;	             //Basic library is already there.
-      s->runningContext = NULL;
-
-      DEBUG("Scheduler manager initialized\n");
-      DEBUG("DVM ENGINE: Dvm initializing DONE.\n");
-      engineReboot();
-      
-      return SOS_OK;
-    }
-  case MSG_FINAL:
-    {
-      concurrency_handler(&dvm_st->conhdlr_st, msg);      
-      event_handler(&dvm_st->evhdlr_st, msg);
-      resmanager_handler(&dvm_st->resmgr_st, msg);
-      DEBUG("DVM ENGINE: VM: Stopping.\n");
-      return SOS_OK;
-    }
-  case MSG_RUN_TASK:
-    {
-      return opdone(s);
-    }
-  case MSG_HALT:
-    {
-      DEBUG("DVM ENGINE: DvmEngineM halted.\n");
-      s->flags.halted = TRUE;
-      return SOS_OK;
-    }
-  case RESUME:
-    {
-      s->flags.halted = FALSE;
-      DEBUG("DVM ENGINE: DvmEngineM resumes....\n");
-      if (!s->flags.taskRunning) {
-	s->flags.taskRunning = TRUE;
-	DEBUG("DVM ENGINE: MSG_RUN_TASK posted...\n");
-	opdone(s);
-      }
-      return SOS_OK;
-    }
-  case MSG_TIMER_TIMEOUT:
-    {
-      // Ram - For periodic error handler
-      MsgParam *t = (MsgParam *)msg->data;
-
-      if (t->byte == ERROR_TIMER) {
-	DEBUG("DVM ENGINE: VM: ERROR\n");
-	if (!s->flags.inErrorState) {
-	  sys_timer_stop(ERROR_TIMER);
-	  return -EINVAL;
-	}
-	if (s->flags.errorFlipFlop) {
-	  sys_post_uart(DVM_MODULE, DVM_ERROR_MSG, sizeof(DvmErrorMsg), &(s->errorMsg), 0, UART_ADDRESS);
-	} else {
-	  // TODO: Need to figure out what this is...
-	  //sys_post_net(M_VIRUS, DVM_ERROR_MSG, sizeof(DvmErrorMsg), &(s->errorMsg), 0, BCAST_ADDRESS);
-	}
-	s->flags.errorFlipFlop = !s->flags.errorFlipFlop;
-	return SOS_OK;
-      }
-      else{
-	event_handler(&dvm_st->evhdlr_st, msg);
-      }
-      break;
-    }
-  case MSG_ADD_LIBRARY:
-    {
-      MsgParam *param = (MsgParam *)msg->data;
-      uint8_t lib_id = param->byte;
-      uint8_t lib_bit = 0x1 << lib_id;
-      s->libraries |= lib_bit;
-      sys_fntable_subscribe(msg->sid, EXECUTE, lib_id); 
-      DEBUG("DVM_ENGINE : Adding library id %d bit %d. So libraries become %02x.\n",lib_id,lib_bit,s->libraries);
-      concurrency_handler(&dvm_st->conhdlr_st, msg);      
-      engineReboot();
-      return SOS_OK;
-    }
-  case MSG_REMOVE_LIBRARY:
-    {
-      MsgParam *param = (MsgParam *)msg->data;
-      uint8_t lib_id = param->byte;
-      uint8_t lib_bit = 0x1 << lib_id;
-      s->libraries ^= lib_bit;	//XOR
-      DEBUG("DVM_ENGINE : Removing library id %d bit %d. So libraries become %02x.\n",lib_id,lib_bit,s->libraries);
-      concurrency_handler(&dvm_st->conhdlr_st, msg);      
-      engineReboot();
-      return SOS_OK;
-    }
-    /*
-#ifdef PC_PLATFORM
-  case MSG_FROM_USER:
-    {
-      DEBUG("DVM ENGINE: Removing Math library\n");
-      ker_deregister_module(M_MATH_LIB);
-    }
-#endif
-    */
-  default:
-    break;
+  return SOS_OK;
+}
+//------------------------------------------------------------------------
+//  case MSG_RUN_TASK:
+int8_t dvmsched_run_task(dvm_state_t* dvm_st, Message *msg)
+{
+  DVMScheduler_state_t *s = &(dvm_st->sched_st);  
+  opdone(s);
+  return SOS_OK;
+}
+//------------------------------------------------------------------------
+//  case MSG_HALT:
+int8_t dvmsched_halt(dvm_state_t* dvm_st, Message *msg)
+{
+  DVMScheduler_state_t *s = &(dvm_st->sched_st);  
+  DEBUG("DVM ENGINE: DvmEngineM halted.\n");
+  s->flags.halted = TRUE;
+  return SOS_OK;
+}
+//------------------------------------------------------------------------
+//  case RESUME:
+int8_t dvmsched_resume(dvm_state_t* dvm_st, Message *msg)
+{
+  DVMScheduler_state_t *s = &(dvm_st->sched_st);  
+  s->flags.halted = FALSE;
+  DEBUG("DVM ENGINE: DvmEngineM resumes....\n");
+  if (!s->flags.taskRunning) {
+    s->flags.taskRunning = TRUE;
+    DEBUG("DVM ENGINE: MSG_RUN_TASK posted...\n");
+    opdone(s);
   }
   return SOS_OK;
 }
+//------------------------------------------------------------------------
+//  case MSG_TIMER_TIMEOUT:
+int8_t dvmsched_timeout(dvm_state_t* dvm_st, Message *msg)
+{
+  // Periodic error broadcast
+  DVMScheduler_state_t *s = &(dvm_st->sched_st);  
+  MsgParam *t = (MsgParam *)msg->data;
+  if (t->byte == ERROR_TIMER) {
+    DEBUG("DVM ENGINE: VM: ERROR\n");
+    if (!s->flags.inErrorState) {
+      sys_timer_stop(ERROR_TIMER);
+      return -EINVAL;
+    }
+    if (s->flags.errorFlipFlop) {
+      sys_post_uart(DVM_MODULE, DVM_ERROR_MSG, sizeof(DvmErrorMsg), &(s->errorMsg), 0, UART_ADDRESS);
+    } else {
+      // TODO: Need to figure out what this is...
+      //sys_post_net(M_VIRUS, DVM_ERROR_MSG, sizeof(DvmErrorMsg), &(s->errorMsg), 0, BCAST_ADDRESS);
+    }
+    s->flags.errorFlipFlop = !s->flags.errorFlipFlop;
+  }
+  return SOS_OK;
+}
+//------------------------------------------------------------------------
+//  case MSG_ADD_LIBRARY:
+int8_t dvmsched_add_lib(dvm_state_t* dvm_st, Message *msg)
+{
+  DVMScheduler_state_t *s = &(dvm_st->sched_st);  
+  MsgParam *param = (MsgParam *)msg->data;
+  uint8_t lib_id = param->byte;
+  uint8_t lib_bit = 0x1 << lib_id;
+  s->libraries |= lib_bit;
+  sys_fntable_subscribe(msg->sid, EXECUTE, lib_id); 
+  DEBUG("DVM_ENGINE : Adding library id %d bit %d. So libraries become %02x.\n",lib_id,lib_bit,s->libraries);
+  engineReboot(dvm_st);
+  return SOS_OK;
+}
+//------------------------------------------------------------------------
+//  case MSG_REMOVE_LIBRARY:
+int8_t dvmsched_rem_lib(dvm_state_t* dvm_st, Message *msg)
+{
+  DVMScheduler_state_t *s = &(dvm_st->sched_st);  
+  MsgParam *param = (MsgParam *)msg->data;
+  uint8_t lib_id = param->byte;
+  uint8_t lib_bit = 0x1 << lib_id;
+  s->libraries ^= lib_bit;	//XOR
+  DEBUG("DVM_ENGINE : Removing library id %d bit %d. So libraries become %02x.\n",lib_id,lib_bit,s->libraries);
+  engineReboot(dvm_st);
+  return SOS_OK;
+}
+//------------------------------------------------------------------------
+// STATIC FUNCTIONS
 //------------------------------------------------------------------------
 static int8_t opdone(DVMScheduler_state_t *s) 
 {
@@ -279,10 +218,10 @@ static int8_t executeContext(DvmContext* context, DVMScheduler_state_t *s) {
 //------------------------------------------------------------------------
 // EXTERNAL FUNCTIONS
 //------------------------------------------------------------------------
-void engineReboot(void) 
+void engineReboot(dvm_state_t* dvm_st) 
 {
-  DVMScheduler_state_t *s = (DVMScheduler_state_t*)sys_get_module_state(DVM_MODULE);
   DvmCapsuleID id;
+  DVMScheduler_state_t *s = &(dvm_st->sched_st);
 
   DEBUG("DVM ENGINE: VM: Dvm rebooting.\n");
   s->runningContext = NULL;
@@ -309,17 +248,17 @@ void engineReboot(void)
   sys_led(LED_YELLOW_OFF);
 }
 //------------------------------------------------------------------------
-int8_t scheduler_submit(DvmContext* context) 
+int8_t scheduler_submit(dvm_state_t* dvm_st, DvmContext* context) 
 {
-  DVMScheduler_state_t *s = (DVMScheduler_state_t*)sys_get_module_state(DVM_MODULE);
+  DVMScheduler_state_t *s = &(dvm_st->sched_st);
   DEBUG("DVM_ENGINE: VM: Context %i submitted to run.\n", (int)context->which);
   context->state = DVM_STATE_READY;
   return executeContext(context, s);
 }
 //------------------------------------------------------------------------
-int8_t error(DvmContext* context, uint8_t cause) 
+int8_t error(dvm_state_t* dvm_st, DvmContext* context, uint8_t cause) 
 {
-  DVMScheduler_state_t *s = (DVMScheduler_state_t*)sys_get_module_state(DVM_MODULE);
+  DVMScheduler_state_t *s = &(dvm_st->sched_st);
   s->flags.inErrorState = TRUE;
   DEBUG("DVM_ENGINE: VM: Entering ERROR state. Context: %i, cause %i\n", (int)context->which, (int)cause);
   sys_timer_start(ERROR_TIMER, 1000, TIMER_REPEAT);

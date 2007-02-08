@@ -25,57 +25,60 @@ static inline int8_t unlock(DvmContext *, uint8_t, DVMConcurrencyMngr_state_t *)
 static inline uint8_t isLocked(uint8_t, DVMConcurrencyMngr_state_t *) ;
 
 //-----------------------------------------------------------------
-int8_t concurrency_handler(void *state, Message *msg)
-{    
-  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t *) state;
-  switch (msg->type)
-    {
-    case MSG_INIT:
-      {
-	s->libraries = 0;
-	queue_init(&s->readyQueue);
-			
-	DEBUG("CONTEXT SYNCH: Initialized\n");
-	return SOS_OK;
-      }
-    case MSG_ADD_LIBRARY:
-      {
-	MsgParam *param = (MsgParam *)msg->data;
-	uint8_t lib_id = param->byte;
-	uint8_t lib_bit = 0x1 << lib_id;
-	s->libraries |= lib_bit;
-	s->extlib_module[lib_id] = msg->sid;
-	return SOS_OK;
-      }
-    case MSG_REMOVE_LIBRARY:
-      {
-	MsgParam *param = (MsgParam *)msg->data;
-	uint8_t lib_id = param->byte;
-	uint8_t lib_bit = 0x1 << lib_id;
-	s->libraries ^= lib_bit;	//XOR
-	s->extlib_module[lib_id] = 0;
-	return SOS_OK;
-      }
-    case MSG_FINAL:
-      {
-	return SOS_OK;	
-      }
-    default:
-      return SOS_OK;
-    }
+// MESSAGE HANDLERS
+//-----------------------------------------------------------------
+//    case MSG_INIT:
+int8_t concurrency_init(dvm_state_t* dvm_st, Message *msg)
+{
+  DVMConcurrencyMngr_state_t *s = &(dvm_st->conmgr_st);
+  s->libraries = 0;
+  queue_init(&s->readyQueue);
+  DEBUG("CONTEXT SYNCH: Initialized\n");
   return SOS_OK;
 }
 //-----------------------------------------------------------------
-void synch_reset() 
+//    case MSG_FINAL:
+int8_t concurrency_final(dvm_state_t* dvm_st, Message *msg)
 {
-  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t*)sys_get_state();
+  return SOS_OK;	
+}
+//-----------------------------------------------------------------
+//    case MSG_ADD_LIBRARY:
+int8_t concurrency_add_lib(dvm_state_t* dvm_st, Message *msg)
+{
+  DVMConcurrencyMngr_state_t *s = &(dvm_st->conmgr_st);
+  MsgParam *param = (MsgParam *)msg->data;
+  uint8_t lib_id = param->byte;
+  uint8_t lib_bit = 0x1 << lib_id;
+  s->libraries |= lib_bit;
+  s->extlib_module[lib_id] = msg->sid;
+  return SOS_OK;
+}
+//-----------------------------------------------------------------
+//    case MSG_REMOVE_LIBRARY:
+int8_t concurrency_rem_lib(dvm_state_t* dvm_st, Message *msg)
+{
+  DVMConcurrencyMngr_state_t *s = &(dvm_st->conmgr_st);
+  MsgParam *param = (MsgParam *)msg->data;
+  uint8_t lib_id = param->byte;
+  uint8_t lib_bit = 0x1 << lib_id;
+  s->libraries ^= lib_bit;	//XOR
+  s->extlib_module[lib_id] = 0;
+  return SOS_OK;
+}
+//-----------------------------------------------------------------
+// EXTERNAL FUNCTIONS
+//-----------------------------------------------------------------
+void synch_reset(dvm_state_t* dvm_st) 
+{
+  DVMConcurrencyMngr_state_t *s = &(dvm_st->conmgr_st);
   queue_init(&s->readyQueue);
   locks_reset(s);
 }
 //-----------------------------------------------------------------	
-void analyzeVars(DvmCapsuleID id) 
+void analyzeVars(dvm_state_t* dvm_st, DvmCapsuleID id) 
 {
-  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t*)sys_get_state();
+  DVMConcurrencyMngr_state_t *s = &(dvm_st->conmgr_st);
   uint16_t i;
   uint16_t handlerLen;
   DvmOpcode instr = 0;
@@ -113,15 +116,15 @@ void analyzeVars(DvmCapsuleID id)
   } 
 }
 //-----------------------------------------------------------------	
-void clearAnalysis(DvmCapsuleID id) 
+void clearAnalysis(dvm_state_t* dvm_st, DvmCapsuleID id) 
 {
-  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t*)sys_get_state();   
+  DVMConcurrencyMngr_state_t *s = &(dvm_st->conmgr_st);
   memset(s->usedVars, 0, DVM_CAPSULE_NUM * ((DVM_LOCK_COUNT + 7)/8));
 }
 //-----------------------------------------------------------------	
-void initializeContext(DvmContext *context) 
+void initializeContext(dvm_state_t* dvm_st, DvmContext *context) 
 {
-  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t*)sys_get_state();   
+  DVMConcurrencyMngr_state_t *s = &(dvm_st->conmgr_st);
   int i;
   for (i = 0; i < (DVM_LOCK_COUNT + 7) / 8; i++) {
     context->heldSet[i] = 0;
@@ -137,9 +140,9 @@ void initializeContext(DvmContext *context)
   context->num_executed = 0;
 }
 //-----------------------------------------------------------------	
-void yieldContext(DvmContext* context) 
+void yieldContext(dvm_state_t* dvm_st, DvmContext* context) 
 {
-  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t*)sys_get_state();   
+  DVMConcurrencyMngr_state_t *s = &(dvm_st->conmgr_st);
   DvmContext* start = NULL;
   DvmContext* current = NULL;
   
@@ -166,9 +169,9 @@ void yieldContext(DvmContext* context)
   }
 }
 //-----------------------------------------------------------------	
-uint8_t resumeContext(DvmContext* caller, DvmContext* context) 
+uint8_t resumeContext(dvm_state_t* dvm_st, DvmContext* caller, DvmContext* context) 
 {
-  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t*)sys_get_state();   
+  DVMConcurrencyMngr_state_t *s = &(dvm_st->conmgr_st);
   context->state = DVM_STATE_WAITING;
   if (isRunnable(context, s)) {
     obtainLocks(caller, context, s);
@@ -189,9 +192,9 @@ uint8_t resumeContext(DvmContext* caller, DvmContext* context)
   }	
 }
 //-----------------------------------------------------------------	
-void haltContext(DvmContext* context) 
+void haltContext(dvm_state_t* dvm_st, DvmContext* context) 
 {
-  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t*)sys_get_state();
+  DVMConcurrencyMngr_state_t *s = &(dvm_st->conmgr_st);
   releaseAllLocks(context, context, s);
   yieldContext(context);
   if (context->queue && context->state != DVM_STATE_HALT) {
@@ -202,7 +205,7 @@ void haltContext(DvmContext* context)
   }
 }
 //-----------------------------------------------------------------	
-//MLocks functions
+// STATIC FUNCTIONS
 //-----------------------------------------------------------------	
 static inline uint8_t isRunnable(DvmContext* context, DVMConcurrencyMngr_state_t *s) 
 { 

@@ -12,17 +12,18 @@ typedef struct {
 } DVMEventHandler_state_t;
 
       
-int8_t initEventHandler(DvmState* eventState, uint8_t capsuleID);
+int8_t initEventHandler(dvm_state_t* dvm_st, DvmState *eventState, uint8_t capsuleID);
 
-DvmCapsuleLength getCodeLength(uint8_t id);
+DvmCapsuleLength getCodeLength(dvm_state_t* dvm_st, uint8_t id);
 
-DvmOpcode getOpcode(uint8_t id, uint16_t which);
+uint8_t getLibraryMask(dvm_state_t* dvm_st, uint8_t id);
 
-uint8_t getLibraryMask(uint8_t id);
+DvmState *getStateBlock (dvm_state_t* dvm_st, uint8_t id);
 
-DvmState* getStateBlock(uint8_t id);
+DvmOpcode getOpcode(dvm_state_t* dvm_st, uint8_t id, uint16_t which);
 
-void startScriptTimer(uint8_t id, uint32_t msec);
+// Ram - Where is this function defined ?
+//void startScriptTimer(uint8_t id, uint32_t msec);
 
 /**
  * \brief event_handler message handler !!
