@@ -60,7 +60,7 @@ and SOS tools.  The following command should do the trick under Ubuntu:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-apt-get install wget flex subversion cvs libc6-dev
+apt-get install flex subversion cvs libc6-dev
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Checkout the SOS 2.x source. Use the following command for anonymous
@@ -150,7 +150,8 @@ ln -s $SOSROOT/tools/src/mspgcc-pybsl/bsl.py $SOSTOOLDIR/bin/msp430-bsl
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	* Download the FTDI chip drivers from link:http://www.ftdichip.com/Drivers/VCP.htm[here].
-	Select the file relevant to your OS. These are used to program the TMote over USB.
+	Select the file relevant to your OS (You will probably not need this if your kernel
+	version is 2.6.9 or higher). These are used to program the TMote over USB.
 
 Configure SOS Utilities
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -160,7 +161,7 @@ Configure SOS Utilities
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/src/
-./sostools.sh
+sh sostools.sh
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -316,7 +317,7 @@ Configure SOS Utilities
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/src/
-./sostools.sh
+sh sostools.sh
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
