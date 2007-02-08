@@ -3,38 +3,30 @@
 
 #include <VM/Dvm.h>
 
+
+//--------------------------------------------------------------------
+// TYPEDEFS
+//--------------------------------------------------------------------
+typedef struct {
+  DvmState* stateBlock[DVM_CAPSULE_NUM];
+} DVMEventHandler_state_t;
+
       
-int8_t initEventHandler( func_cb_ptr p, DvmState *  eventState, uint8_t capsuleID )
-{
-	return -EINVAL;
-}
-    
+int8_t initEventHandler(DvmState* eventState, uint8_t capsuleID);
 
-DvmCapsuleLength getCodeLength( func_cb_ptr p, uint8_t id )
-{
-	return 0;
-}
+DvmCapsuleLength getCodeLength(uint8_t id);
 
-DvmOpcode getOpcode( func_cb_ptr p, uint8_t id, uint16_t which )
-{
-	return 0;
-}
-    
+DvmOpcode getOpcode(uint8_t id, uint16_t which);
 
-uint8_t getLibraryMask( func_cb_ptr p, uint8_t id )
-{
-	return 0;
-}
-	
-     
-DvmState *  getStateBlock( func_cb_ptr p, uint8_t id )
-{
-	return 0;
-}
+uint8_t getLibraryMask(uint8_t id);
 
-void startScriptTimer( func_cb_ptr p, uint8_t id, uint32_t msec )
-{
-	return;
-}
+DvmState* getStateBlock(uint8_t id);
 
-#endif
+void startScriptTimer(uint8_t id, uint32_t msec);
+
+/**
+ * \brief event_handler message handler !!
+ */
+int8_t event_handler(void *state, Message *msg) ;
+
+#endif//_EVENT_H_INCL_

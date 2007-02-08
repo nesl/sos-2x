@@ -13,65 +13,27 @@
 #include <VM/DVMBasiclib.h>
 
 //-----------------------------------------------------------------
-// TYPEDEFS
-//-----------------------------------------------------------------
-typedef struct 
-{
-  uint8_t pid;
-  uint8_t usedVars[DVM_CAPSULE_NUM][(DVM_LOCK_COUNT + 7) / 8];
-  DvmQueue readyQueue;
-  uint8_t libraries;
-  uint8_t extlib_module[4];
-  DvmLock locks[DVM_LOCK_COUNT];
-} app_state;  
-//-----------------------------------------------------------------
 // STATIC FUNCTION PROTOTYPES
 //-----------------------------------------------------------------
-static inline uint8_t isRunnable(DvmContext* context, app_state *s) ;
-static inline int8_t obtainLocks(DvmContext* caller, DvmContext* obtainer, app_state *s) ;
-static inline int8_t releaseLocks(DvmContext* caller, DvmContext* releaser, app_state *s) ;
-static inline int8_t releaseAllLocks(DvmContext* caller, DvmContext* releaser, app_state *s) ;
-static inline void locks_reset(app_state *s) ;
-static inline int8_t lock(DvmContext *, uint8_t, app_state *) ;
-static inline int8_t unlock(DvmContext *, uint8_t, app_state *) ;
-static inline uint8_t isLocked(uint8_t, app_state *) ;
-static int8_t concurrency_handler(void *state, Message *msg) ;
+static inline uint8_t isRunnable(DvmContext* context, DVMConcurrencyMngr_state_t *s) ;
+static inline int8_t obtainLocks(DvmContext* caller, DvmContext* obtainer, DVMConcurrencyMngr_state_t *s) ;
+static inline int8_t releaseLocks(DvmContext* caller, DvmContext* releaser, DVMConcurrencyMngr_state_t *s) ;
+static inline int8_t releaseAllLocks(DvmContext* caller, DvmContext* releaser, DVMConcurrencyMngr_state_t *s) ;
+static inline void locks_reset(DVMConcurrencyMngr_state_t *s) ;
+static inline int8_t lock(DvmContext *, uint8_t, DVMConcurrencyMngr_state_t *) ;
+static inline int8_t unlock(DvmContext *, uint8_t, DVMConcurrencyMngr_state_t *) ;
+static inline uint8_t isLocked(uint8_t, DVMConcurrencyMngr_state_t *) ;
+
 //-----------------------------------------------------------------
-// EXTERNAL FUNCTION PROTOTYPES
-//-----------------------------------------------------------------
-static void synch_reset(func_cb_ptr p);
-static void analyzeVars(func_cb_ptr p, DvmCapsuleID id); 
-static void clearAnalysis(func_cb_ptr p, DvmCapsuleID id);
-static void initializeContext(func_cb_ptr p, DvmContext *context);
-static void yieldContext(func_cb_ptr p, DvmContext* context);
-static uint8_t resumeContext(func_cb_ptr p, DvmContext* caller, DvmContext* context); 
-static void haltContext(func_cb_ptr p, DvmContext* context); 
-static uint8_t isHeldBy(func_cb_ptr p, uint8_t lockNum, DvmContext* context); 
-//-----------------------------------------------------------------
-static const mod_header_t mod_header SOS_MODULE_HEADER = 
-  {
-    .mod_id           =  M_CONTEXT_SYNCH,
-    .state_size       =  sizeof(app_state),
-    .code_id          = ehtons(M_CONTEXT_SYNCH),
-    .platform_type    = HW_TYPE,
-    .processor_type   = MCU_TYPE,
-    .num_sub_func     =  12,
-    .num_prov_func    =  8,
-    .module_handler   =  concurrency_handler,
-    .funct = {},
-  };
-//-----------------------------------------------------------------
-static int8_t concurrency_handler(void *state, Message *msg)
+int8_t concurrency_handler(void *state, Message *msg)
 {    
-  app_state *s = (app_state *) state;
+  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t *) state;
   switch (msg->type)
     {
     case MSG_INIT:
       {
-			
-	s->pid = msg->did;		    
 	s->libraries = 0;
-	queue_initDL(s->q_init, &s->readyQueue );
+	queue_init(&s->readyQueue);
 			
 	DEBUG("CONTEXT SYNCH: Initialized\n");
 	return SOS_OK;
@@ -106,14 +68,14 @@ static int8_t concurrency_handler(void *state, Message *msg)
 //-----------------------------------------------------------------
 void synch_reset() 
 {
-  app_state *s = (app_state*)ker_get_module_state(M_CONTEXT_SYNCH);
-  queue_initDL(s->q_init, &s->readyQueue);
+  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t*)sys_get_state();
+  queue_init(&s->readyQueue);
   locks_reset(s);
 }
 //-----------------------------------------------------------------	
 void analyzeVars(DvmCapsuleID id) 
 {
-  app_state *s = (app_state*)ker_get_module_state(M_CONTEXT_SYNCH);
+  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t*)sys_get_state();
   uint16_t i;
   uint16_t handlerLen;
   DvmOpcode instr = 0;
@@ -122,10 +84,10 @@ void analyzeVars(DvmCapsuleID id)
   for (i = 0; i < ((DVM_LOCK_COUNT + 7) / 8); i++) {
     s->usedVars[id][i] = 0;
   }
-  handlerLen = getCodeLengthDL(s->getCodeLength, id);	
+  handlerLen = getCodeLength(s->getCodeLength, id);	
   DEBUG("CONTEXTSYNCH: Handler length for handler %d is %d.\n",id,handlerLen);
 	
-  libMask = getLibraryMaskDL(s->get_libmask, id);
+  libMask = getLibraryMask(id);
   if ((s->libraries & libMask) != libMask) {			//library missing
     DEBUG("CONTEXT_SYNCH: Library required 0x%x. Missing for handler %d.\n",libMask,id);
     return;
@@ -133,17 +95,17 @@ void analyzeVars(DvmCapsuleID id)
   i = 0;
   while (i < handlerLen) {
     int16_t locknum;
-    instr = getOpcodeDL(s->get_opcode, id, i);
+    instr = getOpcode(id, i);
     if (!(instr & LIB_ID_BIT)) {
       opcode_mod = M_BASIC_LIB;
-      locknum = lockNumDL(s->lockNum, instr);
-      i += bytelengthDL(s->bytelength, instr);
+      locknum = lockNum(instr);
+      i += bytelength(instr);
     } else {
       opcode_mod = (instr & BASIC_LIB_OP_MASK) >> EXT_LIB_OP_SHIFT;
       opcode_mod = s->extlib_module[opcode_mod];
-      ker_fntable_subscribe(s->pid, opcode_mod, LOCKNUM, 1);
+      sys_fntable_subscribe(opcode_mod, LOCKNUM, 1);
       locknum = SOS_CALL(s->lockNum, func_i16u8_t, instr);
-      ker_fntable_subscribe(s->pid, opcode_mod, BYTELENGTH, 0);
+      sys_fntable_subscribe(opcode_mod, BYTELENGTH, 0);
       i += SOS_CALL(s->bytelength, func_u8u8_t, instr);
     }
     if (locknum >= 0) 
@@ -153,13 +115,13 @@ void analyzeVars(DvmCapsuleID id)
 //-----------------------------------------------------------------	
 void clearAnalysis(DvmCapsuleID id) 
 {
-  app_state *s = (app_state*)ker_get_module_state(M_CONTEXT_SYNCH);   
+  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t*)sys_get_state();   
   memset(s->usedVars, 0, DVM_CAPSULE_NUM * ((DVM_LOCK_COUNT + 7)/8));
 }
 //-----------------------------------------------------------------	
 void initializeContext(DvmContext *context) 
 {
-  app_state *s = (app_state*)ker_get_module_state(M_CONTEXT_SYNCH);   
+  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t*)sys_get_state();   
   int i;
   for (i = 0; i < (DVM_LOCK_COUNT + 7) / 8; i++) {
     context->heldSet[i] = 0;
@@ -167,9 +129,9 @@ void initializeContext(DvmContext *context)
   }
   memcpy(context->acquireSet, s->usedVars[context->which], (DVM_LOCK_COUNT + 7) / 8);
   context->pc = 0;
-  resetStacksDL(s->reset_stack, (DvmState *)context);
+  resetStacks((DvmState *)context);
   if (context->queue) {
-    queue_removeDL(s->q_remove, context, context->queue, context);
+    queue_remove(context, context->queue, context);
   }
   context->state = DVM_STATE_HALT;
   context->num_executed = 0;
@@ -177,15 +139,15 @@ void initializeContext(DvmContext *context)
 //-----------------------------------------------------------------	
 void yieldContext(DvmContext* context) 
 {
-  app_state *s = (app_state*)ker_get_module_state(M_CONTEXT_SYNCH);   
+  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t*)sys_get_state();   
   DvmContext* start = NULL;
   DvmContext* current = NULL;
   
   DEBUG("VM (%i): Yielding.\n", (int)context->which);
   releaseLocks(context, context, s);
-  if (!queue_emptyDL(s->q_empty, &s->readyQueue)){
+  if (!queue_empty(&s->readyQueue)){
     do {
-      current = queue_dequeueDL(s->q_dequeue, context, &s->readyQueue);
+      current = queue_dequeue(context, &s->readyQueue);
       if (!resumeContext(context, current)) {
 	DEBUG("VM (%i): Context %i not runnable.\n", (int)context->which, (int)current->which);
 	if (start == NULL) {
@@ -197,7 +159,7 @@ void yieldContext(DvmContext* context)
 	}
       }
     }
-    while ( !queue_emptyDL(s->q_empty,  &s->readyQueue ) );
+    while (!queue_empty(&s->readyQueue));
   }
   else {
     DEBUG("VM (%i): Ready queue empty.\n", (int)context->which);
@@ -206,11 +168,11 @@ void yieldContext(DvmContext* context)
 //-----------------------------------------------------------------	
 uint8_t resumeContext(DvmContext* caller, DvmContext* context) 
 {
-  app_state *s = (app_state*)ker_get_module_state(M_CONTEXT_SYNCH);   
+  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t*)sys_get_state();   
   context->state = DVM_STATE_WAITING;
   if (isRunnable(context, s)) {
     obtainLocks(caller, context, s);
-    if(scheduler_submitDL(s->sched_submit, context) == SOS_OK){
+    if(scheduler_submit(context) == SOS_OK){
       DEBUG("VM (%i): Resumption of %i successful.\n", (int)caller->which, (int)context->which);
       context->num_executed = 0;
       return TRUE;
@@ -222,18 +184,18 @@ uint8_t resumeContext(DvmContext* caller, DvmContext* context)
   }
   else {
     DEBUG("VM (%i): Resumption of %i unsuccessful, putting on the queue.\n", (int)caller->which, (int)context->which);
-    queue_enqueueDL(s->q_enqueue, caller, &s->readyQueue, context);
+    queue_enqueue(caller, &s->readyQueue, context);
     return FALSE;
   }	
 }
 //-----------------------------------------------------------------	
 void haltContext(DvmContext* context) 
 {
-  app_state *s = (app_state*)ker_get_module_state(M_CONTEXT_SYNCH);
+  DVMConcurrencyMngr_state_t *s = (DVMConcurrencyMngr_state_t*)sys_get_state();
   releaseAllLocks(context, context, s);
   yieldContext(context);
   if (context->queue && context->state != DVM_STATE_HALT) {
-    queue_removeDL(s->q_remove, context, context->queue, context);
+    queue_remove(context, context->queue, context);
   }
   if (context->state != DVM_STATE_HALT) {
     context->state = DVM_STATE_HALT;
@@ -242,7 +204,7 @@ void haltContext(DvmContext* context)
 //-----------------------------------------------------------------	
 //MLocks functions
 //-----------------------------------------------------------------	
-static inline uint8_t isRunnable(DvmContext* context, app_state *s) 
+static inline uint8_t isRunnable(DvmContext* context, DVMConcurrencyMngr_state_t *s) 
 { 
   int8_t i;
   uint8_t* neededLocks = (context->acquireSet);  
@@ -260,7 +222,7 @@ static inline uint8_t isRunnable(DvmContext* context, app_state *s)
   return TRUE;
 }
 //-----------------------------------------------------------------	
-static int8_t obtainLocks(DvmContext* caller, DvmContext* obtainer, app_state *s) 
+static int8_t obtainLocks(DvmContext* caller, DvmContext* obtainer, DVMConcurrencyMngr_state_t *s) 
 { 
   int i;
   uint8_t* neededLocks = (obtainer->acquireSet);
@@ -280,7 +242,7 @@ static int8_t obtainLocks(DvmContext* caller, DvmContext* obtainer, app_state *s
   return SOS_OK;		
 }
 //-----------------------------------------------------------------	
-static inline int8_t releaseLocks(DvmContext* caller, DvmContext* releaser, app_state *s) 
+static inline int8_t releaseLocks(DvmContext* caller, DvmContext* releaser, DVMConcurrencyMngr_state_t *s) 
 {
   int i;
   uint8_t* lockSet = (releaser->releaseSet);
@@ -297,7 +259,7 @@ static inline int8_t releaseLocks(DvmContext* caller, DvmContext* releaser, app_
   return SOS_OK;		
 }
 //-----------------------------------------------------------------	
-static int8_t releaseAllLocks(DvmContext* caller, DvmContext* releaser, app_state *s) 
+static int8_t releaseAllLocks(DvmContext* caller, DvmContext* releaser, DVMConcurrencyMngr_state_t *s) 
 {
   int i;
   uint8_t* lockSet = (releaser->heldSet);	
@@ -313,7 +275,7 @@ static int8_t releaseAllLocks(DvmContext* caller, DvmContext* releaser, app_stat
   return SOS_OK;
 }
 //-----------------------------------------------------------------	
-static inline void locks_reset(app_state *s) 
+static inline void locks_reset(DVMConcurrencyMngr_state_t *s) 
 {
   uint16_t i;
   for( i = 0; i < DVM_LOCK_COUNT; i++) 
@@ -322,7 +284,7 @@ static inline void locks_reset(app_state *s)
     }
 }
 //-----------------------------------------------------------------	
-static inline int8_t lock(DvmContext* context, uint8_t lockNum, app_state *s) 
+static inline int8_t lock(DvmContext* context, uint8_t lockNum, DVMConcurrencyMngr_state_t *s) 
 {
   s->locks[lockNum].holder = context;
   context->heldSet[lockNum / 8] |= (1 << (lockNum % 8));
@@ -330,7 +292,7 @@ static inline int8_t lock(DvmContext* context, uint8_t lockNum, app_state *s)
   return SOS_OK;
 }
 //-----------------------------------------------------------------	
-static inline int8_t unlock(DvmContext* context, uint8_t lockNum, app_state *s) 
+static inline int8_t unlock(DvmContext* context, uint8_t lockNum, DVMConcurrencyMngr_state_t *s) 
 {
   context->heldSet[lockNum / 8] &= ~(1 << (lockNum % 8));
   s->locks[lockNum].holder = 0;
@@ -338,7 +300,7 @@ static inline int8_t unlock(DvmContext* context, uint8_t lockNum, app_state *s)
   return SOS_OK;
 }
 //-----------------------------------------------------------------	
-static inline uint8_t isLocked(uint8_t lockNum, app_state *s) 
+static inline uint8_t isLocked(uint8_t lockNum, DVMConcurrencyMngr_state_t *s) 
 {
   return (s->locks[lockNum].holder != 0);	
 }

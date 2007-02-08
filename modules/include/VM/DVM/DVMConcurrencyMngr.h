@@ -3,34 +3,39 @@
 
 #include <VM/Dvm.h>
 
-   
-void synch_reset( func_cb_ptr p )
-{}
-     
-void analyzeVars( func_cb_ptr p, DvmCapsuleID id )
-{}
-
-     
-void clearAnalysis( func_cb_ptr p, DvmCapsuleID id )
-{}
-
-
-void initializeContext( func_cb_ptr p, DvmContext *  context )
-{}
-
-void yieldContext( func_cb_ptr p, DvmContext *  context )
-{}
-
-uint8_t resumeContext( func_cb_ptr p, DvmContext *  caller, DvmContext *  context )
+//-----------------------------------------------------------------
+// TYPEDEFS
+//-----------------------------------------------------------------
+typedef struct 
 {
-	return 0;
-}
+  uint8_t usedVars[DVM_CAPSULE_NUM][(DVM_LOCK_COUNT + 7) / 8];
+  DvmQueue readyQueue;
+  uint8_t libraries;
+  uint8_t extlib_module[4];
+  DvmLock locks[DVM_LOCK_COUNT];
+} DVMConcurrencyMngr_state_t;  
 
-void haltContext( func_cb_ptr p, DvmContext *  context )
-{}
+   
+void synch_reset();
+     
+void analyzeVars(DvmCapsuleID id);
+     
+void clearAnalysis(DvmCapsuleID id);
 
+void initializeContext(DvmContext* context);
 
-uint8_t isHeldBy( func_cb_ptr p, uint8_t lockNum, DvmContext *  context )
-{ return 0; }
+void yieldContext(DvmContext* context);
+
+uint8_t resumeContext(DvmContext* caller, DvmContext* context);
+
+void haltContext(DvmContext* context);
+
+uint8_t isHeldBy(uint8_t lockNum, DvmContext* context);
+
+/**
+ * \brief Message Handler
+ */
+int8_t concurrency_handler(void *state, Message *msg) ;
+
 
 #endif

@@ -4,40 +4,14 @@
 #include <VM/Dvm.h>
 #include <sos_list.h>
 
-     
+int8_t queue_init(DvmQueue* queue);
 
-int8_t queue_init( func_cb_ptr p, DvmQueue *  queue )
-{
-	return -EINVAL;
-}
+uint8_t queue_empty(DvmQueue* queue);
 
-    
+int8_t queue_enqueue(DvmContext* context, DvmQueue* queue, DvmContext* element);
 
-uint8_t queue_empty( func_cb_ptr p, DvmQueue *  queue )
-{
-	return 0;
-}
-	
-        
+DvmContext* queue_dequeue(DvmContext* context, DvmQueue* queue);
 
-int8_t queue_enqueue( func_cb_ptr p, DvmContext *  context, DvmQueue *  queue, DvmContext *  element )
-{
-	return -EINVAL;
-}
+int8_t queue_remove(DvmContext* context, DvmQueue* queue, DvmContext* element);
 
-      
-
-DvmContext *  queue_dequeue( func_cb_ptr p, DvmContext *  context, DvmQueue *  queue )
-{
-	return NULL;
-}
-
-        
-
-int8_t queue_remove( func_cb_ptr p, DvmContext *  context, DvmQueue *  queue, DvmContext *  element )
-{
-	return -EINVAL;
-}
-
-
-#endif
+#endif//_DVM_QUEUE_H_INCL_

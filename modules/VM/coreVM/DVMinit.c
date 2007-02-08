@@ -17,9 +17,6 @@ int8_t VMscheduler_init();
 int8_t dvm_queue_init();
 
 int8_t vm_init() {
-  dvm_queue_init();
-  dvm_mathlib_init();
-  dvm_buffer_init();
   DEBUG("Starting VM init\n");
   resmanager_init();
   DEBUG("Resource manager initialized\n");

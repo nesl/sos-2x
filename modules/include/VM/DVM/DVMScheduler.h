@@ -3,23 +3,25 @@
 
 #include <VM/Dvm.h>
 
-
-   
-void engineReboot( func_cb_ptr p )
-{}
-
-     
-
-int8_t scheduler_submit( func_cb_ptr p, DvmContext *  context )
-{
-	return -EINVAL;
-}
-
-
-int8_t error( func_cb_ptr p, DvmContext *  context, uint8_t cause )
-{
-	return -EINVAL;
-}
+typedef struct {
+  func_cb_ptr ext_execute[4];
+  DvmQueue runQueue;
+  DvmContext* runningContext;
+  DvmErrorMsg errorMsg;
+  uint8_t libraries;
+  struct {
+  uint8_t inErrorState  : 1;
+  uint8_t errorFlipFlop : 1;
+  uint8_t taskRunning   : 1;
+  uint8_t halted        : 1;
+  } /* __attribute__((packed)) */ flags;
+} /*__attribute__((packed)) */ DVMScheduler_state_t;
 
 
-#endif
+void engineReboot(void);
+
+int8_t scheduler_submit(DvmContext* context);
+
+int8_t error(DvmContext *  context, uint8_t cause);
+
+#endif//_SCHED_H_INCL_

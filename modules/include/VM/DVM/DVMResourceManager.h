@@ -8,19 +8,25 @@
 #define DVM_NUM_SCRIPT_BLOCKS		2
 #define DVM_DEFAULT_MEM_ALLOC_SIZE	(DVM_NUM_SCRIPT_BLOCKS*DVM_STATE_SIZE)
 
-    
 
-DvmState *  mem_allocate( func_cb_ptr p, uint8_t capsuleNum )
-{
-	return NULL;
-}
-
-    
-
-int8_t mem_free( func_cb_ptr p, uint8_t capsuleNum )
-{
-	return -EINVAL;
-}
+//----------------------------------------------------------------------------
+// TYPEDEFS
+//----------------------------------------------------------------------------
+typedef struct {
+  DvmState *scripts[DVM_CAPSULE_NUM];
+  uint8_t script_block_owners[DVM_NUM_SCRIPT_BLOCKS];
+  DvmState *script_block_ptr;
+} DVMResourceManager_state_t;
 
 
-#endif
+DvmState* mem_allocate(uint8_t capsuleNum);
+
+int8_t mem_free(uint8_t capsuleNum);
+
+/**
+ * \brief Resource Manager Handler Function
+ */
+int8_t resmanager_handler(void *state, Message *msg);
+
+
+#endif//_RES_MNGR_H_INCL_

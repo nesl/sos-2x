@@ -193,22 +193,22 @@ typedef enum {
 #define M_MATH_LIB 		(ASVM_LIB_MIN_PID + 1)
 #define M_RAGO_LIB 		(ASVM_LIB_MIN_PID + 2)
 
-#define RUN_TASK 		(MOD_MSG_START + 0)
-#define HALT 			(MOD_MSG_START + 1)
-#define RESUME 			(MOD_MSG_START + 2)
-#define VERSION_TIMER_TASK 	(MOD_MSG_START + 3)
-#define CAPSULE_TIMER_TASK 	(MOD_MSG_START + 4)
-#define CHECK_NEED_TASK 	(MOD_MSG_START + 5)
+#define MSG_RUN_TASK 		(MOD_MSG_START + 0)
+#define MSG_HALT 		(MOD_MSG_START + 1)
+#define MSG_RESUME 		(MOD_MSG_START + 2)
+#define MSG_VERSION_TIMER_TASK 	(MOD_MSG_START + 3)
+#define MSG_CAPSULE_TIMER_TASK 	(MOD_MSG_START + 4)
+#define MSG_CHECK_NEED_TASK 	(MOD_MSG_START + 5)
 #define MSG_ADD_LIBRARY 	(MOD_MSG_START + 6)
 #define MSG_REMOVE_LIBRARY 	(MOD_MSG_START + 7)
 
 #define POST_EXECUTE (MOD_MSG_START + 10)
 
-#define SUBSCRIBE_TIMER 	0
-#define ERROR_TIMER 		1
-#define VERSION_TIMER 		2
-#define CAPSULE_TIMER 		3
-#define CLOCK_TIMER 		4
+#define SUBSCRIBE_TIMER 	128
+#define ERROR_TIMER 		129
+#define VERSION_TIMER 		130
+#define CAPSULE_TIMER 		131
+#define CLOCK_TIMER 		132
 
 /*
  * MVirus uses the Trickle algorithm for code propagation and maintenance.
