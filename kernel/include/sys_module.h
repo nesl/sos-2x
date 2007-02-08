@@ -34,8 +34,8 @@ void* ker_sys_msg_take_data(Message *msg);
 int8_t ker_sys_timer_start(uint8_t tid, int32_t interval, uint8_t type);
 int8_t ker_sys_timer_restart(uint8_t tid, int32_t interval);
 int8_t ker_sys_timer_stop(uint8_t tid);
-int8_t ker_sys_post(sos_pid_t did, uint8_t type, uint8_t size, void *data,
-        uint16_t flag);
+int8_t ker_sys_post(sos_pid_t did, uint8_t type, uint8_t size, 
+		    void *data, uint16_t flag);
 int8_t ker_sys_post_link(sos_pid_t dst_mod_id, uint8_t type,
     uint8_t size, void *data, uint16_t flag, uint16_t dst_node_addr);
 int8_t ker_sys_post_value(sos_pid_t dst_mod_id,
@@ -49,6 +49,7 @@ int8_t ker_led(uint8_t op);
 void* ker_sys_get_module_state( void );
 int8_t ker_sys_fntable_subscribe( sos_pid_t pub_pid, uint8_t fid, uint8_t table_index );
 int8_t ker_sys_change_own( void* ptr );
+int8_t ker_sys_codemem_read(codemem_t h, void *buf, uint16_t nbytes, uint16_t offset);
 /// \endcond 
 #endif
 
@@ -731,6 +732,20 @@ static inline int8_t sys_change_own( void* ptr )
 	return ker_sys_change_own( ptr );
 #endif
 }
+
+
+typedef int8_t (* sys_codemem_read_func_t)(codemem_t h, void *buf, uint16_t nbytes, uint16_t offset);
+
+static inline int8_t sys_codemem_read(codemem_t h, void *buf, uint16_t nbytes, uint16_t offset)
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_codemem_read_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*21))(h, buf, nbytes, offset);
+#else
+  return ker_sys_change_own(h, buf, nbytes, offset);
+#endif
+}
+
+
 
 #endif
 
