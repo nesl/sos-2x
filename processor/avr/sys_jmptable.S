@@ -27,7 +27,7 @@ jmp ker_sys_fnptr_from_ker_call ; 20
 #else
 jmp 0                      ; 20
 #endif	
-jmp 0                      ; 21
+jmp ker_sys_codemem_read   ; 21
 jmp 0                      ; 22
 jmp 0                      ; 23
 jmp 0                      ; 24

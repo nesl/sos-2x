@@ -22,8 +22,8 @@ br #ker_led
 br #ker_sys_get_module_state 
 br #ker_sys_fntable_subscribe    ; 18
 br #ker_sys_change_own    ; 19
-br 0    ; 20
-br 0 
+br 0    ; 20 // Ram - Do not use .. being used for SFI in AVR
+br #ker_sys_codemem_read 	; 21
 br 0    ; 22
 br 0 
 br 0    ; 24
