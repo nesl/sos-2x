@@ -4,23 +4,6 @@
 #include <VM/Dvm.h>
 
 //--------------------------------------------------------------
-// DVM SCHEDULER STATE
-//--------------------------------------------------------------
-typedef struct {
-  func_cb_ptr ext_execute[4];
-  DvmQueue runQueue;
-  DvmContext* runningContext;
-  DvmErrorMsg errorMsg;
-  uint8_t libraries;
-  struct {
-  uint8_t inErrorState  : 1;
-  uint8_t errorFlipFlop : 1;
-  uint8_t taskRunning   : 1;
-  uint8_t halted        : 1;
-  } flags;
-} DVMScheduler_state_t;
-
-//--------------------------------------------------------------
 // MESSAGE HANDLER DECLARATIONS
 //--------------------------------------------------------------
 int8_t dvmsched_init(dvm_state_t* dvm_st, Message *msg);

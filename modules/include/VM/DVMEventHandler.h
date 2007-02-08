@@ -2,15 +2,7 @@
 #define _EVENT_H_INCL_
 
 #include <VM/Dvm.h>
-
-
-//--------------------------------------------------------------------
-// TYPEDEFS
-//--------------------------------------------------------------------
-typedef struct {
-  DvmState* stateBlock[DVM_CAPSULE_NUM];
-} DVMEventHandler_state_t;
-
+#include <VM/dvm_types.h>
 
 //--------------------------------------------------------------------
 // MESSAGE HANDLER DEFINITIONS

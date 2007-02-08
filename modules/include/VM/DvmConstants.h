@@ -264,4 +264,12 @@ typedef enum {
   MVIRUS_BITMASK_SIZE = (MVIRUS_BITMASK_ENTRIES + 7) / 8,
 } MVirusConstants;
 
+
+
+
+
+
+
+
+
 #endif

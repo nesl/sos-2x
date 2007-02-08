@@ -4,18 +4,6 @@
 #include <VM/Dvm.h>
 
 //-----------------------------------------------------------------
-// TYPEDEFS
-//-----------------------------------------------------------------
-typedef struct 
-{
-  uint8_t usedVars[DVM_CAPSULE_NUM][(DVM_LOCK_COUNT + 7) / 8];
-  DvmQueue readyQueue;
-  uint8_t libraries;
-  uint8_t extlib_module[4];
-  DvmLock locks[DVM_LOCK_COUNT];
-} DVMConcurrencyMngr_state_t;  
-
-//-----------------------------------------------------------------
 // MESSAGE HANDLER DEFINITIONS
 //-----------------------------------------------------------------
 int8_t concurrency_init(dvm_state_t* dvm_st, Message *msg);
