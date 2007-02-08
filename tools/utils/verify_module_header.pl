@@ -12,6 +12,7 @@ my $state_size;
 my $num_timers;
 my $num_sub_func;
 my $num_prov_func;
+my $num_dfunc;
 my $version;
 my $processor_type;
 my $platform_type;
@@ -22,15 +23,16 @@ binmode SOS_FILE;
 read(SOS_FILE, $header, 10);
 
 ($mod_id, $state_size, $num_timers, 
-		$num_sub_func, $num_prov_func, $version, $processor_type, 
+		$num_sub_func, $num_prov_func, $num_dfunc, $version, $processor_type, 
 	   $platform_type,  $code_id) =
-unpack("CCCCCCCCv", $header);
+unpack("CCCCCCCCCv", $header);
 
 $mod_id += 0;
 $state_size += 0;
 $num_timers += 0;
 $num_sub_func += 0;
 $num_prov_func += 0;
+$num_dfunc += 0;
 $version += 0;
 $processor_type += 0;
 $platform_type += 0;  

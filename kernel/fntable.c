@@ -124,6 +124,36 @@ int8_t ker_fntable_subscribe(sos_pid_t sub_pid, sos_pid_t pub_pid, uint8_t fid, 
 	return SOS_OK;
 }
 
+void* ker_fntable_get_dfunc_addr(sos_pid_t pub_pid, uint8_t fid)
+{
+	sos_module_t *mod;
+	uint8_t num_sub_func;
+	uint8_t num_prov_func;
+	mod_header_ptr pub_h;
+	func_cb_ptr pub_cb = 0;
+	
+	mod = ker_get_module(pub_pid);
+	if(mod == NULL) {	
+		return NULL;
+	}
+	
+	pub_h = mod->header;
+	num_sub_func = sos_read_header_byte(pub_h,
+			offsetof(mod_header_t, num_sub_func));
+	num_prov_func = sos_read_header_byte(pub_h,
+			offsetof(mod_header_t, num_prov_func));
+			
+	pub_cb = fntable_get_prov_cb(
+			sos_get_header_member(pub_h, offsetof(mod_header_t, funct)),
+			fid, num_sub_func, num_sub_func + num_prov_func);
+	if(pub_cb == 0) {
+		return NULL;
+	}
+	// TODO: typechecking
+	
+	return (void*)sos_read_header_ptr(pub_cb, offsetof(func_cb_t, ptr));
+}
+
 static func_cb_ptr fntable_real_subscribe(mod_header_ptr sub_h, sos_pid_t pub_pid, uint8_t fid, uint8_t table_index)
 {
 	mod_header_ptr pub_h;
@@ -188,170 +218,6 @@ static inline func_addr_t mod_header_size(uint8_t num_funcs)
 		(num_funcs * sizeof(func_cb_t)) + offsetof(func_cb_t, ptr);
 }
 
-#ifndef MINIELF_LOADER
-void fntable_fix_address(
-		func_addr_t  base_addr, 
-		uint8_t      num_funcs, 
-		uint8_t     *buf, 
-		uint16_t     nbytes, 
-		func_addr_t  offset)
-#ifndef PC_PLATFORM
-{
-	func_addr_t addr;
-	uint8_t n;
-	if( offset > mod_header_size(num_funcs) ) {
-		return;
-	}
-	// handle special case for module_handler
-	if( offset == 0 && nbytes >= offsetof(mod_header_t, funct) ) {
-		// patch module handler
-		mod_header_t *hdr = (mod_header_t *) buf;
-		addr = (func_addr_t) hdr->module_handler;
-		addr += base_addr;
-		hdr->module_handler = (void*)addr;
-#ifdef SOS_SFI
-		// Module Handler is changed by this call
-		sfi_modtable_register(hdr);
-#endif
-	}
-
-	for( n = 0; n < num_funcs; n++ ) {
-		func_addr_t func_loc = offsetof(mod_header_t, funct) + 
-			(n * sizeof(func_cb_t)) + offsetof(func_cb_t, ptr);
-		if( func_loc >= offset && 
-			((func_loc + sizeof(dummy_func) - 1) < (offset + nbytes)) ) {
-			dummy_func *f = (dummy_func*)(buf + func_loc - offset);
-			addr = (func_addr_t) *f;
-			addr += base_addr;
-#ifdef SOS_SFI
-			*f = (dummy_func)sfi_modtable_add((func_addr_t)addr);
-			//			*f = (dummy_func) addr;
-#else
-			*f = (dummy_func) addr;
-#endif
-		}
-	}
-}
-#else
-{
-	DEBUG("simulate fix_address on PC platform base_addr = %d, num_funcs = %d, nbytes = %d, offset = %d\n", base_addr, num_funcs, nbytes, offset);
-}
-#endif//PC_PLATFORM
-#endif//MINIELF_LOADER
-
-#if 0
-int8_t fntable_fix_address(mod_header_t *hdr, func_addr_t base_addr)
-{
-	func_addr_t addr;
-	uint8_t i;
-	//! fix module handler
-	addr = (func_addr_t) hdr->module_handler;
-	addr += base_addr;
-	hdr->module_handler = (void*)addr;
-	//DEBUG("linker_link: base_addr = %d, num_sub_func = %d num_prov_func\n", base_addr, hdr->num_sub_func, hdr->num_prov_func);
-	for(i = 0; i < hdr->num_sub_func; i++) {
-		//! allow user to use its own error handler
-		addr = (func_addr_t) hdr->funct[i].ptr;
-		addr += base_addr;
-		hdr->funct[i].ptr = (void*)addr;
-
-	}
-	for(i = hdr->num_sub_func;
-			i < (hdr->num_sub_func + hdr->num_prov_func); i++) {
-		addr = (func_addr_t) hdr->funct[i].ptr;
-		addr += base_addr;
-		hdr->funct[i].ptr = (void*)addr;
-	}
-
-	// NOTE: we delay function linking until the module is registered
-	// so that we can handle the case that module is not activated
-	return SOS_OK;
-}
-#endif
-
-/**
- * @brief unlink the module from absolute address into position independent code
- * NOTE: this rountine assumes the header is in RAM
- * unfix offsetof(mod_header_t, module_handler)
- * unfix offsetof(mod_header_t, funct) + (n * sizeof(func_cb_t)) + offsetof(func_cb_t, ptr) for n = [0 ... number_of_funcs) 
- *
- * @param hdr pointer to module header in RAM
- * @param base_addr base address
- */
-void fntable_unfix_address(
-		func_addr_t  base_addr, 
-		uint8_t      num_funcs, 
-		uint8_t     *buf, 
-		uint16_t     nbytes, 
-		func_addr_t  offset)
-#ifndef PC_PLATFORM
-{
-	func_addr_t addr;
-	uint8_t n;
-	if( offset > mod_header_size(num_funcs) ) {
-		return;
-	}
-
-	if( offset == 0 && nbytes >= offsetof(mod_header_t, funct) ) {
-		// patch module handler
-		mod_header_t *hdr = (mod_header_t *) buf;
-#ifdef SOS_SFI
-		addr = (func_addr_t)sfi_modtable_get_real_addr((func_addr_t) hdr->module_handler);
-#else
-		addr = (func_addr_t) hdr->module_handler;
-#endif
-		addr -= base_addr;
-		hdr->module_handler = (void*)addr;
-	}
-
-
-	for( n = 0; n < num_funcs; n++ ) {
-		func_addr_t func_loc = offsetof(mod_header_t, funct) + 
-			(n * sizeof(func_cb_t)) + offsetof(func_cb_t, ptr);
-		if( func_loc >= offset && 
-			((func_loc + sizeof(dummy_func) - 1) < (offset + nbytes)) ) {
-			dummy_func *f = (dummy_func*)(buf + func_loc - offset);
-#ifdef SOS_SFI
-			addr = (func_addr_t)sfi_modtable_get_real_addr((func_addr_t) (*f));
-#else
-			addr = (func_addr_t) *f;
-#endif
-			addr -= base_addr;
-			*f = (dummy_func) addr;
-		}
-	}
-}
-#else
-{
-	DEBUG("simulate unfix_address on PC platform base_addr = %d, num_funcs = %d, nbytes = %d, offset = %d\n", base_addr, num_funcs, nbytes, offset);
-}
-#endif
-#if 0
-int8_t fntable_unfix_address(mod_header_t *hdr, func_addr_t base_addr)
-{
-	func_addr_t addr;
-	uint8_t i;
-
-	//! unfix module handler
-	addr = (func_addr_t) hdr->module_handler;
-	addr -= base_addr;
-	hdr->module_handler = (void*)addr;
-	//DEBUG("linker_unlink: base_addr = %d, num_sub_func = %d num_prov_func\n", base_addr, hdr->num_sub_func, hdr->num_prov_func);
-	for(i = 0; i < hdr->num_sub_func; i++) {
-		//! allow user to use its own error handler
-		addr = (func_addr_t) hdr->funct[i].ptr;
-		addr -= base_addr;
-		hdr->funct[i].ptr = (void*)addr;
-	}
-	for(i = hdr->num_sub_func;
-			i < (hdr->num_sub_func + hdr->num_prov_func); i++) {
-		addr = (func_addr_t) hdr->funct[i].ptr;
-		addr -= base_addr;
-		hdr->funct[i].ptr = (void*)addr;
-	}
-	return SOS_OK;
-}
-#endif
 
 /**
  * @brief link the functions

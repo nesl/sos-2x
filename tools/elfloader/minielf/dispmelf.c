@@ -102,7 +102,7 @@ int PrintMelfSymTable(Melf* MelfDesc)
 							  printf("UNKNOWN  ");
 
 						  // Type
-						  if (MELF_ST_TYPE(msym[i].st_info) <= STT_FILE)
+						  if (MELF_ST_TYPE(msym[i].st_info) <= STT_SOS_DFUNC)
 							  printf("%-8.8s ", SymTypeStrTab[MELF_ST_TYPE(msym[i].st_info)]);
 						  else
 							  printf("UNKNOWN  ");

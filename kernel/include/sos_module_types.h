@@ -19,6 +19,8 @@ typedef uint16_t sos_code_id_t;
  * So please avoid using sos_read_header_* in the loop
  * NOTE: when modifying this structure, please keep it 16 bits align.
  * NOTE: MSP430-GCC does not permit function pointers in a packet structure
+ * Simon: As of Feb 7, 2007, Changing mod_header_t requires
+ * changing the same structure in tools/elfloader/minielf/minielf.h
  */
 typedef struct mod_header {
   sos_pid_t mod_id;        //!< module ID (used for messaging).  Set NULL_PID for system selected mod_id
@@ -26,12 +28,12 @@ typedef struct mod_header {
   uint8_t num_timers;      //!< Number of timers to be reserved at module load time
   uint8_t num_sub_func;	   //!< number of functions to be subscribed
   uint8_t num_prov_func;   //!< number of functions provided
+  uint8_t num_dfunc;       //!< number of direct linked functions
   uint8_t version;         //!< version number, for users bookkeeping
   uint8_t processor_type;  //!< processor type of this module
   uint8_t platform_type;   //!< platform type of this module
-  sos_code_id_t code_id;   //!< module image identifier
   uint8_t padding;
-  uint8_t padding2; 
+  sos_code_id_t code_id;   //!< module image identifier
   msg_handler_t module_handler;
   func_cb_t funct[];
 } mod_header_t;

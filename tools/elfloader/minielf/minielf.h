@@ -79,6 +79,10 @@ typedef struct {
 #define MELF_ST_INFO(b,t) (((b)<<4)+((t)&0x0f))
 
 /**
+ * STT_SOS_DFUNC is the symbol type for direct function linking
+ */
+#define STT_SOS_DFUNC  (STT_FILE + 1)
+/**
  * \brief Mini-ELF Relocation Record
  *
  * - Relocation records are organized as an array in a Mini-ELF file
@@ -91,6 +95,32 @@ typedef struct {
   unsigned char r_type; //!< Relocation Type
   unsigned char pad;
 } __attribute__((packed)) Melf_Rela;
+
+typedef struct sos_func_cb_t {
+	Melf_Addr ptr;        //! function pointer                    
+	uint8_t proto[4]; //! function prototype                  
+	uint8_t pid;      //! function PID                                    
+	uint8_t fid;      //! function ID                         
+} __attribute__((packed)) 
+sos_func_cb_t;
+
+typedef struct sos_mod_header_t {
+	uint8_t  mod_id;        //!< module ID (used for messaging).  Set NULL_PID for system selected mod_id
+	uint8_t state_size;      //!< module state size
+	uint8_t num_timers;      //!< Number of timers to be reserved at module load time
+	uint8_t num_sub_func;    //!< number of functions to be subscribed
+	uint8_t num_prov_func;   //!< number of functions provided
+	uint8_t num_dfunc;       //!< number of direct linked functions
+	uint8_t version;         //!< version number, for users bookkeeping
+	uint8_t processor_type;  //!< processor type of this module
+	uint8_t platform_type;   //!< platform type of this module
+	uint8_t padding;
+	uint16_t code_id;   //!< module image identifier
+	Melf_Addr module_handler;
+	sos_func_cb_t funct[];
+} __attribute__((packed)) 
+sos_mod_header_t;
+
 
 /*@}*/
 

@@ -40,9 +40,7 @@
 #define DEBUG(...)
 #endif
 
-#ifdef MINIELF_LOADER
 #include <melfloader.h>
-#endif
 
 #define CODEMEM_EXECUTABLE_FLAG  0x01
 

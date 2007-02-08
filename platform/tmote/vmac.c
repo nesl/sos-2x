@@ -236,7 +236,7 @@ void sosmsg_to_mac(Message *msg, VMAC_PPDU *ppdu)
 	ppdu->mpdu.did = msg->did;
 	ppdu->mpdu.sid = msg->sid;
 	ppdu->mpdu.type = msg->type;
-	
+	ppdu->mpdu.group = node_group_id;	
 	ppdu->mpdu.data = msg->data;
 }
 
@@ -293,6 +293,11 @@ static int8_t radio_msg_send(Message *msg)
 	VMAC_PPDU ppdu;
 	vhal_data vd;
 	
+	if(msg->type == MSG_TIMESTAMP){
+		uint32_t timestp = ker_systime32();
+		memcpy(msg->data, (uint8_t*)(&timestp),sizeof(uint32_t));
+	}
+
 	sosmsg_to_mac(msg, &ppdu);
 
 	ppdu.mpdu.fcf = 1;		//doesn't matter, hardware supports it
@@ -385,6 +390,7 @@ void _MacRecvCallBack(int16_t timestamp)
 {
 	VMAC_PPDU ppdu;
 	vhal_data vd;
+	Message *msg;
 
 	mac_to_vhal(&ppdu, &vd);
 	Radio_Disable_Interrupt();		//disable interrupt while reading data
@@ -392,17 +398,28 @@ void _MacRecvCallBack(int16_t timestamp)
 		Radio_Enable_Interrupt();	//enable interrupt
 		return;
 	}
-	Radio_Enable_Interrupt();		//enable interrupt
 	vhal_to_mac(&vd, &ppdu);
 
-	Message *msg = msg_create();
+	if( ppdu.mpdu.group     != node_group_id ) {
+		ker_free(vd.payload);
+		Radio_Enable_Interrupt();       //enable interrupt
+		return;
+	}
+
+	msg = msg_create();
 	if( msg == NULL ) {
 		ker_free(vd.payload);
+		Radio_Enable_Interrupt();		//enable interrupt
 		return;
 	}
 	mac_to_sosmsg(&ppdu, msg);
+	if(msg->type == MSG_TIMESTAMP){
+		uint32_t timestp = ker_systime32();
+		memcpy(((uint8_t*)(msg->data) + sizeof(uint32_t)),(uint8_t*)(&timestp),sizeof(uint32_t));
+	} 
 	timestamp_incoming(msg, ker_systime32());
 	handle_incoming_msg(msg, SOS_MSG_RADIO_IO);
+	Radio_Enable_Interrupt();		//enable interrupt
 }
 
 /*************************************************************************

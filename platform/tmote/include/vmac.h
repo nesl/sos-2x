@@ -75,6 +75,7 @@ typedef struct _VMAC_MPDU {
 	sos_pid_t  did;                          //!< module destination id
 	sos_pid_t  sid;                          //!< module source id
 	uint8_t  type;                           //!< module specific message type
+	uint8_t  group;                          //!< SOS group info
 	uint8_t *data;
 	uint16_t fcs;
 }VMAC_MPDU;
@@ -82,7 +83,7 @@ typedef struct _VMAC_MPDU {
 /**********************************************************************
  * define the pre-payload and post-payload length                     *
  **********************************************************************/
-#define PRE_PAYLOAD_LEN 	11
+#define PRE_PAYLOAD_LEN 	12
 #define POST_PAYLOAD_LEN	2
 
 /**********************************************************************

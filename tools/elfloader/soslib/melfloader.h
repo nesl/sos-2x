@@ -55,7 +55,7 @@ mod_header_t* melf_get_mod_header(unsigned char* image_buf);
  * \param sym   Symbol Record
  * \param progshdr Program Section Header
  */
-void melf_arch_relocate(melf_desc_t* mdesc, Melf_Rela* rela, 
+int8_t melf_arch_relocate(melf_desc_t* mdesc, Melf_Rela* rela, 
 			       Melf_Sym* sym, Melf_Shdr* progshdr);
 
 /**

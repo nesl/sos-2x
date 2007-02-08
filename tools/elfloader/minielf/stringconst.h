@@ -16,7 +16,7 @@ static const char* SecFlagStrTab[]  __attribute__((unused)) = {"NOF", "W  ", "A 
 // Symbol Binding Description
 static const char* SymBindStrTab[]  __attribute__((unused)) = {"LOCAL", "GLOBAL", "WEAK"};
 // Symbol Type Description
-static const char* SymTypeStrTab[]  __attribute__((unused)) = {"NOTYPE", "OBJECT", "FUNC", "SECTION", "FILE"};
+static const char* SymTypeStrTab[]  __attribute__((unused)) = {"NOTYPE", "OBJECT", "FUNC", "SECTION", "FILE", "DFUNC"};
 
 
 

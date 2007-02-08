@@ -452,16 +452,6 @@ static inline void send_fragment()
 		goto send_fragment_postproc;
 	}
 
-#ifndef MINIELF_LOADER
-	if (cam->fetchtype == FETCHTYPE_MODULE) {
-		fntable_unfix_address(
-				ker_codemem_get_header_address( cam->cm ),
-				send_state.num_funcs,
-				out_pkt->fragment,
-				FETCHER_FRAGMENT_SIZE,
-				(func_addr_t) frag_id * FETCHER_FRAGMENT_SIZE);
-	}
-#endif
 
 	//DEBUG("out_pkt has addr %x\n", (int)out_pkt);
 	DEBUG_PID(KER_FETCHER_PID, "send_fragment: frag_id = %d to %d\n", frag_id, send_state.dest);
@@ -593,24 +583,6 @@ static int8_t handle_data(Message *msg)
 		// if the first fragment is not available, we drop the packet
 		return SOS_OK;
 	}
-
-#ifndef MINIELF_LOADER
-	//DEBUG("calling codemem_write\n");
-	if(f->frag_id == 0 && cam->fetchtype == FETCHTYPE_MODULE) {
-		// if this is the first fragment, get number of functions
-		mod_header_t * hdr = (mod_header_t*) f->fragment;
-		fst->num_funcs = hdr->num_sub_func + hdr->num_prov_func;
-	}
-
-	if( cam->fetchtype == FETCHTYPE_MODULE ) {
-		fntable_fix_address(
-				ker_codemem_get_header_address( cam->cm ),
-				fst->num_funcs,
-				f->fragment,
-				FETCHER_FRAGMENT_SIZE,
-				(func_addr_t)FETCHER_FRAGMENT_SIZE * f->frag_id);
-	}
-#endif
 
 	ret = ker_codemem_write(cam->cm, KER_FETCHER_PID,
 			f->fragment, FETCHER_FRAGMENT_SIZE,

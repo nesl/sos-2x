@@ -118,6 +118,8 @@ void fntable_unfix_address(
  */
 int8_t fntable_link(sos_module_t *m);
 
+void* ker_fntable_get_dfunc_addr(sos_pid_t pub_pid, uint8_t fid);
+
 /**
  * @brief error stub for function subscriber
  */

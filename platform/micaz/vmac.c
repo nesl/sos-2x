@@ -390,6 +390,7 @@ void _MacRecvCallBack(int16_t timestamp)
 {
 	VMAC_PPDU ppdu;
 	vhal_data vd;
+	Message *msg;
 
 	mac_to_vhal(&ppdu, &vd);
 	Radio_Disable_Interrupt();		//disable interrupt while reading data
@@ -404,21 +405,20 @@ void _MacRecvCallBack(int16_t timestamp)
 		Radio_Enable_Interrupt();		//enable interrupt
 		return;	 
 	}	 
-	{
-		Message *msg = msg_create();
-		if( msg == NULL ) {
-			ker_free(vd.payload);
-			Radio_Enable_Interrupt();		//enable interrupt
-			return;
-		}
-		mac_to_sosmsg(&ppdu, msg);
-		if(msg->type == MSG_TIMESTAMP){
-			uint32_t timestp = ker_systime32();
-			memcpy(((uint8_t*)(msg->data) + sizeof(uint32_t)),(uint8_t*)(&timestp),sizeof(uint32_t));
-		}
-		timestamp_incoming(msg, ker_systime32());
-		handle_incoming_msg(msg, SOS_MSG_RADIO_IO);
+
+	msg = msg_create();
+	if( msg == NULL ) {
+		ker_free(vd.payload);
+		Radio_Enable_Interrupt();		//enable interrupt
+		return;
 	}
+	mac_to_sosmsg(&ppdu, msg);
+	if(msg->type == MSG_TIMESTAMP){
+		uint32_t timestp = ker_systime32();
+		memcpy(((uint8_t*)(msg->data) + sizeof(uint32_t)),(uint8_t*)(&timestp),sizeof(uint32_t));
+	}
+	timestamp_incoming(msg, ker_systime32());
+	handle_incoming_msg(msg, SOS_MSG_RADIO_IO);
 	Radio_Enable_Interrupt();		//enable interrupt
 }
 

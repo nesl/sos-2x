@@ -31,6 +31,8 @@
 
 // NOTE: PLEASE MAKE SURE THAT THIS STRUCTURE
 // IS WORD ALIGNED.
+// Simon: As of Feb 7, 2007, Changing func_cb_t requires
+// changing the same structure in tools/elfloader/minielf/minielf.h
 typedef struct func_cb {
 	void *ptr;        //! function pointer                    
 	uint8_t proto[4]; //! function prototype                  

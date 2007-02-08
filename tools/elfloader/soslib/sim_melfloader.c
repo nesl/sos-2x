@@ -9,6 +9,7 @@
 #include <codemem.h>
 
 //----------------------------------------------------------
-void melf_arch_relocate(melf_desc_t* mdesc, Melf_Rela* rela, Melf_Sym* sym, Melf_Shdr* progshdr)
+int8_t melf_arch_relocate(melf_desc_t* mdesc, Melf_Rela* rela, Melf_Sym* sym, Melf_Shdr* progshdr)
 {
+	return 0;
 }

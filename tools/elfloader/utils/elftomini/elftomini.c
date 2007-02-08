@@ -2,6 +2,7 @@
  * \file elftomini.c
  * \brief Create a MiniELF format file from a given ELF file
  * \author Ram Kumar {ram@ee.ucla.edu}
+ * \author Simon Han {simonhan@cs.ucla.edu}
  */
 
 /**
@@ -49,6 +50,11 @@ typedef struct {
 #ifdef DBGMODE
   int* mtoemap; // For pretty printing
 #endif
+  Melf_Data* mreladata;      // The relocation table for MELF
+  Melf_Data* textdata;       // Text section in MELF
+  sos_mod_header_t *sos_mod_hdr_ptr;  // Pointer to module header in MELF text section
+  int sos_mod_hdr_offset;             // The offset at the beginning of module header in text section
+  int sos_mod_hdr_end;                // The offset to the end of module header in text section
 } symbol_map_t; 
 
 
@@ -60,15 +66,16 @@ static Melf_Data* convProgbitsScn(Elf_Scn* progbitsscn);
 static int initSymbolMap(symbol_map_t* symmap, Elf_Scn* symtabscn);
 static void addTxtScnToSymbolMap( symbol_map_t* symmap, Elf_Scn* progbitsscn );
 static void addStrTabToSymbolMap( symbol_map_t* symmap, Elf_Scn* strtabscn );
-//int patchSymbol(symbol_map_t* symmap, Elf32_Rela* erela );
 static int addMelfSymbol(symbol_map_t* symmap, int elfsymndx);
 static int convElfHdr(Melf_Scn* mscn, Elf_Scn* escn);
+static void fixUndefinedSymbols( symbol_map_t* symmap );
+static void printSOSModHeader( sos_mod_header_t *hdr );
 #ifdef DBGMODE
 static void  prettyPrintMELF(Melf* melfDesc);
 #endif
 
 static int e_machine;
-static  Elf* elf;
+static Elf* elf;
 
 int main(int argc, char** argv)
 {
@@ -178,12 +185,6 @@ static int convElfToMiniFile(char* elffilename, char* melffilename)
   }
 
   // Get the pointer to .rela.text section
-  /*
-  if ((relatextscn = getELFSectionByName(elf, ".rela.text")) == NULL){
-    fprintf(stderr, "Error getting .rela.text section.\n");
-    exit(EXIT_FAILURE);
-  }
-  */
   relatextscn = getELFSectionByName(elf, ".rela.text");
 
   // Get the pointer to .text section
@@ -218,8 +219,6 @@ static int convElfToMiniFile(char* elffilename, char* melffilename)
   
 
   // Convert Relocation Table
-  // Simon: convert relocation before text section
-  //        because some symbols will be patched in .text section
   if( relatextscn != NULL ) {
   if ((relatextdata = convRelaScn(relatextscn, symmap)) == NULL){
     fprintf(stderr, "Error converting Rela table.\n");
@@ -232,15 +231,32 @@ static int convElfToMiniFile(char* elffilename, char* melffilename)
     fprintf(stderr, "Error converting text section.\n");
     exit(EXIT_FAILURE);
   }
+  symmap->textdata = textdata;
 
   // Add mod_header symbol
   if ((modhdrsymndx = getELFSymbolTableNdx(elf, "mod_header")) == -1){
     fprintf(stderr, "Could not locate symbol: mod_header. Not a valid SOS module\n");
     exit(EXIT_FAILURE);
   }
+  
   addMelfSymbol(symmap, modhdrsymndx);
   melf_setModHdrSymNdx(melf, symmap->etommap[modhdrsymndx]);
 
+  printf("MELF module header index = %d\n", symmap->etommap[modhdrsymndx] );
+  {
+	Melf_Sym *modhdrsym = &(symmap->msym[ symmap->etommap[modhdrsymndx] ]);
+	symmap->sos_mod_hdr_ptr = (sos_mod_header_t*)(((char*)(textdata->d_buf)) + modhdrsym->st_value);
+	symmap->sos_mod_hdr_offset = modhdrsym->st_value;
+	symmap->sos_mod_hdr_end = modhdrsym->st_value + sizeof(sos_mod_header_t) + 
+		(sizeof(sos_func_cb_t) * 
+		(symmap->sos_mod_hdr_ptr->num_sub_func + symmap->sos_mod_hdr_ptr->num_prov_func + symmap->sos_mod_hdr_ptr->num_dfunc));
+		
+	//printf("MELF module header Start: %4d\n", symmap->sos_mod_hdr_offset);
+	//printf("MELF module header End: %4d\n", symmap->sos_mod_hdr_end);
+	printSOSModHeader( symmap->sos_mod_hdr_ptr );
+	fixUndefinedSymbols( symmap );
+  }
+  
   // Convert Symbol Table
   if ((symtabdata = convSymScn(symmap)) == NULL){
     fprintf(stderr, "Error convering symbol table.\n");
@@ -333,12 +349,12 @@ static Melf_Data* convProgbitsScn(Elf_Scn* progbitsscn)
     if (ELF_T_BYTE == edata->d_type){
       // Allocate memory for mdata
       if ((mdata = malloc(sizeof(Melf_Data))) == NULL){
-	fprintf(stderr, "Could not allocte memory for Mini-ELF progbits mdata structure.\n");
-	return NULL;
+		fprintf(stderr, "Could not allocte memory for Mini-ELF progbits mdata structure.\n");
+		return NULL;
       }
       if ((mdata->d_buf = malloc(edata->d_size)) == NULL){
-	fprintf(stderr, "Could not allocate memory for Mini-ELF progbits data.\n");
-	return NULL;
+		fprintf(stderr, "Could not allocate memory for Mini-ELF progbits data.\n");
+		return NULL;
       }
       mdata->d_type = ELF_T_BYTE;
       memcpy(mdata->d_buf, edata->d_buf, edata->d_size);
@@ -486,22 +502,13 @@ static Melf_Data* convRelaScn(Elf_Scn* relascn, symbol_map_t* symmap)
 		int esymndx;
 		int msymndx;
 		esymndx = ELF32_R_SYM(erela[i].r_info);
-
-		/*
-		//
-		// Check whether we can patch the symbol right now 
-		// (i.e. known sys-calls)
-		//
-		if( patchSymbol( symmap, erela + i ) != 0 ) {
-			continue;
-		}
-		*/
 		
 		// Get MELF Symbol Index
 		if ((msymndx = addMelfSymbol(symmap, esymndx)) == -1){
 			fprintf(stderr, "Invalid symbol index in rela.\n");
 			return NULL;
 		}
+	
 		// Convert ELF Rela record to MELF Rela	record
 		mrela[mreladata->d_numData].r_offset = (Melf_Addr)erela[i].r_offset;
 		mrela[mreladata->d_numData].r_symbol = msymndx;
@@ -511,120 +518,14 @@ static Melf_Data* convRelaScn(Elf_Scn* relascn, symbol_map_t* symmap)
 		mreladata->d_numData++;
       }
       mreladata->d_size = mreladata->d_numData * sizeof(Melf_Rela);
+	  symmap->mreladata = mreladata;
       return mreladata;
     }
   }
+  symmap->mreladata = NULL;
   fprintf(stderr, "Section does not contain any rela records.\n");
   return NULL;
 }
-
-//---------------------------------------------------------------------
-/*
-static uint32_t get_sys_addr( char* name );
-int patchSymbol(symbol_map_t* symmap, Elf32_Rela* erela )
-{
-	int idx_to_string;
-	Elf32_Half ndx;
-	
-	uint32_t reloc_addr;
-	//
-	// Just print out for now
-	//
-	printf("*** patchSymbol: ***\n");
-	// Offset                                             
-	printf("%08x ", erela->r_offset);                   
-	// Type                                               
-	printf("%03x ", ELF32_R_TYPE(erela->r_info));       
-	// Sym                                                
-    printf("%07d ", ELF32_R_SYM(erela->r_info));        
-    // Addend                                             
-    printf("%08x ", erela->r_addend);
-	// Newline                                            
-    printf("\n");
-
-	idx_to_string = (symmap->esym[ELF32_R_SYM(erela->r_info)]).st_name;
-	ndx           = (symmap->esym[ELF32_R_SYM(erela->r_info)]).st_shndx;
-	
-	if( ndx != SHN_UNDEF ) {
-		return 0;
-	}
-	// Find st_name from symbol table and then get from symbol string table
-	//printf("Symbol idx = %d\n", idx_to_string );
-	printf("Patching Symbol: %s\n", &(symmap->strtab[idx_to_string]));
-		
-	reloc_addr = get_sys_addr((char*)&(symmap->strtab[idx_to_string]));
-	// print the offset val
-	if( e_machine == EM_AVR ) {
-		printf("%x %x %x %x\n", symmap->rawtext[erela->r_offset],
-			symmap->rawtext[erela->r_offset + 1],
-			symmap->rawtext[erela->r_offset + 2],
-			symmap->rawtext[erela->r_offset + 3]);
-		
-		printf("patch val = %x\n", reloc_addr);
-		reloc_addr = (reloc_addr >> 1); 
-		symmap->rawtext[erela->r_offset + 2] = (uint8_t)(reloc_addr);
-		symmap->rawtext[erela->r_offset + 3] = (uint8_t)(reloc_addr >> 8);
-		printf("After %x %x %x %x\n", symmap->rawtext[erela->r_offset],
-			symmap->rawtext[erela->r_offset + 1],
-			symmap->rawtext[erela->r_offset + 2],
-			symmap->rawtext[erela->r_offset + 3]);
-	} else if( e_machine == EM_MSP430 ) {
-		printf("%x %x\n", symmap->rawtext[erela->r_offset],
-			symmap->rawtext[erela->r_offset + 1]);
-			
-		symmap->rawtext[erela->r_offset + 0] = (uint8_t)(reloc_addr);
-		symmap->rawtext[erela->r_offset + 1] = (uint8_t)(reloc_addr >> 8);
-		printf("After %x %x\n", symmap->rawtext[erela->r_offset],
-			symmap->rawtext[erela->r_offset + 1]);
-	}
-	return 1;
-}
-
-static char* systbl[] = {
-"sys_fnptr_call",
-"sys_malloc",
-"sys_realloc",
-"sys_free",
-"sys_msg_take_data",
-"sys_timer_start",
-"sys_timer_restart",
-"sys_timer_stop",
-"sys_post",
-"sys_post_link",
-"sys_post_value",
-"sys_hw_type",
-"sys_id",
-"sys_rand",
-"sys_time32",
-"sys_sensor_get_data",
-};
-
-static uint32_t get_sys_addr( char* name )
-{
-	uint32_t offset;
-	int i;
-	
-	if( e_machine == EM_AVR ) {
-		offset = 0x1D400;
-	} else if( e_machine == EM_MSP430 ) {
-		offset = 0xFB80;
-	}
-	for( i = 0; i < (sizeof(systbl) / sizeof(char*)); i++ ) {
-		if( strcmp( systbl[i], name ) == 0 ) {
-			if(e_machine == EM_AVR ) {
-				return offset + i * 4;
-			} else if( e_machine == EM_MSP430 ) {
-				return offset + i * 4;
-			}
-			
-		}
-	}
-	printf("Cannot find %s: patch to sys_fnptr_call\n", name);
-	return offset + 0;
-	//fprintf(stderr, "cannot find name..\n");
-	//exit(EXIT_FAILURE);
-}
-*/
 
 //---------------------------------------------------------------------
 static int addMelfSymbol(symbol_map_t* symmap, int elfsymndx)
@@ -667,6 +568,7 @@ static int addMelfSymbol(symbol_map_t* symmap, int elfsymndx)
   }
   return (symmap->etommap[elfsymndx]);
 }
+
 /*
 static void printELFSymbol(symbol_map_t* symmap, int elfsymndx )
 {
@@ -687,6 +589,87 @@ static void printELFSymbol(symbol_map_t* symmap, int elfsymndx )
 	printf("\n");
 }
 */
+
+static void fixUndefinedSymbols( symbol_map_t* symmap )
+{
+	int i;
+	Melf_Rela  *mrela;
+	
+	if( symmap->mreladata == NULL ) {
+		fprintf(stderr, "Invalid relocation data!\n");
+		exit(1);
+	}
+	mrela = (Melf_Rela*)(symmap->mreladata->d_buf);
+	//
+	// Search through each relocation record
+	// If the record points to undinfed symbol and the record points to SOS function table,
+	// Store module ID and function ID to st_value
+	//
+	for( i = 0; i < symmap->mreladata->d_numData; i++ ) {
+		Melf_Sym *msym = &(symmap->msym[ mrela[i].r_symbol ]);
+		
+		if( (MELF_ST_BIND( msym->st_info ) == STB_GLOBAL) && 
+			(MELF_ST_TYPE( msym->st_info ) == STT_NOTYPE) ) {
+			//printf("Relocation Record contains undefined symbol, Offset = %4x\n", mrela[i].r_offset);
+			
+			if( mrela[i].r_offset >= (symmap->sos_mod_hdr_offset + offsetof(sos_mod_header_t, funct)) && 
+			    mrela[i].r_offset < symmap->sos_mod_hdr_end ) {
+				int func_idx = mrela[i].r_offset - symmap->sos_mod_hdr_offset - offsetof(sos_mod_header_t, funct); 
+				
+				//printf("In module header %d\n", func_idx);
+				if( func_idx % sizeof(sos_func_cb_t) == 0 ) {
+					func_idx /= sizeof(sos_func_cb_t);
+					//printf("func_idx = %d\n", func_idx);
+					// Change STT_NOTYPE to STT_SOS_DFUNC
+					msym->st_info = MELF_ST_INFO( STB_GLOBAL, STT_SOS_DFUNC );
+					msym->st_value = ((Melf_Addr)(symmap->sos_mod_hdr_ptr->funct[func_idx].pid) << 8)
+						| (Melf_Addr)(symmap->sos_mod_hdr_ptr->funct[func_idx].fid);
+				} else {
+					//printf("func_idx is not pointing to correct location\n");
+					exit(1);
+				}
+			} else {
+				//printf("NOT in module header\n");
+			}
+		}
+	}
+	
+	//
+	// If we still have undefined symbol, fire Error!
+	//
+	for( i = 0; i < symmap->numM; i++ ) {
+		Melf_Sym *msym = &(symmap->msym[i]);
+		
+		if( (MELF_ST_BIND( msym->st_info ) == STB_GLOBAL) && 
+			(MELF_ST_TYPE( msym->st_info ) == STT_NOTYPE) ) {
+			// If this relocation record is still undefined
+			// TODO: print error information
+			int elfsymndx = symmap->mtoemap[i];
+			Elf32_Sym *esym = &(symmap->esym[elfsymndx]);
+			
+			printf("ERROR: Undefined symbol: %s\n", &(symmap->strtab[esym->st_name]));
+			exit(1);
+		} 
+	}
+	
+}
+
+static void printSOSModHeader( sos_mod_header_t *hdr )
+{
+	int i;
+	printf("====== SOS Module Header =====\n");
+	printf("Module ID:          %4d\n", hdr->mod_id);
+	printf("Number Sub Func:    %4d\n", hdr->num_sub_func);
+	printf("Number Prov Func:   %4d\n", hdr->num_prov_func);
+	printf("Number Direct Func: %4d\n", hdr->num_dfunc); 
+	printf("Processor Type:     %4d\n", hdr->processor_type);
+	printf("Platform Type:      %4d\n", hdr->platform_type);
+	for( i = 0; i < hdr->num_sub_func + hdr->num_prov_func; i++ ) {
+		printf("Funcion %d: ADDR: %4x, PID: %4d, FID: %4d\n", i, hdr->funct[i].ptr, hdr->funct[i].pid, hdr->funct[i].fid);
+	}
+	
+	printf("\n");
+}
 
 //---------------------------------------------------------------------
 static int printusage()

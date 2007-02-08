@@ -3,15 +3,16 @@
  * \brief Mini-ELF loader specific to AVR architecture
  * \author Ram Kumar {ram@ee.ucla.edu}
  */
-
+#define STT_FILE 4
 #include <avr_minielf.h>
 #include <melfloader.h>
 #include <codemem.h>
+#include <fntable.h>
 
 static inline void WRITE_LDI(uint8_t* instr, uint8_t byte);
 
 //----------------------------------------------------------
-void melf_arch_relocate(melf_desc_t* mdesc, Melf_Rela* rela, Melf_Sym* sym, Melf_Shdr* progshdr)
+int8_t melf_arch_relocate(melf_desc_t* mdesc, Melf_Rela* rela, Melf_Sym* sym, Melf_Shdr* progshdr)
 {
   uint8_t instr[4];
   uint32_t reloc_addr;
@@ -19,7 +20,14 @@ void melf_arch_relocate(melf_desc_t* mdesc, Melf_Rela* rela, Melf_Sym* sym, Melf
   
   reloc_offset = (Melf_Addr)(progshdr->sh_offset) + rela->r_offset;
   
-  reloc_addr = mdesc->base_addr + (uint32_t) progshdr->sh_offset + (uint32_t)sym->st_value + (uint32_t)rela->r_addend;
+  if( MELF_ST_TYPE(sym->st_info) == STT_SOS_DFUNC ) {
+	sos_pid_t pid = (sos_pid_t)((sym->st_value >> 8) & 0x00ff);
+	uint8_t fid = (uint8_t)(sym->st_value & 0x00ff);
+	reloc_addr = (uint16_t)ker_fntable_get_dfunc_addr(pid, fid);
+	if( reloc_addr == 0 ) return -1;
+  } else {
+	reloc_addr = mdesc->base_addr + (uint32_t) progshdr->sh_offset + (uint32_t)sym->st_value + (uint32_t)rela->r_addend;
+  }
 
   ker_codemem_read(mdesc->cmhdl, KER_DFT_LOADER_PID, (void*)instr, 4, reloc_offset);
   
@@ -28,7 +36,7 @@ void melf_arch_relocate(melf_desc_t* mdesc, Melf_Rela* rela, Melf_Sym* sym, Melf
   case R_AVR_32:
   case R_AVR_7_PCREL:
   case R_AVR_13_PCREL:
-    return;
+    return 0;
     
   case R_AVR_16:
     instr[0] = (uint8_t)reloc_addr;
@@ -115,7 +123,7 @@ void melf_arch_relocate(melf_desc_t* mdesc, Melf_Rela* rela, Melf_Sym* sym, Melf
     break;
   }
 
-  return;
+  return 0;
 }
 //----------------------------------------------------------
 static inline void WRITE_LDI(uint8_t* instr, uint8_t byte)
