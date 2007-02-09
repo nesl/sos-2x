@@ -69,7 +69,7 @@ interfacing with the user.  It is built using:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-cd $SOSROOT/config/sos_tool/
+cd $SOSROOT/tools/sos_tool/
 make emu
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
