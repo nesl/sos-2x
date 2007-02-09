@@ -16,7 +16,7 @@
 // TYPEDEFS
 //----------------------------------------------------------------------------
 #define NULL_CAPSULE                    (DVM_CAPSULE_NUM + 1)
-#define DVM_STATE_SIZE				sizeof(DvmState)
+#define DVM_STATE_SIZE			sizeof(DvmState)
 #define DVM_NUM_SCRIPT_BLOCKS		2
 #define DVM_DEFAULT_MEM_ALLOC_SIZE	(DVM_NUM_SCRIPT_BLOCKS*DVM_STATE_SIZE)
 
@@ -53,11 +53,26 @@ typedef struct {
   DvmState* stateBlock[DVM_CAPSULE_NUM];
 } DVMEventHandler_state_t;
 
+typedef struct 
+{
+  uint8_t busy;			  // for GET_DATA
+  DvmContext *executing;	  // for GET_DATA
+  DvmQueue getDataWaitQueue;	  // for GET_DATA
+  DvmContext *nop_executing;	  // for NOP
+  uint16_t delay_cnt;             // for NOP
+  DvmDataBuffer buffers[DVM_NUM_BUFS];
+  DvmStackVariable shared_vars[DVM_NUM_SHARED_VARS];
+  int32_t fl_post;			//for posting a int32_t/float directly
+} DVMBasiclib_state_t;
+
+
 typedef struct _str_dvm_state {
-  DVMScheduler_state_t sched_st; // This should be the first field (because of fn. ptr. ptr.)
+  func_cb_ptr execute_syncall;
+  DVMScheduler_state_t sched_st; // This should be the second field (because of fn. ptr. ptr.)
   DVMResourceManager_state_t resmgr_st;
   DVMEventHandler_state_t evhdlr_st;
   DVMConcurrencyMngr_state_t conmgr_st;
+  DVMBasiclib_state_t basiclib_st;
 } dvm_state_t;
 
 

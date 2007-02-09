@@ -2,37 +2,26 @@
 #define _BASICLIB_H_INCL_
 
 #include <VM/Dvm.h>
+#include <VM/dvm_types.h>
 
 
-typedef struct 
-{
-  uint8_t busy;			  // for GET_DATA
-  DvmContext *executing;	  // for GET_DATA
-  DvmQueue getDataWaitQueue;	  // for GET_DATA
-  DvmContext *nop_executing;	  // for NOP
-  uint16_t delay_cnt;             // for NOP
-  DvmDataBuffer buffers[DVM_NUM_BUFS];
-  DvmStackVariable shared_vars[DVM_NUM_SHARED_VARS];
-} DVMBasiclib_state_t;
+//------------------------------------------------------------------
+// MESSAGE HANDLER DEFINITIONS
+//------------------------------------------------------------------
+int8_t basic_library_init(dvm_state_t* dvm_st, Message *msg);
+int8_t basic_library_final(dvm_state_t* dvm_st, Message* msg);
+int8_t basic_library_data_ready(dvm_state_t* dvm_st, Message *msg);
 
-
-
-void rebooted();     
-
-int8_t execute(DvmState* eventState);
-
+//------------------------------------------------------------------
+// EXTERNAL FUNCTION DEFINITIONS
+//------------------------------------------------------------------
+int8_t execute(dvm_state_t* dvm_st, DvmState* eventState);
+void rebooted(dvm_state_t* dvm_st); 
 int16_t lockNum(uint8_t instr);
-
 uint8_t bytelength(uint8_t opcode);
+//int8_t execute_extlib(uint8_t fnid, DvmStackVariable *arg, uint8_t size, DvmStackVariable *res);
 
 
-int8_t execute_extlib(uint8_t fnid, DvmStackVariable *arg, 
-		      uint8_t size, DvmStackVariable *res);
-
-/**
- * \brief Basic Library Handler
- */
-int8_t basic_library(void *state, Message *msg);
 
 
 

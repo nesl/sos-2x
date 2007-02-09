@@ -2,6 +2,7 @@
 #define _CONC_MNGR_H_INCL_
 
 #include <VM/Dvm.h>
+#include <VM/dvm_types.h>
 
 //-----------------------------------------------------------------
 // MESSAGE HANDLER DEFINITIONS

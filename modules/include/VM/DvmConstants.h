@@ -1,10 +1,10 @@
 #ifndef _DVM_CONSTANTS_H_
 #define _DVM_CONSTANTS_H_
 
+#include <mod_pid.h>
 #include <message_types.h>
 #include "codesend.h"
 
-#define ASVM_MOD_MIN_PID 	50
 #define ASVM_LIB_MIN_PID	200
 #define LIB_ID_BIT			0x80
 #define BASIC_LIB_OP_MASK 	0x7F
@@ -13,13 +13,13 @@
 
 enum {
   DVM_OPDEPTH      	= 8,
-  DVM_BUF_LEN      	= 64,//20
+  DVM_BUF_LEN      	= 32,//20
   DVM_CAPSULE_SIZE 	= 28,
   DVM_CAPSULE_NUM	= 8, 
   DVM_CPU_SLICE    	= 50,
   DVM_NUM_SHARED_VARS	= 8,
   DVM_NUM_LOCAL_VARS	= 5,//4
-  DVM_NUM_BUFS		= 1,
+  DVM_NUM_BUFS		= 2,
   DVM_LOCK_COUNT   	= DVM_NUM_SHARED_VARS + DVM_NUM_BUFS, 
   DVM_MAX_SCRIPT_LENGTH = 255,
 };
@@ -178,6 +178,7 @@ typedef enum {
 #define ISTYPE 		6
 
 //Module IDs in DVM
+/*
 #define M_CONTEXT_SYNCH 	(ASVM_MOD_MIN_PID + 0)
 #define DVM_ENGINE_M 		(ASVM_MOD_MIN_PID + 1)
 #define M_STACKS			(ASVM_MOD_MIN_PID + 2)
@@ -187,11 +188,14 @@ typedef enum {
 #define M_RESOURCE_MANAGER 	(ASVM_MOD_MIN_PID + 6)
 #define M_BASIC_LIB 		(ASVM_MOD_MIN_PID + 7)
 #define M_QUEUE             (ASVM_MOD_MIN_PID + 8)
+*/
+
 
 //Extension Libraries
 #define M_EXT_LIB 		(ASVM_LIB_MIN_PID + 0)
 #define M_MATH_LIB 		(ASVM_LIB_MIN_PID + 1)
 #define M_RAGO_LIB 		(ASVM_LIB_MIN_PID + 2)
+
 
 #define MSG_RUN_TASK 		(MOD_MSG_START + 0)
 #define MSG_HALT 		(MOD_MSG_START + 1)

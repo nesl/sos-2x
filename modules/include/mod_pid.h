@@ -126,6 +126,10 @@ enum {
 
   //! 164 
   PHOTO_SENSOR_PID = (APP_MOD_MIN_PID + 36),
+
+  //! 165
+  DVM_MODULE_PID   = (APP_MOD_MIN_PID + 37),
+
 //! PLEASE add the name to modules/mod_pid.c
 };
 
