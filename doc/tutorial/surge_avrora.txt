@@ -180,9 +180,9 @@ is accomplished using the SOS tool:
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/config/sos_tool/
 ./sos_tool.exe --insmod
-../../modules/sensordrivers/micasb/photosensor/photosensor.sos
-./sos_tool.exe --insmod ../../modules/routing/tree_routing/tree_routing.sos
-./sos_tool.exe --insmod ../../modules/test_modules/surge/surge.sos
+../../modules/sensordrivers/micasb/photosensor/photosensor.mlf
+./sos_tool.exe --insmod ../../modules/routing/tree_routing/tree_routing.mlf
+./sos_tool.exe --insmod ../../modules/demo/surge/surge.mlf
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After these modules load, the routing tree should form and sensor data

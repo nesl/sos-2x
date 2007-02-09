@@ -119,10 +119,10 @@ is accomplished using the SOS tool:
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/sos_tool/
-./sos_tool.exe --insmod=../../modules/demos/blink/blink.sos
+./sos_tool.exe --insmod=../../modules/demos/blink/blink.mlf
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-After a short wait the module is loaded onto the node and its yellow LED
+After a short wait the module is loaded onto the node and its green LED
 should begin to blink. 
 
 Next: link:surge.html[Overview of surge module] 
