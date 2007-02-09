@@ -194,14 +194,14 @@ static int convElfToMiniFile(char* elffilename, char* melffilename)
   }
   
   if ((strtabscn = getELFSectionByName(elf, ".strtab")) == NULL ) {
-	fprintf(stderr, "Error getting .strtab section. \n");
-	exit(EXIT_FAILURE);
+    fprintf(stderr, "Error getting .strtab section. \n");
+    exit(EXIT_FAILURE);
   }
 
   // DEBUG info. to verify we have the correct sections
   DEBUG("Section Number (.text): %d\n", (int)elf_ndxscn(textscn));
   if( relatextscn != NULL ) {
-	  DEBUG("Section Number (.rela.text): %d\n", (int)elf_ndxscn(relatextscn));
+    DEBUG("Section Number (.rela.text): %d\n", (int)elf_ndxscn(relatextscn));
   }
   DEBUG("Section Number (.symtab): %d\n", (int)elf_ndxscn(symtabscn));
 
@@ -220,10 +220,10 @@ static int convElfToMiniFile(char* elffilename, char* melffilename)
 
   // Convert Relocation Table
   if( relatextscn != NULL ) {
-  if ((relatextdata = convRelaScn(relatextscn, symmap)) == NULL){
-    fprintf(stderr, "Error converting Rela table.\n");
-    exit(EXIT_FAILURE);
-  }
+    if ((relatextdata = convRelaScn(relatextscn, symmap)) == NULL){
+      fprintf(stderr, "Error converting Rela table.\n");
+      exit(EXIT_FAILURE);
+    }
   }
 
   // Convert Text Section
@@ -244,17 +244,17 @@ static int convElfToMiniFile(char* elffilename, char* melffilename)
 
   printf("MELF module header index = %d\n", symmap->etommap[modhdrsymndx] );
   {
-	Melf_Sym *modhdrsym = &(symmap->msym[ symmap->etommap[modhdrsymndx] ]);
-	symmap->sos_mod_hdr_ptr = (sos_mod_header_t*)(((char*)(textdata->d_buf)) + modhdrsym->st_value);
-	symmap->sos_mod_hdr_offset = modhdrsym->st_value;
-	symmap->sos_mod_hdr_end = modhdrsym->st_value + sizeof(sos_mod_header_t) + 
-		(sizeof(sos_func_cb_t) * 
-		(symmap->sos_mod_hdr_ptr->num_sub_func + symmap->sos_mod_hdr_ptr->num_prov_func + symmap->sos_mod_hdr_ptr->num_dfunc));
+    Melf_Sym *modhdrsym = &(symmap->msym[ symmap->etommap[modhdrsymndx] ]);
+    symmap->sos_mod_hdr_ptr = (sos_mod_header_t*)(((char*)(textdata->d_buf)) + modhdrsym->st_value);
+    symmap->sos_mod_hdr_offset = modhdrsym->st_value;
+    symmap->sos_mod_hdr_end = modhdrsym->st_value + sizeof(sos_mod_header_t) + 
+      (sizeof(sos_func_cb_t) * 
+       (symmap->sos_mod_hdr_ptr->num_sub_func + symmap->sos_mod_hdr_ptr->num_prov_func + symmap->sos_mod_hdr_ptr->num_dfunc));
 		
-	//printf("MELF module header Start: %4d\n", symmap->sos_mod_hdr_offset);
-	//printf("MELF module header End: %4d\n", symmap->sos_mod_hdr_end);
-	printSOSModHeader( symmap->sos_mod_hdr_ptr );
-	fixUndefinedSymbols( symmap );
+    //printf("MELF module header Start: %4d\n", symmap->sos_mod_hdr_offset);
+    //printf("MELF module header End: %4d\n", symmap->sos_mod_hdr_end);
+    printSOSModHeader( symmap->sos_mod_hdr_ptr );
+    fixUndefinedSymbols( symmap );
   }
   
   // Convert Symbol Table
@@ -273,12 +273,12 @@ static int convElfToMiniFile(char* elffilename, char* melffilename)
 
   // Create a new MELF Relocation table section
   if( relatextscn != NULL ) {
-  if ((m_relatextscn = melf_new_scn(melf)) == NULL){
-    fprintf(stderr, "Error creating relocation table MELF section.\n");
-    exit(EXIT_FAILURE);
-  }
-  convElfHdr(m_relatextscn, relatextscn);
-  melf_add_data_to_scn(m_relatextscn, relatextdata);
+    if ((m_relatextscn = melf_new_scn(melf)) == NULL){
+      fprintf(stderr, "Error creating relocation table MELF section.\n");
+      exit(EXIT_FAILURE);
+    }
+    convElfHdr(m_relatextscn, relatextscn);
+    melf_add_data_to_scn(m_relatextscn, relatextdata);
   }
 
   // Create a new MELF Symbol table section
@@ -349,12 +349,12 @@ static Melf_Data* convProgbitsScn(Elf_Scn* progbitsscn)
     if (ELF_T_BYTE == edata->d_type){
       // Allocate memory for mdata
       if ((mdata = malloc(sizeof(Melf_Data))) == NULL){
-		fprintf(stderr, "Could not allocte memory for Mini-ELF progbits mdata structure.\n");
-		return NULL;
+	fprintf(stderr, "Could not allocte memory for Mini-ELF progbits mdata structure.\n");
+	return NULL;
       }
       if ((mdata->d_buf = malloc(edata->d_size)) == NULL){
-		fprintf(stderr, "Could not allocate memory for Mini-ELF progbits data.\n");
-		return NULL;
+	fprintf(stderr, "Could not allocate memory for Mini-ELF progbits data.\n");
+	return NULL;
       }
       mdata->d_type = ELF_T_BYTE;
       memcpy(mdata->d_buf, edata->d_buf, edata->d_size);
@@ -387,27 +387,27 @@ static int initSymbolMap(symbol_map_t* symmap, Elf_Scn* symtabscn)
     if (ELF_T_SYM == edata->d_type){
       int i;
       symmap->esym = (Elf32_Sym*)edata->d_buf;
-	  //esym = (Elf32_Sym*)edata->d_buf;
+      //esym = (Elf32_Sym*)edata->d_buf;
       symmap->numE = (int)(edata->d_size/ shdr->sh_entsize);
       if ((symmap->msym = malloc(sizeof(Melf_Sym)* symmap->numE)) == NULL){
-		fprintf(stderr, "Error allocating memory.\n");
-		return -1;
+	fprintf(stderr, "Error allocating memory.\n");
+	return -1;
       }
       if ((symmap->etommap = malloc(sizeof(int)* symmap->numE)) == NULL){
-		fprintf(stderr, "Error allocating memory.\n");
-		return -1;
+	fprintf(stderr, "Error allocating memory.\n");
+	return -1;
       }
 #ifdef DBGMODE
       if ((symmap->mtoemap = malloc(sizeof(int)* symmap->numE)) == NULL){
-		fprintf(stderr, "Error allocating memory.\n");
-		return -1;
+	fprintf(stderr, "Error allocating memory.\n");
+	return -1;
       }
       for (i = 0; i < symmap->numE; i++)
-		symmap->mtoemap[i] = -1;
+	symmap->mtoemap[i] = -1;
 #endif
       symmap->numM = 0;
       for (i = 0; i < symmap->numE; i++)
-		symmap->etommap[i] = -1;
+	symmap->etommap[i] = -1;
       return 0;
     }
   }
@@ -418,29 +418,29 @@ static int initSymbolMap(symbol_map_t* symmap, Elf_Scn* symtabscn)
 //---------------------------------------------------------------------
 static void addStrTabToSymbolMap( symbol_map_t* symmap, Elf_Scn* strtabscn )
 {
-	Elf_Data *edata = NULL;
+  Elf_Data *edata = NULL;
 	
-	while ((edata = elf_getdata(strtabscn, edata)) != NULL) {
-		if (ELF_T_BYTE == edata->d_type){
-			symmap->strtab = (unsigned char*) edata->d_buf;
-			return;
-		}
-	}
-	fprintf(stderr, "Section does not contain any strings.\n");
-	exit(EXIT_FAILURE);
+  while ((edata = elf_getdata(strtabscn, edata)) != NULL) {
+    if (ELF_T_BYTE == edata->d_type){
+      symmap->strtab = (unsigned char*) edata->d_buf;
+      return;
+    }
+  }
+  fprintf(stderr, "Section does not contain any strings.\n");
+  exit(EXIT_FAILURE);
 }
 
 static void addTxtScnToSymbolMap( symbol_map_t* symmap, Elf_Scn* progbitsscn )
 {
-	Elf_Data *edata = NULL;
-	while ((edata = elf_rawdata(progbitsscn, edata)) != NULL){
-		if (ELF_T_BYTE == edata->d_type){
-			symmap->rawtext = (unsigned char*) edata->d_buf;
-			return;
-		}
-	}
-	fprintf(stderr, "Section does not contain any bytes.\n");
-	exit(EXIT_FAILURE);
+  Elf_Data *edata = NULL;
+  while ((edata = elf_rawdata(progbitsscn, edata)) != NULL){
+    if (ELF_T_BYTE == edata->d_type){
+      symmap->rawtext = (unsigned char*) edata->d_buf;
+      return;
+    }
+  }
+  fprintf(stderr, "Section does not contain any bytes.\n");
+  exit(EXIT_FAILURE);
 }
 
 //---------------------------------------------------------------------
@@ -487,38 +487,38 @@ static Melf_Data* convRelaScn(Elf_Scn* relascn, symbol_map_t* symmap)
       numRecs = edata->d_size/shdr->sh_entsize;
       // Allocating memory for MELF rela table
       if ((mreladata = malloc(sizeof(Melf_Data))) == NULL){
-		fprintf(stderr, "Error allocating memory.");
-		return NULL;
+	fprintf(stderr, "Error allocating memory.");
+	return NULL;
       }
       if ((mreladata->d_buf = malloc(sizeof(Melf_Rela) * numRecs)) == NULL){
-		fprintf(stderr, "Error allocating memory.");
-		return NULL;
+	fprintf(stderr, "Error allocating memory.");
+	return NULL;
       }
       // Init the MELF rela table
       mreladata->d_numData = 0;      
       mreladata->d_type = ELF_T_RELA;
       mrela = (Melf_Rela*)mreladata->d_buf;
       for (i = 0; i < numRecs; i++){
-		int esymndx;
-		int msymndx;
-		esymndx = ELF32_R_SYM(erela[i].r_info);
+	int esymndx;
+	int msymndx;
+	esymndx = ELF32_R_SYM(erela[i].r_info);
 		
-		// Get MELF Symbol Index
-		if ((msymndx = addMelfSymbol(symmap, esymndx)) == -1){
-			fprintf(stderr, "Invalid symbol index in rela.\n");
-			return NULL;
-		}
+	// Get MELF Symbol Index
+	if ((msymndx = addMelfSymbol(symmap, esymndx)) == -1){
+	  fprintf(stderr, "Invalid symbol index in rela.\n");
+	  return NULL;
+	}
 	
-		// Convert ELF Rela record to MELF Rela	record
-		mrela[mreladata->d_numData].r_offset = (Melf_Addr)erela[i].r_offset;
-		mrela[mreladata->d_numData].r_symbol = msymndx;
-		mrela[mreladata->d_numData].r_type = (unsigned char)ELF32_R_TYPE(erela[i].r_info);
-		mrela[mreladata->d_numData].r_addend = (Melf_Sword) erela[i].r_addend;
-		//
-		mreladata->d_numData++;
+	// Convert ELF Rela record to MELF Rela	record
+	mrela[mreladata->d_numData].r_offset = (Melf_Addr)erela[i].r_offset;
+	mrela[mreladata->d_numData].r_symbol = msymndx;
+	mrela[mreladata->d_numData].r_type = (unsigned char)ELF32_R_TYPE(erela[i].r_info);
+	mrela[mreladata->d_numData].r_addend = (Melf_Sword) erela[i].r_addend;
+	//
+	mreladata->d_numData++;
       }
       mreladata->d_size = mreladata->d_numData * sizeof(Melf_Rela);
-	  symmap->mreladata = mreladata;
+      symmap->mreladata = mreladata;
       return mreladata;
     }
   }
@@ -546,18 +546,18 @@ static int addMelfSymbol(symbol_map_t* symmap, int elfsymndx)
 #ifdef DBGMODE
     symmap->mtoemap[symmap->numM] = elfsymndx;
 #endif
-	idx_to_string = (symmap->esym[elfsymndx]).st_name;
-	if( ELF32_ST_TYPE((symmap->esym[elfsymndx]).st_info) == STT_SECTION ) {
-		char *sh_name = getELFSectionName(elf,
-				(symmap->esym[elfsymndx]).st_shndx);
-		printf("Add ELF Symbol to MELF: %s + %d\n",
-				sh_name,    
-				(symmap->esym[elfsymndx]).st_value);
-	} else {
-		printf("Add ELF Symbol to MELF: %s\n", &(symmap->strtab[idx_to_string]));
-	}
-	// Add this ELF symbol to the MELF symbol table
-	esym = &(symmap->esym[elfsymndx]);
+    idx_to_string = (symmap->esym[elfsymndx]).st_name;
+    if( ELF32_ST_TYPE((symmap->esym[elfsymndx]).st_info) == STT_SECTION ) {
+      char *sh_name = getELFSectionName(elf,
+					(symmap->esym[elfsymndx]).st_shndx);
+      printf("Add ELF Symbol to MELF: %s + %d\n",
+	     sh_name,    
+	     (symmap->esym[elfsymndx]).st_value);
+    } else {
+      printf("Add ELF Symbol to MELF: %s\n", &(symmap->strtab[idx_to_string]));
+    }
+    // Add this ELF symbol to the MELF symbol table
+    esym = &(symmap->esym[elfsymndx]);
     msym = &(symmap->msym[symmap->numM]);
     
     msym->st_value = (Melf_Addr)esym->st_value;
@@ -570,105 +570,108 @@ static int addMelfSymbol(symbol_map_t* symmap, int elfsymndx)
 }
 
 /*
-static void printELFSymbol(symbol_map_t* symmap, int elfsymndx )
-{
-	Elf32_Sym* esym;
-	//Elf_Data* edata;
-	printf("printELFSymbol\n");
-	esym = &(symmap->esym[elfsymndx]);
+  static void printELFSymbol(symbol_map_t* symmap, int elfsymndx )
+  {
+  Elf32_Sym* esym;
+  //Elf_Data* edata;
+  printf("printELFSymbol\n");
+  esym = &(symmap->esym[elfsymndx]);
 	
-	printf("Value %08x ", esym->st_value);
-	printf("Size %6d ", esym->st_size);
-	switch(esym->st_shndx) {
-		case SHN_ABS: printf("ABS "); break;                  
-          case SHN_COMMON: printf("CMN "); break;               
-          case SHN_UNDEF: printf("UND "); break;                
-          default: printf("%3d ", esym->st_shndx); break;     
-	}
+  printf("Value %08x ", esym->st_value);
+  printf("Size %6d ", esym->st_size);
+  switch(esym->st_shndx) {
+  case SHN_ABS: printf("ABS "); break;                  
+  case SHN_COMMON: printf("CMN "); break;               
+  case SHN_UNDEF: printf("UND "); break;                
+  default: printf("%3d ", esym->st_shndx); break;     
+  }
 	
-	printf("\n");
-}
+  printf("\n");
+  }
 */
 
 static void fixUndefinedSymbols( symbol_map_t* symmap )
 {
-	int i;
-	Melf_Rela  *mrela;
+  int i;
+  Melf_Rela  *mrela;
 	
-	if( symmap->mreladata == NULL ) {
-		fprintf(stderr, "Invalid relocation data!\n");
-		exit(1);
-	}
-	mrela = (Melf_Rela*)(symmap->mreladata->d_buf);
-	//
-	// Search through each relocation record
-	// If the record points to undinfed symbol and the record points to SOS function table,
-	// Store module ID and function ID to st_value
-	//
-	for( i = 0; i < symmap->mreladata->d_numData; i++ ) {
-		Melf_Sym *msym = &(symmap->msym[ mrela[i].r_symbol ]);
+  if( symmap->mreladata == NULL ) {
+    fprintf(stderr, "Invalid relocation data!\n");
+    exit(1);
+  }
+  mrela = (Melf_Rela*)(symmap->mreladata->d_buf);
+  //
+  // Search through each relocation record
+  // If the record points to undinfed symbol and the record points to SOS function table,
+  // Store module ID and function ID to st_value
+  //
+  for( i = 0; i < symmap->mreladata->d_numData; i++ ) {
+    Melf_Sym *msym = &(symmap->msym[ mrela[i].r_symbol ]);
 		
-		if( (MELF_ST_BIND( msym->st_info ) == STB_GLOBAL) && 
-			(MELF_ST_TYPE( msym->st_info ) == STT_NOTYPE) ) {
-			//printf("Relocation Record contains undefined symbol, Offset = %4x\n", mrela[i].r_offset);
+    if( (MELF_ST_BIND( msym->st_info ) == STB_GLOBAL) && 
+	(MELF_ST_TYPE( msym->st_info ) == STT_NOTYPE) &&
+	(SHN_UNDEF == msym->st_shid )) {
+      //printf("Relocation Record contains undefined symbol, Offset = %4x\n", mrela[i].r_offset);
 			
-			if( mrela[i].r_offset >= (symmap->sos_mod_hdr_offset + offsetof(sos_mod_header_t, funct)) && 
-			    mrela[i].r_offset < symmap->sos_mod_hdr_end ) {
-				int func_idx = mrela[i].r_offset - symmap->sos_mod_hdr_offset - offsetof(sos_mod_header_t, funct); 
+      if( mrela[i].r_offset >= (symmap->sos_mod_hdr_offset + offsetof(sos_mod_header_t, funct)) && 
+	  mrela[i].r_offset < symmap->sos_mod_hdr_end ) {
+	int func_idx = mrela[i].r_offset - symmap->sos_mod_hdr_offset - offsetof(sos_mod_header_t, funct); 
 				
-				//printf("In module header %d\n", func_idx);
-				if( func_idx % sizeof(sos_func_cb_t) == 0 ) {
-					func_idx /= sizeof(sos_func_cb_t);
-					//printf("func_idx = %d\n", func_idx);
-					// Change STT_NOTYPE to STT_SOS_DFUNC
-					msym->st_info = MELF_ST_INFO( STB_GLOBAL, STT_SOS_DFUNC );
-					msym->st_value = ((Melf_Addr)(symmap->sos_mod_hdr_ptr->funct[func_idx].pid) << 8)
-						| (Melf_Addr)(symmap->sos_mod_hdr_ptr->funct[func_idx].fid);
-				} else {
-					//printf("func_idx is not pointing to correct location\n");
-					exit(1);
-				}
-			} else {
-				//printf("NOT in module header\n");
-			}
-		}
+	//printf("In module header %d\n", func_idx);
+	if( func_idx % sizeof(sos_func_cb_t) == 0 ) {
+	  func_idx /= sizeof(sos_func_cb_t);
+	  //printf("func_idx = %d\n", func_idx);
+	  // Change STT_NOTYPE to STT_SOS_DFUNC
+	  msym->st_info = MELF_ST_INFO( STB_GLOBAL, STT_SOS_DFUNC );
+	  msym->st_value = ((Melf_Addr)(symmap->sos_mod_hdr_ptr->funct[func_idx].pid) << 8)
+	    | (Melf_Addr)(symmap->sos_mod_hdr_ptr->funct[func_idx].fid);
+	} else {
+	  //printf("func_idx is not pointing to correct location\n");
+	  exit(1);
 	}
+      } else {
+	//printf("NOT in module header\n");
+      }
+    }
+  }
 	
-	//
-	// If we still have undefined symbol, fire Error!
-	//
-	for( i = 0; i < symmap->numM; i++ ) {
-		Melf_Sym *msym = &(symmap->msym[i]);
-		
-		if( (MELF_ST_BIND( msym->st_info ) == STB_GLOBAL) && 
-			(MELF_ST_TYPE( msym->st_info ) == STT_NOTYPE) ) {
-			// If this relocation record is still undefined
-			// TODO: print error information
-			int elfsymndx = symmap->mtoemap[i];
-			Elf32_Sym *esym = &(symmap->esym[elfsymndx]);
-			
-			printf("ERROR: Undefined symbol: %s\n", &(symmap->strtab[esym->st_name]));
-			exit(1);
-		} 
-	}
+  //
+  // If we still have undefined symbol, fire Error!
+  //
+  for( i = 0; i < symmap->numM; i++ ) {
+    Melf_Sym *msym = &(symmap->msym[i]);
+	  
+    if( (MELF_ST_BIND( msym->st_info ) == STB_GLOBAL) && 
+	(MELF_ST_TYPE( msym->st_info ) == STT_NOTYPE) &&
+	(SHN_UNDEF == msym->st_shid )) {
+      // If this relocation record is still undefined
+      // TODO: print error information
+      int elfsymndx = symmap->mtoemap[i];
+      Elf32_Sym *esym = &(symmap->esym[elfsymndx]);
+	    
+      printf("ERROR: Undefined symbol: %s\n", &(symmap->strtab[esym->st_name]));
+      exit(1);
+    } 
+  }
+
 	
 }
 
 static void printSOSModHeader( sos_mod_header_t *hdr )
 {
-	int i;
-	printf("====== SOS Module Header =====\n");
-	printf("Module ID:          %4d\n", hdr->mod_id);
-	printf("Number Sub Func:    %4d\n", hdr->num_sub_func);
-	printf("Number Prov Func:   %4d\n", hdr->num_prov_func);
-	printf("Number Direct Func: %4d\n", hdr->num_dfunc); 
-	printf("Processor Type:     %4d\n", hdr->processor_type);
-	printf("Platform Type:      %4d\n", hdr->platform_type);
-	for( i = 0; i < hdr->num_sub_func + hdr->num_prov_func; i++ ) {
-		printf("Funcion %d: ADDR: %4x, PID: %4d, FID: %4d\n", i, hdr->funct[i].ptr, hdr->funct[i].pid, hdr->funct[i].fid);
-	}
+  int i;
+  printf("====== SOS Module Header =====\n");
+  printf("Module ID:          %4d\n", hdr->mod_id);
+  printf("Number Sub Func:    %4d\n", hdr->num_sub_func);
+  printf("Number Prov Func:   %4d\n", hdr->num_prov_func);
+  printf("Number Direct Func: %4d\n", hdr->num_dfunc); 
+  printf("Processor Type:     %4d\n", hdr->processor_type);
+  printf("Platform Type:      %4d\n", hdr->platform_type);
+  for( i = 0; i < hdr->num_sub_func + hdr->num_prov_func; i++ ) {
+    printf("Funcion %d: ADDR: %4x, PID: %4d, FID: %4d\n", i, hdr->funct[i].ptr, hdr->funct[i].pid, hdr->funct[i].fid);
+  }
 	
-	printf("\n");
+  printf("\n");
 }
 
 //---------------------------------------------------------------------
