@@ -112,7 +112,6 @@ extern mod_header_ptr ker_codemem_get_header_from_code_id( sos_code_id_t cid );
 
 
 extern int8_t codemem_register_module( mod_header_ptr h );
-#endif
 
 /**
  * \brief Mark a codemem section executable. 
@@ -124,7 +123,6 @@ extern int8_t ker_codemem_mark_executable(codemem_t h);
 
 extern void codemem_init(void);
 
-#ifndef _MODULE_
 extern mod_header_ptr ker_codemem_get_header_address( codemem_t h);
 extern uint32_t ker_codemem_get_start_address( codemem_t h);
 #define ker_codemem_get_module_code_address(h) ker_codemem_get_header_address(h)

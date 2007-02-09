@@ -24,6 +24,7 @@
 #include <stddef.h>
 #include <kertable_conf.h>  // for get_kertable_entry()
 #include <sos_error_types.h>
+#include <codemem.h>
 
 #ifndef SYS_JUMP_TBL_START
 /// \cond NOTYPEDEF
