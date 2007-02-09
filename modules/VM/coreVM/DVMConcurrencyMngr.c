@@ -87,10 +87,10 @@ void analyzeVars(dvm_state_t* dvm_st, DvmCapsuleID id)
   for (i = 0; i < ((DVM_LOCK_COUNT + 7) / 8); i++) {
     s->usedVars[id][i] = 0;
   }
-  handlerLen = getCodeLength(s->getCodeLength, id);	
+  handlerLen = getCodeLength(dvm_st, id);	
   DEBUG("CONTEXTSYNCH: Handler length for handler %d is %d.\n",id,handlerLen);
 	
-  libMask = getLibraryMask(id);
+  libMask = getLibraryMask(dvm_st, id);
   if ((s->libraries & libMask) != libMask) {			//library missing
     DEBUG("CONTEXT_SYNCH: Library required 0x%x. Missing for handler %d.\n",libMask,id);
     return;
@@ -98,18 +98,19 @@ void analyzeVars(dvm_state_t* dvm_st, DvmCapsuleID id)
   i = 0;
   while (i < handlerLen) {
     int16_t locknum;
-    instr = getOpcode(id, i);
+    instr = getOpcode(dvm_st, id, i);
     if (!(instr & LIB_ID_BIT)) {
-      opcode_mod = M_BASIC_LIB;
+      opcode_mod = DVM_MODULE_PID;
       locknum = lockNum(instr);
       i += bytelength(instr);
     } else {
       opcode_mod = (instr & BASIC_LIB_OP_MASK) >> EXT_LIB_OP_SHIFT;
       opcode_mod = s->extlib_module[opcode_mod];
-      sys_fntable_subscribe(opcode_mod, LOCKNUM, 1);
-      locknum = SOS_CALL(s->lockNum, func_i16u8_t, instr);
-      sys_fntable_subscribe(opcode_mod, BYTELENGTH, 0);
-      i += SOS_CALL(s->bytelength, func_u8u8_t, instr);
+      // Ram - XXX - Need to modify this for loadable extensions
+      //      sys_fntable_subscribe(opcode_mod, LOCKNUM, 1);
+      locknum = lockNum(instr);
+      //      sys_fntable_subscribe(opcode_mod, BYTELENGTH, 0);
+      i += bytelength(instr);
     }
     if (locknum >= 0) 
       s->usedVars[id][locknum / 8] |= (1 << (locknum % 8)); 
@@ -151,7 +152,7 @@ void yieldContext(dvm_state_t* dvm_st, DvmContext* context)
   if (!queue_empty(&s->readyQueue)){
     do {
       current = queue_dequeue(context, &s->readyQueue);
-      if (!resumeContext(context, current)) {
+      if (!resumeContext(dvm_st, context, current)) {
 	DEBUG("VM (%i): Context %i not runnable.\n", (int)context->which, (int)current->which);
 	if (start == NULL) {
 	  start = current;
@@ -175,7 +176,7 @@ uint8_t resumeContext(dvm_state_t* dvm_st, DvmContext* caller, DvmContext* conte
   context->state = DVM_STATE_WAITING;
   if (isRunnable(context, s)) {
     obtainLocks(caller, context, s);
-    if(scheduler_submit(context) == SOS_OK){
+    if(scheduler_submit(dvm_st, context) == SOS_OK){
       DEBUG("VM (%i): Resumption of %i successful.\n", (int)caller->which, (int)context->which);
       context->num_executed = 0;
       return TRUE;
@@ -196,7 +197,7 @@ void haltContext(dvm_state_t* dvm_st, DvmContext* context)
 {
   DVMConcurrencyMngr_state_t *s = &(dvm_st->conmgr_st);
   releaseAllLocks(context, context, s);
-  yieldContext(context);
+  yieldContext(dvm_st, context);
   if (context->queue && context->state != DVM_STATE_HALT) {
     queue_remove(context, context->queue, context);
   }

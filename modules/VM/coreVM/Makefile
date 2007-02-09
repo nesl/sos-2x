@@ -12,6 +12,6 @@ INCDIR += -I$(ROOTDIR)/modules/include/VM
 
 
 SRCS += DVMScheduler.c DVMConcurrencyMngr.c DVMResourceManager.c DVMEventHandler.c
-SRCS += DVMBasiclib. DVMStacks.c DVMqueue.c
+SRCS += DVMBasiclib.c DVMStacks.c DVMqueue.c
 
 include ../../Makerules

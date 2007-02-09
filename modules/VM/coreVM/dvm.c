@@ -13,9 +13,10 @@
 #include <VM/DVMqueue.h>
 #include <VM/DVMConcurrencyMngr.h>
 #include <VM/DVMEventHandler.h>
+#include <VM/DVMResourceManager.h>
 #include <VM/DVMBasiclib.h>
 #include <loader/loader.h> // For loader message type
-
+#include <sys_module.h>
 
 //------------------------------------------------------------------------
 // TYPEDEFS
@@ -26,13 +27,14 @@ typedef int8_t (*execute_lib_func_t)(func_cb_ptr cb, DvmContext* context, DvmOpc
 // STATIC FUNCTIONS
 //------------------------------------------------------------------------
 static int8_t dvm_handler(void* state, Message *msg);
+static int8_t error_8(func_cb_ptr p);
 
 //------------------------------------------------------------------------
 // MODULE HEADER
 //------------------------------------------------------------------------
 static const mod_header_t mod_header SOS_MODULE_HEADER = {
-  .mod_id         =   DVM_MODULE,
-  .code_id        =   ehtons(DVM_MODULE),
+  .mod_id         =   DVM_MODULE_PID,
+  .code_id        =   ehtons(DVM_MODULE_PID),
   .platform_type  =   HW_TYPE,
   .processor_type =   MCU_TYPE,
   .state_size     =   sizeof(dvm_state_t),
@@ -44,6 +46,7 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
     {error_8, "czy2", M_EXT_LIB, EXECUTE},
     {error_8, "czy2", M_EXT_LIB, EXECUTE},
     {error_8, "czy2", M_EXT_LIB, EXECUTE},
+    {error_8, "cCz4", RUNTIME_PID, EXECUTE_SYNCALL},
   },
 };
 
@@ -62,6 +65,7 @@ static int8_t dvm_handler(void* state, Message *msg)
       event_handler_init(dvm_st, msg);
       concurrency_init(dvm_st, msg);
       dvmsched_init(dvm_st, msg);
+      basic_library_init(dvm_st, msg);
       DEBUG("DVM ENGINE: Dvm initializing DONE.\n");
       break;
     }
@@ -72,6 +76,7 @@ static int8_t dvm_handler(void* state, Message *msg)
       event_handler_final(dvm_st, msg);
       resmanager_final(dvm_st, msg);
       dvmsched_final(dvm_st, msg);
+      basic_library_final(dvm_st, msg);
       DEBUG("DVM ENGINE: VM: Stopping.\n");
       break;
     }
@@ -98,6 +103,12 @@ static int8_t dvm_handler(void* state, Message *msg)
     {
       dvmsched_timeout(dvm_st, msg);
       event_handler_timeout(dvm_st, msg);
+      break;
+    }
+
+  case MSG_DATA_READY:
+    {
+      basic_library_data_ready(dvm_st, msg);
       break;
     }
 
@@ -128,4 +139,11 @@ static int8_t dvm_handler(void* state, Message *msg)
     }
   }
   return SOS_OK;
+}
+//------------------------------------------------------------------------
+// ERROR HANDLER
+//------------------------------------------------------------------------
+static int8_t error_8(func_cb_ptr p)
+{
+  return -EINVAL;
 }

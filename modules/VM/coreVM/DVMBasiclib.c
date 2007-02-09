@@ -11,6 +11,9 @@
 #include <VM/DVMqueue.h>
 #include <VM/DVMBuffer.h>
 #include <VM/DVMMathlib.h>
+#include <led.h>
+#include <sys_module.h>
+
 //--------------------------------------------------------------------
 // CONSTANTS
 //--------------------------------------------------------------------
@@ -22,6 +25,9 @@
 //--------------------------------------------------------------------
 // TYPEDEFS
 //--------------------------------------------------------------------
+typedef int8_t (*execute_syncall_func_t)(func_cb_ptr cb, uint8_t fnid, DvmStackVariable *arg, 
+				  uint8_t size, DvmStackVariable *res);
+
 typedef struct {
   uint8_t fnid;
   DvmStackVariable *argBuf;
@@ -30,9 +36,9 @@ typedef struct {
 //--------------------------------------------------------------------
 // STATIC FUNCTION DEFINITIONS
 //--------------------------------------------------------------------
-static int8_t tryget(DvmContext *context, uint8_t sensor_type, DVMBasiclib_state_t *s);
-static inline int8_t post_op(DvmState *eventState, DVMBasiclib_state_t *s); 
-static inline int8_t call_op(DvmState *eventState, DVMBasiclib_state_t *s); 
+static int8_t tryget(dvm_state_t* dvm_st, DvmContext *context, uint8_t sensor_type, DVMBasiclib_state_t *s);
+static inline int8_t post_op(dvm_state_t* dvm_st, DvmState *eventState, DVMBasiclib_state_t *s); 
+static inline int8_t call_op(dvm_state_t* dvm_st, DvmState *eventState, DVMBasiclib_state_t *s); 
 static inline void led_op(uint16_t val);
 static void buffer_get(DvmDataBuffer *buffer, uint8_t numBytes, uint8_t bufferOffset, uint16_t *dest);
 static void buffer_set(DvmDataBuffer *buffer, uint8_t numBytes, uint8_t bufferOffset, uint32_t val);
@@ -41,79 +47,61 @@ static void buffer_append(DvmDataBuffer *buffer, uint8_t numBytes, uint16_t var)
 static void buffer_concatenate(DvmDataBuffer *dst, DvmDataBuffer *src);
 static int32_t convert_to_float(DvmStackVariable *arg1, DvmStackVariable *arg2);
 //--------------------------------------------------------------------
-int8_t basic_library(void *state, Message *msg)
-{    
-  DVMBasiclib_state_t *s = (DVMBasiclib_state_t *) state;
-
-  switch (msg->type)
-    {
-    case MSG_INIT:
-      {	
-	s->busy = 0;
-	s->nop_executing = NULL;
-	queue_init( &(s->getDataWaitQueue));
-	return SOS_OK;
-      }
-    case MSG_DATA_READY:
-      {
-	__asm __volatile("en_rcv:");
-	__asm __volatile("nop");
-	__asm __volatile("nop");
-	__asm __volatile("st_data:");
-	MsgParam* param = (MsgParam*) (msg->data);
-	uint16_t photo_data = param->word;
-	s->busy = 0;
-	if (s->executing != NULL) {
-	  DEBUG("BASICLIB (%d): Sensor returns - Context resumed.\n",s->executing->which);
-	  pushValue( (DvmState *)(s->executing), photo_data, DVM_TYPE_INTEGER); 
-	  resumeContext( s->executing, s->executing);
-	  s->executing = NULL;
-	}
-
-	if (!queue_empty(&(s->getDataWaitQueue))) {
-	  DvmContext *current = queue_dequeue( NULL, &(s->getDataWaitQueue));
-	  DEBUG("BASICLIB (%d): Sensor returns - Some context waiting to get photo data.\n",current->which);
-	  tryget(current, PHOTO, s);
-	}
-	__asm __volatile("en_data:");
-	__asm __volatile("nop");
-	return SOS_OK;
-      }			
-      /*
-	Ram - Need to ask Simon about this
-    case MOD_MSG_START:
-      {
-	uint16_t i;
-
-	for( i = 0; i < PER_DELAY; i++ ) {
-	  asm volatile("nop");
-	}
-	s->delay_cnt++;
-	if( s->delay_cnt >= COMPUTATION_DELAY ) {
-	  // Delay done
-	  if( s->nop_executing != NULL ) {
-	    resumeContext( s->nop_executing, s->nop_executing);
-	    s->nop_executing = NULL;
-	  }
-	} else {
-	  post_short( M_BASIC_LIB, M_BASIC_LIB, MOD_MSG_START, 0, 0, 0 );
-	}
-	return SOS_OK;
-      }
-      */
-    default:
-      return SOS_OK;
-    }
+// MESSAGE HANDLER
+//--------------------------------------------------------------------   
+//    case MSG_INIT:
+int8_t basic_library_init(dvm_state_t* dvm_st, Message *msg)
+{	
+  DVMBasiclib_state_t *s =  (&dvm_st->basiclib_st);
+  s->busy = 0;
+  s->nop_executing = NULL;
+  queue_init( &(s->getDataWaitQueue));
   return SOS_OK;
-}        
-//--------------------------------------------------------------------
-int8_t execute(DvmState *eventState) 
+}
+//--------------------------------------------------------------------   
+//    case MSG_FINAL:
+int8_t basic_library_final(dvm_state_t* dvm_st, Message* msg)
 {
-  DVMBasiclib_state_t *s = (DVMBasiclib_state_t*)sys_get_module_state();
+  return SOS_OK;
+}
+//--------------------------------------------------------------------   
+//    case MSG_DATA_READY:
+int8_t basic_library_data_ready(dvm_state_t* dvm_st, Message *msg)
+{
+  DVMBasiclib_state_t *s =  (&dvm_st->basiclib_st);
+  __asm __volatile("en_rcv:");
+  __asm __volatile("nop");
+  __asm __volatile("nop");
+  __asm __volatile("st_data:");
+  MsgParam* param = (MsgParam*) (msg->data);
+  uint16_t photo_data = param->word;
+  s->busy = 0;
+  if (s->executing != NULL) {
+    DEBUG("BASICLIB (%d): Sensor returns - Context resumed.\n",s->executing->which);
+    pushValue( (DvmState *)(s->executing), photo_data, DVM_TYPE_INTEGER); 
+    resumeContext(dvm_st, s->executing, s->executing);
+    s->executing = NULL;
+  }
+  
+  if (!queue_empty(&(s->getDataWaitQueue))) {
+    DvmContext *current = queue_dequeue( NULL, &(s->getDataWaitQueue));
+    DEBUG("BASICLIB (%d): Sensor returns - Some context waiting to get photo data.\n",current->which);
+    tryget(dvm_st, current, PHOTO, s);
+  }
+  __asm __volatile("en_data:");
+  __asm __volatile("nop");
+  return SOS_OK;
+}			
+//--------------------------------------------------------------------   
+// EXTERNAL FUNCTIONS
+//--------------------------------------------------------------------
+int8_t execute(dvm_state_t* dvm_st, DvmState *eventState) 
+{
+  DVMBasiclib_state_t *s = (&dvm_st->basiclib_st);
   DvmContext *context = &(eventState->context);
 	
   while ((context->state == DVM_STATE_RUN) && (context->num_executed < DVM_CPU_SLICE)) { 
-    DvmOpcode instr = getOpcode( context->which, context->pc);
+    DvmOpcode instr = getOpcode(dvm_st, context->which, context->pc);
     DEBUG("VM (%d): PC is %d. instr %d\n",context->which, context->pc, instr);
     if(instr & LIB_ID_BIT)
       {	//Extension Library opcode encountered
@@ -137,7 +125,7 @@ int8_t execute(DvmState *eventState)
       case OP_HALT:
 	{
 	  DEBUG("VM (%d): HALT executed.\n", (int)context->which);
-	  haltContext(context);
+	  haltContext(dvm_st, context);
 	  context->state = DVM_STATE_HALT;
 	  context->pc = 0;
 	  break;
@@ -384,7 +372,7 @@ int8_t execute(DvmState *eventState)
 	}                                                             
       case OP_JMP:
 	{
-	  DvmOpcode line_num = getOpcode( context->which, ++context->pc);
+	  DvmOpcode line_num = getOpcode(dvm_st, context->which, ++context->pc);
 	  context->pc = line_num;
 	  break;
 	}
@@ -392,7 +380,7 @@ int8_t execute(DvmState *eventState)
       case OP_JZ:
 	{
 	  DvmStackVariable* arg1 = popOperand( eventState);
-	  DvmOpcode line_num = getOpcode( context->which, ++context->pc);
+	  DvmOpcode line_num = getOpcode(dvm_st, context->which, ++context->pc);
 	  int32_t fl_arg1 = 1;
 
 	  DEBUG("VM (%d): JNZ or JZ\n", context->pc);
@@ -428,7 +416,7 @@ int8_t execute(DvmState *eventState)
 	  __asm __volatile("st_jg:");
 	  DvmStackVariable* arg1 = popOperand( eventState);
 	  DvmStackVariable* arg2 = popOperand( eventState);
-	  DvmOpcode line_num = getOpcode( context->which, context->pc + 1);
+	  DvmOpcode line_num = getOpcode( dvm_st,  context->which, context->pc + 1);
 	  context->pc += 1;
 	  DEBUG("BASICLIB (%d): Executing JG %d.\n",context->which, line_num);
 	  int32_t fl_arg1, fl_arg2;
@@ -485,7 +473,7 @@ int8_t execute(DvmState *eventState)
 	    res = SOS_OK;
 	  } else {
 	    DEBUG("BASICLIB (%d): Calling get photo data\n",context->which);
-	    res = tryget(context, sensor_type, s);
+	    res = tryget(dvm_st, context, sensor_type, s);
 	  }
 	  __asm __volatile("en_get:");
 	  __asm __volatile("nop");
@@ -500,19 +488,19 @@ int8_t execute(DvmState *eventState)
 	  s->delay_cnt = 0;
 	  s->nop_executing = context;
 	  context->state = DVM_STATE_BLOCKED;
-	  post_short( M_BASIC_LIB, M_BASIC_LIB, MOD_MSG_START, 0, 0, 0 );
-	  yieldContext(context);
+	  sys_post_value(DVM_MODULE_PID, MOD_MSG_START, 0, 0);
+	  yieldContext(dvm_st, context);
 	  return SOS_OK;
 	}
       case OP_POST:	//Asynchronous call
 	{
-	  if (post_op(eventState, s) < 0)
+	  if (post_op(dvm_st, eventState, s) < 0)
 	    return SOS_OK;
 	  break;
 	}
       case OP_CALL:	//synchronous call
 	{
-	  call_op(eventState, s);
+	  call_op(dvm_st, eventState, s);
 	  break;
 	}
       case OP_BPUSH + 0: case OP_BPUSH + 1:
@@ -640,7 +628,7 @@ int8_t execute(DvmState *eventState)
 	{
 	  __asm __volatile("st_push:");
 	  context->pc += 1;
-	  DvmOpcode arg = getOpcode( context->which, context->pc);
+	  DvmOpcode arg = getOpcode( dvm_st,  context->which, context->pc);
 	  pushValue( eventState, arg, DVM_TYPE_INTEGER);
 	  context->pc += 1;
 	  DEBUG("VM (%i): Executing PUSH with arg %hi\n", (int)context->which, arg);
@@ -652,13 +640,13 @@ int8_t execute(DvmState *eventState)
 	{
 	  uint16_t arg;
 	  context->pc += 1;
-	  DvmOpcode arg1 = getOpcode( context->which, context->pc), arg2, arg3, arg4;
+	  DvmOpcode arg1 = getOpcode( dvm_st,  context->which, context->pc), arg2, arg3, arg4;
 	  context->pc += 1;
-	  arg2 = getOpcode( context->which, context->pc);
+	  arg2 = getOpcode( dvm_st,  context->which, context->pc);
 	  context->pc += 1;
-	  arg3 = getOpcode( context->which, context->pc);
+	  arg3 = getOpcode( dvm_st,  context->which, context->pc);
 	  context->pc += 1;
-	  arg4 = getOpcode( context->which, context->pc);
+	  arg4 = getOpcode( dvm_st,  context->which, context->pc);
 	  arg = arg3;
 	  arg = (arg << 8) + arg4;
 	  pushValue( eventState, arg, DVM_TYPE_FLOAT_DEC);
@@ -786,13 +774,16 @@ int8_t execute(DvmState *eventState)
 	  DvmStackVariable* bufarg = popOperand( eventState);
 
 	  if (bufarg->type == DVM_TYPE_BUFFER) {
-	    post_net(modarg->value.var, M_BASIC_LIB, typearg->value.var, bufarg->buffer.var->size, bufarg->buffer.var->entries, 0, addarg->value.var);
+	    sys_post_net(modarg->value.var, typearg->value.var, bufarg->buffer.var->size, 
+			 bufarg->buffer.var->entries, 0, addarg->value.var);
 	  } else if (bufarg->type == DVM_TYPE_FLOAT) {
 	    DvmStackVariable* bufarg_dec = popOperand( eventState);
 	    s->fl_post = convert_to_float(bufarg, bufarg_dec);
-	    post_net(modarg->value.var, M_BASIC_LIB, typearg->value.var, sizeof(int32_t), &s->fl_post, 0, addarg->value.var);
+	    sys_post_net(modarg->value.var, typearg->value.var, sizeof(int32_t), 
+			 &s->fl_post, 0, addarg->value.var);
 	  } else {
-	    post_net(modarg->value.var, M_BASIC_LIB, typearg->value.var, sizeof(int16_t), &bufarg->value.var, 0, addarg->value.var);
+	    sys_post_net(modarg->value.var, typearg->value.var, sizeof(int16_t), 
+			 &bufarg->value.var, 0, addarg->value.var);
 	  }
 
 	  context->pc += 1;
@@ -807,16 +798,16 @@ int8_t execute(DvmState *eventState)
 
 	  if (bufarg->type == DVM_TYPE_BUFFER) {
 	    DEBUG("\n\nBASICLIB (%d): BCAST BUFFER\n\n", context->which);
-	    post_net(modarg->value.var, M_BASIC_LIB, typearg->value.var, bufarg->buffer.var->size, bufarg->buffer.var->entries, 0, BCAST_ADDRESS);
+	    sys_post_net(modarg->value.var, typearg->value.var, bufarg->buffer.var->size, bufarg->buffer.var->entries, 0, BCAST_ADDRESS);
 	    //DEBUG("\n\nBASICLIB (%d): BCAST \n\n", context->which);
 	  } else if (bufarg->type == DVM_TYPE_FLOAT) {
 	    DEBUG("\n\nBASICLIB (%d): BCAST FLOAT\n\n", context->which);
 	    DvmStackVariable* bufarg_dec = popOperand( eventState);
 	    s->fl_post = convert_to_float(bufarg, bufarg_dec);
-	    post_net(modarg->value.var, M_BASIC_LIB, typearg->value.var, sizeof(int32_t), &s->fl_post, 0, BCAST_ADDRESS);
+	    sys_post_net(modarg->value.var, typearg->value.var, sizeof(int32_t), &s->fl_post, 0, BCAST_ADDRESS);
 	  } else {
 	    DEBUG("\n\nBASICLIB (%d): BCAST VALUE\n\n", context->which);
-	    post_net(modarg->value.var, M_BASIC_LIB, typearg->value.var, sizeof(int16_t), &bufarg->value.var, 0, BCAST_ADDRESS);
+	    sys_post_net(modarg->value.var, typearg->value.var, sizeof(int16_t), &bufarg->value.var, 0, BCAST_ADDRESS);
 	  }
 	  //DEBUG("\n\nBASICLIB (%d): BCAST \n\n", context->which);
 
@@ -892,10 +883,10 @@ static inline void led_op(uint16_t val)
 
 }
 //--------------------------------------------------------------------
-static inline int8_t call_op(DvmState *eventState, DVMBasiclib_state_t *s) {
-  // Argument can be either an integer or a buffer
+static inline int8_t call_op(dvm_state_t* dvm_st, DvmState *eventState, DVMBasiclib_state_t *s) {
   // Result will depend on the function being called, and the 
   // script compiler will take care of pushing the appropriate variable
+  
   DvmContext *context = &(eventState->context);
   uint8_t size = 0;
   DvmStackVariable *callArgs = popOperand( eventState);
@@ -904,9 +895,9 @@ static inline int8_t call_op(DvmState *eventState, DVMBasiclib_state_t *s) {
   if (retValue->type != DVM_TYPE_BUFFER) {DEBUG("\n\n\nPROBLEM IN RET BUFFER\n\n\n");}
 
   context->pc += 1;
-  uint8_t mod_id = getOpcode( context->which, context->pc);
+  uint8_t mod_id = getOpcode( dvm_st,  context->which, context->pc);
   context->pc += 1;
-  uint8_t fnid = getOpcode( context->which, context->pc);
+  uint8_t fnid = getOpcode( dvm_st,  context->which, context->pc);
 
   if (sys_fntable_subscribe(mod_id, EXECUTE_SYNCALL, 0) != SOS_OK) {
     DEBUG("\n\n\n\nSUBSCRIPTION PROBLEMS\n\n\n\n\n");
@@ -918,14 +909,15 @@ static inline int8_t call_op(DvmState *eventState, DVMBasiclib_state_t *s) {
   } else if (callArgs->type == DVM_TYPE_INTEGER) {
     size = 2;
   } 
-  SOS_CALL(s->execute_syncall, func_i8u8zu8z_t, fnid, callArgs, size, retValue);
+  SOS_CALL(dvm_st->execute_syncall, execute_syncall_func_t, fnid, callArgs, size, retValue);
   pushOperand( eventState, retValue);
 
   context->pc += 1;
+  
   return SOS_OK;
 }
 //--------------------------------------------------------------------
-static inline int8_t post_op(DvmState *eventState, DVMBasiclib_state_t *s) {
+static inline int8_t post_op(dvm_state_t* dvm_st, DvmState *eventState, DVMBasiclib_state_t *s) {
   // Post the stack variable + fnid.
   // The "post stub" should extract and COPY the required information, and post back to itself
   post_msg_type *pmsg = (post_msg_type *)sys_malloc(sizeof(uint8_t)+sizeof(DvmStackVariable*));
@@ -933,9 +925,9 @@ static inline int8_t post_op(DvmState *eventState, DVMBasiclib_state_t *s) {
 
   DvmStackVariable *callArgs = popOperand( eventState);
   context->pc += 1;
-  uint8_t mod_id = getOpcode(context->which, context->pc);
+  uint8_t mod_id = getOpcode( dvm_st, context->which, context->pc);
   context->pc += 1;
-  uint8_t fnid = getOpcode(context->which, context->pc);
+  uint8_t fnid = getOpcode( dvm_st, context->which, context->pc);
 
   pmsg->fnid = fnid;
   pmsg->argBuf = callArgs;
@@ -946,8 +938,8 @@ static inline int8_t post_op(DvmState *eventState, DVMBasiclib_state_t *s) {
     //And, yield the context and put it in ready queue
     pushOperand( eventState, callArgs);
     context->pc -= 2;
-    yieldContext(context);
-    resumeContext( context, context);
+    yieldContext(dvm_st, context);
+    resumeContext(dvm_st, context, context);
     context->state = DVM_STATE_RUN;
     //Context should be put back in ready queue
     //so that the post operation can be retried
@@ -960,13 +952,13 @@ static inline int8_t post_op(DvmState *eventState, DVMBasiclib_state_t *s) {
   return SOS_OK;
 }
 //--------------------------------------------------------------------
-static int8_t tryget(DvmContext *context, uint8_t sensor_type, DVMBasiclib_state_t *s) {
+static int8_t tryget(dvm_state_t* dvm_st, DvmContext *context, uint8_t sensor_type, DVMBasiclib_state_t *s) {
 
   if (sys_sensor_get_data(sensor_type) == SOS_OK) {
     s->busy = 1;
     s->executing = context;
     context->state = DVM_STATE_BLOCKED;
-    yieldContext(context);
+    yieldContext(dvm_st, context);
   } else {
     context->state = DVM_STATE_WAITING;
     queue_enqueue( context, &(s->getDataWaitQueue), context);
@@ -974,10 +966,9 @@ static int8_t tryget(DvmContext *context, uint8_t sensor_type, DVMBasiclib_state
   return SOS_OK;
 }
 //--------------------------------------------------------------------
-void rebooted() 
+void rebooted(dvm_state_t* dvm_st) 
 {
-  DVMBasiclib_state_t *s = (DVMBasiclib_state_t*)sys_get_module_state();
-
+  DVMBasiclib_state_t *s = (&dvm_st->basiclib_st);
   int i;
 
   queue_init(&(s->getDataWaitQueue));

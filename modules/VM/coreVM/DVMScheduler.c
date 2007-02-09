@@ -4,13 +4,26 @@
  * \author Ram Kumar - Port to sos-2.x
  */
 
+#include <VM/dvm.h>
+#include <VM/DvmConstants.h>
+#include <VM/DVMScheduler.h>
+#include <VM/DVMqueue.h>
+#include <VM/DVMConcurrencyMngr.h>
+#include <VM/DVMEventHandler.h>
+#include <VM/DVMBasiclib.h>
+#include <VM/dvm_types.h>
+#include <led.h>
+#include <sys_module.h>
+
+
+typedef int8_t (*execute_lib_func_t)(func_cb_ptr cb, DvmContext* context, DvmOpcode instr);
 
 //------------------------------------------------------------------------
-// STATIC FUNCTION DECLARATIONS
+// STATIC FUNCTION FUNCTIONS
 //------------------------------------------------------------------------
-static inline int8_t computeInstruction(DVMScheduler_state_t *s) ;
-static int8_t executeContext(DvmContext* context, DVMScheduler_state_t *s) ;
-static int8_t opdone(DVMScheduler_state_t *s) ;
+static inline int8_t computeInstruction(dvm_state_t *dvm_st);
+static int8_t executeContext(dvm_state_t *dvm_st, DvmContext* context);
+static int8_t opdone(dvm_state_t *dvm_st);
 
 //------------------------------------------------------------------------
 // MESSAGE HANDLERS
@@ -38,8 +51,7 @@ int8_t dvmsched_final(dvm_state_t* dvm_st, Message *msg)
 //  case MSG_RUN_TASK:
 int8_t dvmsched_run_task(dvm_state_t* dvm_st, Message *msg)
 {
-  DVMScheduler_state_t *s = &(dvm_st->sched_st);  
-  opdone(s);
+  opdone(dvm_st);
   return SOS_OK;
 }
 //------------------------------------------------------------------------
@@ -61,7 +73,7 @@ int8_t dvmsched_resume(dvm_state_t* dvm_st, Message *msg)
   if (!s->flags.taskRunning) {
     s->flags.taskRunning = TRUE;
     DEBUG("DVM ENGINE: MSG_RUN_TASK posted...\n");
-    opdone(s);
+    opdone(dvm_st);
   }
   return SOS_OK;
 }
@@ -79,7 +91,7 @@ int8_t dvmsched_timeout(dvm_state_t* dvm_st, Message *msg)
       return -EINVAL;
     }
     if (s->flags.errorFlipFlop) {
-      sys_post_uart(DVM_MODULE, DVM_ERROR_MSG, sizeof(DvmErrorMsg), &(s->errorMsg), 0, UART_ADDRESS);
+      sys_post_uart(DVM_MODULE_PID, DVM_ERROR_MSG, sizeof(DvmErrorMsg), &(s->errorMsg), 0, UART_ADDRESS);
     } else {
       // TODO: Need to figure out what this is...
       //sys_post_net(M_VIRUS, DVM_ERROR_MSG, sizeof(DvmErrorMsg), &(s->errorMsg), 0, BCAST_ADDRESS);
@@ -118,8 +130,9 @@ int8_t dvmsched_rem_lib(dvm_state_t* dvm_st, Message *msg)
 //------------------------------------------------------------------------
 // STATIC FUNCTIONS
 //------------------------------------------------------------------------
-static int8_t opdone(DVMScheduler_state_t *s) 
+static int8_t opdone(dvm_state_t *dvm_st) 
 {
+  DVMScheduler_state_t *s = &(dvm_st->sched_st);  
   DEBUG("DVM ENGINE: opdone starts running...\n");
   if (s->flags.halted == TRUE) {
     DEBUG("DVM ENGINE: Halted, don't run.\n");
@@ -132,7 +145,7 @@ static int8_t opdone(DVMScheduler_state_t *s)
       (s->runningContext->num_executed >= DVM_CPU_SLICE)) { 
     DEBUG("DVM ENGINE: Slice for context %i expired, re-enqueue.\n", (int)s->runningContext->which);
     s->runningContext->state = DVM_STATE_READY;
-    queue_enque(s->runningContext, &(s->runQueue), s->runningContext);
+    queue_enqueue(s->runningContext, &(s->runQueue), s->runningContext);
     s->runningContext = NULL;
   }
 
@@ -148,11 +161,11 @@ static int8_t opdone(DVMScheduler_state_t *s)
       //Context was halted by library
       //Release the CPU
       s->runningContext = NULL;
-      if (sys_post_value(DVM_MODULE, MSG_RUN_TASK, 0, 0) != SOS_OK) {
+      if (sys_post_value(DVM_MODULE_PID, MSG_RUN_TASK, 0, 0) != SOS_OK) {
 	s->flags.taskRunning = FALSE;
       }
     } else {
-      computeInstruction(s);
+      computeInstruction(dvm_st);
     }
   } else {
     DEBUG("DVM ENGINE: Running_context was NULL\n");
@@ -162,21 +175,22 @@ static int8_t opdone(DVMScheduler_state_t *s)
   return SOS_OK;
 }	
 //------------------------------------------------------------------------
-static inline int8_t computeInstruction(DVMScheduler_state_t *s) {
+static inline int8_t computeInstruction(dvm_state_t *dvm_st) {
   int8_t r;
+  DVMScheduler_state_t *s = &(dvm_st->sched_st);  
   DvmContext *context = s->runningContext;
-  DvmOpcode instr = getOpcode(context->which, context->pc);
+  DvmOpcode instr = getOpcode(dvm_st, context->which, context->pc);
   if (context->state != DVM_STATE_RUN) {
     return -EINVAL;
   }
   DEBUG("DVM_ENGINE: Inside compute_instruction \n");
   if (context->pc == 0) {
-    uint8_t libMask = getLibraryMask(context->which);
+    uint8_t libMask = getLibraryMask(dvm_st, context->which);
     if ((s->libraries & libMask) != libMask) {
       DEBUG("DVM_ENGINE: Library missing for context %d. Halting execution.\n", context->which);
-      haltContext(context);
+      haltContext(dvm_st, context);
       s->runningContext = NULL;
-      sys_post_value(DVM_MODULE, MSG_RUN_TASK, 0, 0);
+      sys_post_value(DVM_MODULE_PID, MSG_RUN_TASK, 0, 0);
       return -EINVAL;
     }
   }
@@ -190,28 +204,30 @@ static inline int8_t computeInstruction(DVMScheduler_state_t *s) {
       //if (r < 0) signal error, halt context, break
     } else {			//Basic Library
       DEBUG("DVM_ENGINE: Library being called is %d\n", M_BASIC_LIB);
-      r = execute(getStateBlock(context->which));
+      r = execute(dvm_st, getStateBlock(dvm_st, context->which));
       //if (r < 0) signal error, halt context, break
     }
-    instr = getOpcode(context->which, context->pc);
+    instr = getOpcode(dvm_st, context->which, context->pc);
   }
   if (context->num_executed >= DVM_CPU_SLICE)
-    sys_post_value(DVM_MODULE, MSG_RUN_TASK, 0, 0);
+    sys_post_value(DVM_MODULE_PID, MSG_RUN_TASK, 0, 0);
   else if (context->state != DVM_STATE_RUN)
-    return opdone(s);
+    return opdone(dvm_st);
   return SOS_OK;
 }
 //------------------------------------------------------------------------
-static int8_t executeContext(DvmContext* context, DVMScheduler_state_t *s) {
+static int8_t executeContext(dvm_state_t *dvm_st, DvmContext* context)
+{
+  DVMScheduler_state_t *s = &(dvm_st->sched_st);
   if (context->state != DVM_STATE_READY) {
     DEBUG("DVM_ENGINE: Failed to submit context %i: not in READY state.\n", (int)context->which);
     return -EINVAL;
   }  
-  queue_enque(context, &s->runQueue, context);
+  queue_enqueue(context, &s->runQueue, context);
   if (!s->flags.taskRunning) {
     s->flags.taskRunning = TRUE;
     DEBUG("DVM_ENGINE: Executing context.. Posting run task.\n");
-    sys_post_value(DVM_MODULE, MSG_RUN_TASK, 0, 0); 
+    sys_post_value(DVM_MODULE_PID, MSG_RUN_TASK, 0, 0); 
   }
   return SOS_OK;
 }
@@ -228,20 +244,20 @@ void engineReboot(dvm_state_t* dvm_st)
   
   queue_init(&s->runQueue);
   
-  synch_reset();
+  synch_reset(dvm_st);
   
   for (id = 0; id < DVM_CAPSULE_NUM; id++) {
-    clearAnalysis(id);
+    clearAnalysis(dvm_st, id);
   }
   DEBUG("DVM ENGINE: VM: Analyzing lock sets.\n");
   for (id = 0; id < DVM_CAPSULE_NUM; id++) {
-    analyzeVars(id);
+    analyzeVars(dvm_st, id);
   }
   s->flags.inErrorState = FALSE;
   s->flags.halted = FALSE;
   
   DEBUG("DVM ENGINE: VM: Signaling reboot to libraries.\n");    
-  rebooted();
+  rebooted(dvm_st);
 
   sys_led(LED_RED_OFF);
   sys_led(LED_GREEN_OFF);
@@ -253,11 +269,12 @@ int8_t scheduler_submit(dvm_state_t* dvm_st, DvmContext* context)
   DVMScheduler_state_t *s = &(dvm_st->sched_st);
   DEBUG("DVM_ENGINE: VM: Context %i submitted to run.\n", (int)context->which);
   context->state = DVM_STATE_READY;
-  return executeContext(context, s);
+  return executeContext(dvm_st, context);
 }
 //------------------------------------------------------------------------
-int8_t error(dvm_state_t* dvm_st, DvmContext* context, uint8_t cause) 
+int8_t error(DvmContext* context, uint8_t cause) 
 {
+  dvm_state_t* dvm_st = sys_get_state();
   DVMScheduler_state_t *s = &(dvm_st->sched_st);
   s->flags.inErrorState = TRUE;
   DEBUG("DVM_ENGINE: VM: Entering ERROR state. Context: %i, cause %i\n", (int)context->which, (int)cause);

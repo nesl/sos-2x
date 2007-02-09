@@ -10,6 +10,8 @@
 #include <VM/DVMEventHandler.h>
 #include <VM/DVMStacks.h>
 #include <VM/DVMBasiclib.h>
+#include <sys_module.h>
+
 //----------------------------------------------------------------------------
 // HANDLER FUNCTIONS
 //----------------------------------------------------------------------------
@@ -33,7 +35,7 @@ int8_t resmanager_init(dvm_state_t* dvm_st, Message *msg)
 }
 //----------------------------------------------------------------------------
 //  case MSG_FINAL:
-int8_t resmanager_final(dvm_state_t* dvm_st, Message *msg);
+int8_t resmanager_final(dvm_state_t* dvm_st, Message *msg)
 {
   uint8_t i;
   DVMResourceManager_state_t *s = &(dvm_st->resmgr_st);
@@ -60,25 +62,17 @@ int8_t resmanager_loader_data_handler(dvm_state_t* dvm_st, Message *msg)
     return -ENOMEM;
   }
   ds->context.which = id;
-  sys_codemem_read(cm, DVM_MODULE,
-		   &(ds->context.moduleID), 
-		   sizeof(ds->context.moduleID), offsetof(DvmScript, moduleID));
+  sys_codemem_read(cm, &(ds->context.moduleID), sizeof(ds->context.moduleID), offsetof(DvmScript, moduleID));
   DEBUG("RESOURCE_MANAGER: Event - module = %d, offset = %ld \n", ds->context.moduleID, offsetof(DvmScript, moduleID));
-  sys_codemem_read(cm, DVM_MODULE,
-		   &(ds->context.type), sizeof(ds->context.type),
-		   offsetof(DvmScript, eventType));
+  sys_codemem_read(cm, &(ds->context.type), sizeof(ds->context.type), offsetof(DvmScript, eventType));
   DEBUG("RESOURCE_MANAGER: Event - event type = %d, offset = %ld \n", ds->context.type, offsetof(DvmScript, eventType));
-  sys_codemem_read(cm, DVM_MODULE,
-		   &(ds->context.dataSize), sizeof(ds->context.dataSize),
-		   offsetof(DvmScript, length));
+  sys_codemem_read(cm, &(ds->context.dataSize), sizeof(ds->context.dataSize), offsetof(DvmScript, length));
   ds->context.dataSize = ehtons(ds->context.dataSize);
   DEBUG("RESOURCE_MANAGER: Length of script = %d, offset = %ld \n", ds->context.dataSize, offsetof(DvmScript, length));
-  sys_codemem_read(cm, DVM_MODULE,
-		   &(ds->context.libraryMask), sizeof(ds->context.libraryMask),
-		   offsetof(DvmScript, libraryMask));
+  sys_codemem_read(cm, &(ds->context.libraryMask), sizeof(ds->context.libraryMask), offsetof(DvmScript, libraryMask));
   DEBUG("RESOURCE_MANAGER: Library Mask = 0x%x, offset = %ld \n", ds->context.libraryMask, offsetof(DvmScript, libraryMask));
   ds->cm = cm;
-  initEventHandler(ds, id);
+  initEventHandler(dvm_st, ds, id);
   return SOS_OK;
 }
 //----------------------------------------------------------------------------
