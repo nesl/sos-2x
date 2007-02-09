@@ -1,5 +1,3 @@
-
-
 /**
  *  Routines for managing code space
  * 
@@ -563,6 +561,6 @@ void codemem_init(void)
 
 int8_t ker_sys_codemem_read(codemem_t h, void *buf, uint16_t nbytes, uint16_t offset)
 {
-  sos_pid_t my_id = ker_get_current_pid();
-  return ker_codemem_read(h, my_id, buf, nbytes, offset);
+  sos_pid_t my_pid = ker_get_current_pid();
+  return ker_codemem_read(h, my_pid, buf, nbytes, offset);
 }

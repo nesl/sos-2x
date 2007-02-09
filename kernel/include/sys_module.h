@@ -741,7 +741,7 @@ static inline int8_t sys_codemem_read(codemem_t h, void *buf, uint16_t nbytes, u
 #ifdef SYS_JUMP_TBL_START
   return ((sys_codemem_read_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*21))(h, buf, nbytes, offset);
 #else
-  return ker_sys_change_own(h, buf, nbytes, offset);
+  return ker_sys_codemem_read(h, buf, nbytes, offset);
 #endif
 }
 
