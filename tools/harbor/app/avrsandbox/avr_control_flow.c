@@ -81,7 +81,7 @@ static void avr_update_cf_instr(avr_instr_t* instrin, basicblk_t* cblk, int* gcf
       basicblk_t* fallblk;
       fallblk = cblk->fall;
       if (fallblk->newsize != fallblk->size){
-	DEBUG("SKIP INSTR.: Old Size: %d New Size: %d. Addr: 0x%x\n", (int)fallblk->size, (int)fallblk->newsize, (int)(cblk->newaddr+cblk->newsize));
+	DEBUG("SKIP INSTR.: Old Size: %d Old Addr.: 0x%x New Size: %d. New Addr: 0x%x\n", (int)fallblk->size, (int)(cblk->addr + cblk->size), (int)fallblk->newsize, (int)(cblk->newaddr+cblk->newsize));
 	*gcfupdateflag = 1;
 	if ((instr->rawVal & OP_TYPE1_MASK) == OP_CPSE){
 	  avr_fix_cpse(instr, cblk);
@@ -158,8 +158,24 @@ static void avr_update_cf_instr(avr_instr_t* instrin, basicblk_t* cblk, int* gcf
       uint16_t newinstr;
       k = (int)(((int)(cblk->branch->newaddr) - (int)(cblk->newaddr + cblk->newsize))/2);
       if ((k < -2048) || (k > 2047)){
+	uint32_t newcalljmpinstr;
+	uint32_t calljmpaddr;
+	DEBUG("OPTYPE17: Addr: 0x%x Branch: 0x%x k: %d.\n", (int)(cblk->newaddr + cblk->newsize), (int)cblk->branch->newaddr, k);
+	*gcfupdateflag = 1;
+	calljmpaddr = ((cblk->branch)->newaddr);
+	if ((instr->rawVal & OP_TYPE17_MASK) == OP_RCALL)
+	  newcalljmpinstr = create_optype10(OP_CALL, calljmpaddr);
+	else
+	  newcalljmpinstr = create_optype10(OP_JMP, calljmpaddr);
+	instr->rawVal = (uint16_t)(newcalljmpinstr >> 16);
+	instr++;
+	cblk->newsize += sizeof(avr_instr_t);
+	instr->rawVal = (uint16_t)(newcalljmpinstr);
+	return;
+	/*
 	fprintf(stderr, "OPTYPE17: Addr: 0x%x Branch: 0x%x k: %d.\n", (int)(cblk->newaddr + cblk->newsize), (int)cblk->branch->newaddr, k);
 	exit(EXIT_FAILURE);
+	*/
       }
       newinstr = create_optype17(instr->rawVal & OP_TYPE17_MASK, (int16_t)k);
       instr->rawVal = newinstr;

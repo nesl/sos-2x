@@ -207,8 +207,15 @@ static void avr_create_new_symbol_table(Elf_Data* nedata, Elf* elf, Elf* nelf,
 	nerela = (Elf32_Rela*)nreladata->d_buf;
 	for (j = 0; j < numRecs; j++){
 	  if ((ELF32_R_SYM(nerela->r_info) == i) && (ELF32_R_TYPE(nerela->r_info) == R_AVR_CALL)){
-	    nsym->st_value -= sizeof(avr_instr_t) * 2;
-	    DEBUG("Call target symbol. Modify to accomodate safe stack store.\n");
+	    // Check if it is indeed a call instruction before changing the symbol
+	    avr_instr_t instr;
+	    instr = find_instr_at_new_addr(blist, nerela->r_offset);
+	    if ((instr.rawVal & OP_TYPE10_MASK) == OP_CALL){
+	      nsym->st_value -= sizeof(avr_instr_t) * 2;
+	      DEBUG("Call target symbol. Modify to accomodate safe stack store.\n");
+	    }
+	    else
+	      DEBUG("Jmp target symbol. No modification to symbol required.\n");
 	    break;
 	  }
 	  // Follwing is only for producing a more readable elf.lst
@@ -285,8 +292,15 @@ static void avr_create_new_rela_text_data(Elf_Data* nedata, Elf* elf,
 	// The addend should point to two words before the actual function 
 	// so as to invoke the call to the safe stack save function
 	if (ELF32_R_TYPE(nerela->r_info) == R_AVR_CALL){
-	  nerela->r_addend -= sizeof(avr_instr_t) * 2;
-	  DEBUG("Internal call target -> Modify addend to include safe stack.\n");
+	  // Check if it is indeed a call instruction before changing the addend
+	  avr_instr_t instr;
+	  instr = find_instr_at_new_addr(blist, nerela->r_offset);
+	  if ((instr.rawVal & OP_TYPE10_MASK) == OP_CALL){
+	    nerela->r_addend -= sizeof(avr_instr_t) * 2;
+	    DEBUG("Internal call target -> Modify addend to include safe stack.\n");
+	  }
+	  else
+	    DEBUG("Internal jmp target -> No further modifications.\n");
 	}
 	DEBUG("Entry: %d Old Addend: 0x%x New Addend: 0x%x\n", i, (int)old_addend, nerela->r_addend);
       }

@@ -568,6 +568,26 @@ uint32_t find_updated_address(bblklist_t* blist, uint32_t oldaddr)
   return 0;
 }
 //--------------------------------------------------------------
+avr_instr_t find_instr_at_new_addr(bblklist_t* blist, uint32_t newaddr)
+{
+  basicblk_t* cblk;
+  for (cblk = blist->blk_1; cblk != NULL; cblk = (basicblk_t*)cblk->link.next){
+    if ((cblk->newaddr <= newaddr) && (newaddr < (cblk->newaddr + cblk->newsize))){
+      // Found the basic block
+      uint32_t blkoffset, instrndx;
+      blkoffset = newaddr - cblk->newaddr;
+      instrndx = blkoffset/sizeof(avr_instr_t);
+      return (cblk->newinstr[instrndx]);
+    }
+  }
+  fprintf(stderr, "find_instr_at_new_addr: Cannot find instruction at address 0x%x\n", newaddr);
+  exit(EXIT_FAILURE);
+  avr_instr_t temp;
+  temp.rawVal = 0;
+  return temp;
+}
+
+//--------------------------------------------------------------
 void disp_blocks(bblklist_t* blist, uint32_t startaddr)
 {
   basicblk_t* cblk;

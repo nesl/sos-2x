@@ -90,4 +90,10 @@ basicblk_t* find_block(bblklist_t* blist, uint32_t addr);
  */
 uint32_t find_updated_address(bblklist_t* blist, uint32_t oldaddr);
 
+
+/**
+ * \brief Return the instruction at the new address in a sandbox'ed program
+ */
+avr_instr_t find_instr_at_new_addr(bblklist_t* blist, uint32_t newaddr);
+
 #endif//_BASICBLOCK_H_
