@@ -33,6 +33,8 @@
 // IS WORD ALIGNED.
 // Simon: As of Feb 7, 2007, Changing func_cb_t requires
 // changing the same structure in tools/elfloader/minielf/minielf.h
+// Ram: As of Feb 9, 2007, Changing func_cb_t requires
+// changing harbor_sos_func_cb_t structure in tools/harbor/lib/sos_mod_header_patch.c
 typedef struct func_cb {
 	void *ptr;        //! function pointer                    
 	uint8_t proto[4]; //! function prototype                  

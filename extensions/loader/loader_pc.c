@@ -313,7 +313,7 @@ static int process_insmod()
 	code_id = module_id;
   }
   printf("module id = %d\n", module_id);
-  printf("memory size = %d\n", mod_hdr->state_size);
+  printf("memory size = %d\n", ehtons(mod_hdr->state_size));
   printf("code id = %d\n", code_id);
 
   //! print info
@@ -807,7 +807,7 @@ void print_mod_header(mod_header_t* mod_hdr)
 {
   printf("****** MOD HEADER *************\n");
   printf("Module ID: %d\n", mod_hdr->mod_id);
-  printf("State Size: %d\n", mod_hdr->state_size);
+  printf("State Size: %d\n", ehtons(mod_hdr->state_size));
   printf("Number of timers: %d\n", mod_hdr->num_timers);
   printf("Number of sub functions: %d\n", mod_hdr->num_sub_func);
   printf("Number of prov functions: %d\n", mod_hdr->num_prov_func);

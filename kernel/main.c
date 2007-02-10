@@ -58,9 +58,6 @@
 #include <sfi_jumptable.h>
 #endif
 
-#ifdef INCL_VM
-#include <VM/dvm_init.h>
-#endif
 
 /**
  * @brief application start
@@ -128,11 +125,6 @@ int sos_main(uint8_t cond){
 
     //! enable interrupt
 	ENABLE_GLOBAL_INTERRUPTS();
-
-#ifdef INCL_VM
-	//Initialize the Dynamic Virtual Machine, if included
-	vm_init();
-#endif
 
 	DEBUG("SOS booted\n");
     //! start application

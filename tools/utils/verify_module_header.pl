@@ -20,12 +20,12 @@ my $code_id;
 
 open(SOS_FILE, "$fin") or die("Cannot read from $fin");
 binmode SOS_FILE;
-read(SOS_FILE, $header, 10);
+read(SOS_FILE, $header, 12);
 
-($mod_id, $state_size, $num_timers, 
-		$num_sub_func, $num_prov_func, $num_dfunc, $version, $processor_type, 
-	   $platform_type,  $code_id) =
-unpack("CCCCCCCCCv", $header);
+($state_size, $mod_id, $num_timers,
+		$num_sub_func, $num_prov_func, $num_dfunc, $version, $code_id, $processor_type,
+	   $platform_type) =
+unpack("vCCCCCCvCC", $header);
 
 $mod_id += 0;
 $state_size += 0;
@@ -35,7 +35,7 @@ $num_prov_func += 0;
 $num_dfunc += 0;
 $version += 0;
 $processor_type += 0;
-$platform_type += 0;  
+$platform_type += 0;
 $code_id += 0;
 $error = 0;
 $warning = 0;

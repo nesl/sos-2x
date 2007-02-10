@@ -26,6 +26,7 @@
 #include <minielf.h>
 #include <minielflib.h>
 #include <elfhelper.h>
+#include <sos_endian.h>
 
 #ifdef DBGMODE
 #include <dispmelf.h>
@@ -662,6 +663,7 @@ static void printSOSModHeader( sos_mod_header_t *hdr )
   int i;
   printf("====== SOS Module Header =====\n");
   printf("Module ID:          %4d\n", hdr->mod_id);
+  printf("State Size:         %4d\n", entohs(hdr->state_size));
   printf("Number Sub Func:    %4d\n", hdr->num_sub_func);
   printf("Number Prov Func:   %4d\n", hdr->num_prov_func);
   printf("Number Direct Func: %4d\n", hdr->num_dfunc); 

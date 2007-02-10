@@ -21,19 +21,21 @@ typedef uint16_t sos_code_id_t;
  * NOTE: MSP430-GCC does not permit function pointers in a packet structure
  * Simon: As of Feb 7, 2007, Changing mod_header_t requires
  * changing the same structure in tools/elfloader/minielf/minielf.h
+ * Ram: As of Feb 9, 2007, Changing mod_header_t requires
+ * changing harbor_sos_mod_header_t structure in tools/harbor/lib/sos_mod_header_patch.c
  */
 typedef struct mod_header {
+  uint16_t state_size;      //!< module state size
   sos_pid_t mod_id;        //!< module ID (used for messaging).  Set NULL_PID for system selected mod_id
-  uint8_t state_size;      //!< module state size
   uint8_t num_timers;      //!< Number of timers to be reserved at module load time
   uint8_t num_sub_func;	   //!< number of functions to be subscribed
   uint8_t num_prov_func;   //!< number of functions provided
   uint8_t num_dfunc;       //!< number of direct linked functions
   uint8_t version;         //!< version number, for users bookkeeping
+  sos_code_id_t code_id;   //!< module image identifier
   uint8_t processor_type;  //!< processor type of this module
   uint8_t platform_type;   //!< platform type of this module
-  uint8_t padding;
-  sos_code_id_t code_id;   //!< module image identifier
+  //  uint8_t padding;
   msg_handler_t module_handler;
   func_cb_t funct[];
 } mod_header_t;
