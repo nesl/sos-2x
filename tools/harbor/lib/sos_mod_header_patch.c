@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <fcntl.h>
+#include <string.h>
 
 #include <libelf.h>
 
@@ -142,22 +143,38 @@ static uint32_t bin_find_module_start_addr(file_desc_t* fdesc)
 static uint32_t elf_find_module_start_addr(file_desc_t* fdesc)
 {
   Elf_Scn *scn, *symscn;
-  Elf32_Shdr *shdr;
+  Elf32_Shdr *shdr, *symshdr;
   Elf_Data *edata, *symdata;
   uint32_t modheader_addr;
-  int modhdrndx;
-  Elf32_Sym* msym;
+  //  int modhdrndx;
+  Elf32_Sym *msym, *symarr;
   uint8_t* etext;
 
   // Get module header
-  symscn = getELFSymbolTableScn(fdesc->elf);
-  modhdrndx = getELFSymbolTableNdx(fdesc->elf, "mod_header");
-  while ((symdata = elf_getdata(scn, symdata)) != NULL){
-    if (ELF_T_SYM == symdata->d_type){
-      msym = (Elf32_Sym*)symdata->d_buf;
-      msym += modhdrndx;
+  symscn = NULL;
+  while ((symscn = elf_nextscn(fdesc->elf, symscn)) != NULL){
+    if ((symshdr = elf32_getshdr(symscn)) != NULL){
+      if (SHT_SYMTAB == symshdr->sh_type){
+	symdata = NULL;
+	while ((symdata = elf_getdata(symscn, symdata))!= NULL){
+	  if (ELF_T_SYM == symdata->d_type){
+	    int numSymbols, i;
+	    char* symNameRead;
+	    symarr = (Elf32_Sym*)(symdata->d_buf);
+	    numSymbols = (int)(symdata->d_size/symshdr->sh_entsize);
+	    for (i = 0; i < numSymbols; i++){
+	      symNameRead = elf_strptr(fdesc->elf, symshdr->sh_link, symarr[i].st_name);
+	      if (strcmp(symNameRead, "mod_header") == 0){
+		msym = &symarr[i];
+		break;
+	      }
+	    }
+	  }
+	}
+      }
     }
   }
+
   modheader_addr =  msym->st_value;
   
 
@@ -178,6 +195,18 @@ static uint32_t elf_find_module_start_addr(file_desc_t* fdesc)
 	  uint32_t startaddr;
 	  modhdr = (harbor_sos_mod_header_t*)(&etext[modheader_addr]);
 	  numfuncs = modhdr->num_prov_func + modhdr->num_sub_func;
+	  /*
+	  printf("Dom ID. = %d\n", modhdr->mod_id);
+	  printf("Code ID. = %d\n", modhdr->code_id);
+	  printf("Plat. Type = %d\n", modhdr->platform_type);
+	  printf("Proc. Type = %d\n", modhdr->processor_type);
+	  printf("State Size = %d\n", modhdr->state_size);
+	  printf("Num. Sub Func. = %d\n", modhdr->num_sub_func);
+	  printf("Num. Prov. Func. = %d\n", modhdr->num_prov_func); 
+	  printf("Num Funcs. = %d\n", numfuncs);
+	  */
+	  printf("Offsetof %d\n", (int)offsetof(harbor_sos_mod_header_t, funct));
+	  printf("Sizeof %d\n", (int)sizeof(harbor_sos_func_cb_t)*numfuncs);
 	  startaddr = offsetof(harbor_sos_mod_header_t, funct) + sizeof(harbor_sos_func_cb_t)*numfuncs;
 	  return startaddr;
 	}
