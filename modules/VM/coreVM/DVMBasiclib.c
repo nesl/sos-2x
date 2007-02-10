@@ -56,6 +56,7 @@ int8_t basic_library_init(dvm_state_t* dvm_st, Message *msg)
   s->busy = 0;
   s->nop_executing = NULL;
   queue_init( &(s->getDataWaitQueue));
+  DEBUG("[BASIC LIB] basic_library_init: Success\n");
   return SOS_OK;
 }
 //--------------------------------------------------------------------   
@@ -77,7 +78,7 @@ int8_t basic_library_data_ready(dvm_state_t* dvm_st, Message *msg)
   uint16_t photo_data = param->word;
   s->busy = 0;
   if (s->executing != NULL) {
-    DEBUG("BASICLIB (%d): Sensor returns - Context resumed.\n",s->executing->which);
+    DEBUG("[BASIC_LIB] basic_lib_data_ready: Context %d resumed.\n",s->executing->which);
     pushValue( (DvmState *)(s->executing), photo_data, DVM_TYPE_INTEGER); 
     resumeContext(dvm_st, s->executing, s->executing);
     s->executing = NULL;
@@ -85,7 +86,7 @@ int8_t basic_library_data_ready(dvm_state_t* dvm_st, Message *msg)
   
   if (!queue_empty(&(s->getDataWaitQueue))) {
     DvmContext *current = queue_dequeue( NULL, &(s->getDataWaitQueue));
-    DEBUG("BASICLIB (%d): Sensor returns - Some context waiting to get photo data.\n",current->which);
+    DEBUG("[BASIC_LIB] basic_lib_data_ready: Context %d waiting to get photo data.\n",current->which);
     tryget(dvm_st, current, PHOTO, s);
   }
   __asm __volatile("en_data:");
@@ -102,7 +103,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	
   while ((context->state == DVM_STATE_RUN) && (context->num_executed < DVM_CPU_SLICE)) { 
     DvmOpcode instr = getOpcode(dvm_st, context->which, context->pc);
-    DEBUG("VM (%d): PC is %d. instr %d\n",context->which, context->pc, instr);
+    DEBUG("[BASIC_LIB] execute: (%d) PC: %d. INSTR: %d\n",context->which, context->pc, instr);
     if(instr & LIB_ID_BIT)
       {	//Extension Library opcode encountered
 	return SOS_OK;
@@ -124,7 +125,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	}
       case OP_HALT:
 	{
-	  DEBUG("VM (%d): HALT executed.\n", (int)context->which);
+	  DEBUG("[BASIC_LIB] execute: (%d): HALT executed.\n", (int)context->which);
 	  haltContext(dvm_st, context);
 	  context->state = DVM_STATE_HALT;
 	  context->pc = 0;
@@ -144,7 +145,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	{
 	  __asm __volatile("st_getv:");
 	  uint8_t arg = instr - OP_GETVAR;
-	  DEBUG("BASIC_LIB : OPGETVAR (%d):: pushing value %d.\n", (int)arg,(int)s->shared_vars[arg].value.var);
+	  DEBUG("[BASIC_LIB] execute: OPGETVAR (%d):: Pushing value %d.\n", (int)arg,(int)s->shared_vars[arg].value.var);
 	  pushOperand( eventState, &s->shared_vars[arg]);
 	  context->pc += 1;
 	  __asm __volatile("en_getv:");
@@ -158,7 +159,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  __asm __volatile("st_setv:");
 	  uint8_t arg = instr - OP_SETVAR;
 	  DvmStackVariable* var = popOperand( eventState);
-	  DEBUG("BASIC_LIB: OPSETVAR (%d):: Setting value to %d.\n",(int)arg,(int)var->value.var);
+	  DEBUG("[BASIC_LIB] execute: OPSETVAR (%d):: Setting value to %d.\n",(int)arg,(int)var->value.var);
 	  s->shared_vars[arg] = *var;
 	  context->pc += 1;
 	  __asm __volatile("en_setv:");
@@ -172,7 +173,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  uint8_t arg = instr - OP_GETVARF;
 	  int32_t res = 0;
 	  uint16_t res_part = 0;
-	  DEBUG("BASIC_LIB : OPGETVARF (%d):: pushing value %d.\n", (int)arg,(int)s->shared_vars[arg].value.var);
+	  DEBUG("[BASIC_LIB] execute: OPGETVARF (%d):: Pushing value %d.\n", (int)arg,(int)s->shared_vars[arg].value.var);
 	  res = (int32_t)(s->shared_vars[arg].value.var * FLOAT_PRECISION);
 	  res_part = res & 0xFFFF;
 	  pushValue( eventState, res_part, DVM_TYPE_FLOAT_DEC);
@@ -189,7 +190,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  DvmStackVariable* var = popOperand( eventState);
 	  int32_t res = 0;
 	  uint16_t res_part;
-	  DEBUG("BASIC_LIB: OPSETVARF (%d):: Setting value to %d.\n",(int)arg,(int)var->value.var);
+	  DEBUG("[BASIC_LIB] execute: OPSETVARF (%d):: Setting value to %d.\n",(int)arg,(int)var->value.var);
 	  res = (int32_t)(var->value.var * FLOAT_PRECISION);
 	  res_part = res & 0xFFFF;
 	  s->shared_vars[arg+1].type = DVM_TYPE_FLOAT_DEC;
@@ -207,14 +208,15 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  uint32_t msec;
 	  uint8_t timerID = instr - OP_SETTIMER;
 	  DvmStackVariable* arg = popOperand( eventState);
-	  DEBUG("BASIC_LIB: Setting timer 0 period to %d.\n", arg->value.var);
+	  DEBUG("[BASIC_LIB] execute: Setting Timer %d period to %d.\n", timerID, arg->value.var);
 	  //msec = 102 * arg->value.var + (4 * arg->value.var) / 10; 
 	  msec = arg->value.var; 
-	  sys_timer_stop(timerID);
+	  DEBUG("[BASIC_LIB] execute: <<<<< WARNING - Timer %d not being stopped >>>>\n", timerID);
+	  //	  sys_timer_stop(timerID);
 	  if (msec > 0) {
 	    // Ram - Where is the init ??
 	    sys_timer_start(timerID, msec, TIMER_REPEAT);
-	    DEBUG("BasicLib: TIMER STARTED FOR ID %d at %d \n", timerID, msec);
+	    DEBUG("[BASIC_LIB] execute: Timer ID: %d started. Period: %d msec.\n", timerID, msec);
 	  }
 	  context->pc += 1;
 	  break;
@@ -383,7 +385,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  DvmOpcode line_num = getOpcode(dvm_st, context->which, ++context->pc);
 	  int32_t fl_arg1 = 1;
 
-	  DEBUG("VM (%d): JNZ or JZ\n", context->pc);
+	  DEBUG("[BASIC_LIB] execute: (%d) JNZ or JZ\n", context->pc);
 	  if (arg1->type == DVM_TYPE_FLOAT) {
 	    DvmStackVariable* arg2 = popOperand( eventState);
 	    fl_arg1 = convert_to_float(arg1, arg2);
@@ -418,7 +420,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  DvmStackVariable* arg2 = popOperand( eventState);
 	  DvmOpcode line_num = getOpcode( dvm_st,  context->which, context->pc + 1);
 	  context->pc += 1;
-	  DEBUG("BASICLIB (%d): Executing JG %d.\n",context->which, line_num);
+	  DEBUG("[BASIC_LIB] execute: (%d) Executing JG %d.\n",context->which, line_num);
 	  int32_t fl_arg1, fl_arg2;
 
 	  if (arg1->type == DVM_TYPE_FLOAT) {
@@ -439,7 +441,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	    fl_arg2 = arg2->value.var;
 	  }
 
-	  DEBUG("BASICLIB (%d): Executing JG. Compare %d %d.\n", context->which, fl_arg1, fl_arg2);
+	  DEBUG("[BASIC_LIB] execute: (%d) Executing JG. Compare %d %d.\n", context->which, fl_arg1, fl_arg2);
 
 	  if(
 	     ( (instr == OP_JG)  && (fl_arg1 > fl_arg2))   ||
@@ -469,10 +471,10 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  if (s->busy) {
 	    context->state = DVM_STATE_WAITING;
 	    queue_enqueue( context, &(s->getDataWaitQueue), context);
-	    DEBUG("BASICLIB (%d): Calling get sensor data - Sensor busy\n",context->which);
+	    DEBUG("[BASIC_LIB] execute: (%d) Calling get sensor data - Sensor ID: %d - Sensor busy\n",context->which, sensor_type);
 	    res = SOS_OK;
 	  } else {
-	    DEBUG("BASICLIB (%d): Calling get photo data\n",context->which);
+	    DEBUG("[BASIC_LIB] execute: (%d) Calling get sensor data - Sensor ID: %d\n",context->which, sensor_type);
 	    res = tryget(dvm_st, context, sensor_type, s);
 	  }
 	  __asm __volatile("en_get:");
@@ -508,7 +510,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	{
 	  __asm __volatile("st_bp:");
 	  uint8_t buf_idx = instr - OP_BPUSH;
-	  DEBUG("VM (%d) BPUSH %d\n", context->pc, buf_idx);
+	  DEBUG("[BASIC_LIB] execute: (%d) BPUSH %d\n", context->pc, buf_idx);
 	  pushBuffer( eventState, &(s->buffers[buf_idx]));
 	  __asm __volatile("en_bp:");
 	  context->pc += 1;
@@ -545,7 +547,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	{
 	  __asm __volatile("st_getl:");
 	  uint8_t arg = instr - OP_GETLOCAL;
-	  DEBUG("BASIC_LIB : OPGETLOCAL (%d):: pushing value %d.\n", (int)arg,(int)eventState->vars[arg].value.var);
+	  DEBUG("[BASIC_LIB] execute: OPGETLOCAL (%d):: Pushing value %d.\n", (int)arg,(int)eventState->vars[arg].value.var);
 	  if (eventState->vars[arg].type == DVM_TYPE_FLOAT) {
 	    pushOperand( eventState, &eventState->vars[arg+1]);
 	  }
@@ -561,12 +563,12 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  __asm __volatile("st_setl:");
 	  uint8_t arg = instr - OP_SETLOCAL;
 	  DvmStackVariable* var = popOperand( eventState), *var1 = NULL;
-	  DEBUG("BASIC_LIB: OPSETLOCAL (%d):: Setting value to %d.\n",(int)arg,(int)var->value.var);
+	  DEBUG("[BASIC_LIB] execute: OPSETLOCAL (%d):: Setting value to %d.\n",(int)arg,(int)var->value.var);
 	  eventState->vars[arg] = *var;
 	  if (var->type == DVM_TYPE_FLOAT) {
 	    var1 = popOperand( eventState);
 	    eventState->vars[arg+1] = *var1;
-	    DEBUG("BASIC_LIB: OPSETLOCAL (%d):: Setting LSB value to %d.\n",(int)arg,(int)var1->value.var);
+	    DEBUG("[BASIC_LIB] execute: OPSETLOCAL (%d):: Setting LSB value to %d.\n",(int)arg,(int)var1->value.var);
 	  }
 	  context->pc += 1;
 	  __asm __volatile("en_setl:");
@@ -581,7 +583,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  uint8_t arg = instr - OP_GETLOCALF;
 	  int32_t res = 0;
 	  uint16_t res_part = 0;
-	  DEBUG("BASIC_LIB : OPGETLOCALF (%d):: pushing value %d.\n", (int)arg,(int)eventState->vars[arg].value.var);
+	  DEBUG("[BASIC_LIB] execute: OPGETLOCALF (%d):: Pushing value %d.\n", (int)arg,(int)eventState->vars[arg].value.var);
 				
 	  if (eventState->vars[arg].type == DVM_TYPE_INTEGER) {
 	    res = (int32_t)(eventState->vars[arg].value.var * FLOAT_PRECISION);
@@ -605,7 +607,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  DvmStackVariable* var = popOperand( eventState);
 	  int32_t res = 0;
 	  uint16_t res_part;
-	  DEBUG("BASIC_LIB: OPSETLOCALF (%d):: Setting value to %d.\n",(int)arg,(int)var->value.var);
+	  DEBUG("[BASIC_LIB] execute: OPSETLOCALF (%d):: Setting value to %d.\n",(int)arg,(int)var->value.var);
 	  if (var->type == DVM_TYPE_INTEGER) {
 	    res = (int32_t)(var->value.var * FLOAT_PRECISION);
 	    res_part = res & 0xFFFF;
@@ -631,7 +633,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  DvmOpcode arg = getOpcode( dvm_st,  context->which, context->pc);
 	  pushValue( eventState, arg, DVM_TYPE_INTEGER);
 	  context->pc += 1;
-	  DEBUG("VM (%i): Executing PUSH with arg %hi\n", (int)context->which, arg);
+	  DEBUG("[BASIC_LIB] execute: (%i) Executing PUSH with arg %hi\n", (int)context->which, arg);
 	  __asm __volatile("en_push:");
 	  __asm __volatile("nop");
 	  break;
@@ -650,11 +652,11 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  arg = arg3;
 	  arg = (arg << 8) + arg4;
 	  pushValue( eventState, arg, DVM_TYPE_FLOAT_DEC);
-	  DEBUG("VM (%i): Executing PUSHF with decimal %d\n", (int)context->which, arg);
+	  DEBUG("[BASIC_LIB] execute: (%i) Executing PUSHF with decimal %d\n", (int)context->which, arg);
 	  arg = arg1;
 	  arg = (arg << 8) + arg2;
 	  pushValue( eventState, arg, DVM_TYPE_FLOAT);
-	  DEBUG("VM (%i): Executing PUSHF with arg %d \n", (int)context->which, arg);
+	  DEBUG("[BASIC_LIB] execute: (%i) Executing PUSHF with arg %d \n", (int)context->which, arg);
 	  context->pc += 1;
 	  break;
 	}
@@ -692,15 +694,15 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	      DvmStackVariable* apparg_dec = popOperand( eventState);
 	      buffer_append(bufarg->buffer.var, 2, apparg_dec->value.var);
 	      buffer_append(bufarg->buffer.var, 2, apparg->value.var);
-	      DEBUG("BASICLIB: OPBAPPEND. %d %d \n", apparg->value.var, apparg_dec->value.var); 
+	      DEBUG("[BASIC_LIB] execute:  OPBAPPEND. %d %d \n", apparg->value.var, apparg_dec->value.var); 
 	    } else {
 	      buffer_append(bufarg->buffer.var, 2, apparg->value.var);   
-	      DEBUG("BASICLIB: OPBAPPEND. %d \n", apparg->value.var);
+	      DEBUG("[BASIC_LIB] execute:  OPBAPPEND. %d \n", apparg->value.var);
 	    }
 	    __asm __volatile("en_bapp2:");
 	    __asm __volatile("nop");
 	  }
-	  DEBUG("BASICLIB: After BAPPEND. buffer size is %d.\n",bufarg->buffer.var->size);
+	  DEBUG("[BASIC_LIB] execute:  After BAPPEND. buffer size is %d.\n",bufarg->buffer.var->size);
 	  __asm __volatile("st_bapp3:");                
 	  pushOperand( eventState, bufarg);        
 	  context->pc += 1;                             
@@ -729,9 +731,9 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  uint16_t res_part, res_part2;
 
 	  buffer_get(bufarg->buffer.var, 2, indexarg->value.var, &res_part);
-	  DEBUG("BASICLIB: OPBREADF. read decimal part %d\n", res_part);
+	  DEBUG("[BASIC_LIB] execute:  OPBREADF. read decimal part %d\n", res_part);
 	  buffer_get(bufarg->buffer.var, 2, indexarg->value.var+2, &res_part2);                                                         
-	  DEBUG("BASICLIB: OPBREADF. read MSB %d\n", res_part2);
+	  DEBUG("[BASIC_LIB] execute:  OPBREADF. read MSB %d\n", res_part2);
 	  pushValue( eventState, res_part, DVM_TYPE_FLOAT_DEC);  
 	  pushValue( eventState, res_part2, DVM_TYPE_FLOAT);     
 
@@ -751,13 +753,13 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	    DvmStackVariable* valuearg1 = popOperand( eventState);
 	    indexarg = popOperand( eventState);  
 	    buffer_set(bufarg->buffer.var, 2, indexarg->value.var, valuearg1->value.var);                                             
-	    DEBUG("BASICLIB: OPBSET. set float LSB in buffer %d\n", valuearg1->value.var);                                            
+	    DEBUG("[BASIC_LIB] execute:  OPBSET. set float LSB in buffer %d\n", valuearg1->value.var);                                            
 	    buffer_set(bufarg->buffer.var, 2, indexarg->value.var+2, valuearg->value.var);                                            
-	    DEBUG("BASICLIB: OPBSET. set float MSB in buffer %d\n", valuearg->value.var);
+	    DEBUG("[BASIC_LIB] execute:  OPBSET. set float MSB in buffer %d\n", valuearg->value.var);
 	  } else {                                      
 	    indexarg = popOperand( eventState);  
 	    buffer_set(bufarg->buffer.var, 2, indexarg->value.var, valuearg->value.var);                                              
-	    DEBUG("BASICLIB: OPSET. set integer in buffer %d\n", valuearg->value.var);                                                
+	    DEBUG("[BASIC_LIB] execute:  OPSET. set integer in buffer %d\n", valuearg->value.var);                                                
 	  }                                             
 
 	  context->pc += 1;                             
@@ -797,19 +799,19 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  DvmStackVariable* bufarg = popOperand( eventState);
 
 	  if (bufarg->type == DVM_TYPE_BUFFER) {
-	    DEBUG("\n\nBASICLIB (%d): BCAST BUFFER\n\n", context->which);
+	    DEBUG("\n\n[BASIC_LIB] (%d): BCAST BUFFER\n\n", context->which);
 	    sys_post_net(modarg->value.var, typearg->value.var, bufarg->buffer.var->size, bufarg->buffer.var->entries, 0, BCAST_ADDRESS);
-	    //DEBUG("\n\nBASICLIB (%d): BCAST \n\n", context->which);
+	    //DEBUG("\n\n[BASIC_LIB] (%d): BCAST \n\n", context->which);
 	  } else if (bufarg->type == DVM_TYPE_FLOAT) {
-	    DEBUG("\n\nBASICLIB (%d): BCAST FLOAT\n\n", context->which);
+	    DEBUG("\n\n[BASIC_LIB] (%d): BCAST FLOAT\n\n", context->which);
 	    DvmStackVariable* bufarg_dec = popOperand( eventState);
 	    s->fl_post = convert_to_float(bufarg, bufarg_dec);
 	    sys_post_net(modarg->value.var, typearg->value.var, sizeof(int32_t), &s->fl_post, 0, BCAST_ADDRESS);
 	  } else {
-	    DEBUG("\n\nBASICLIB (%d): BCAST VALUE\n\n", context->which);
+	    DEBUG("\n\n[BASIC_LIB] (%d): BCAST VALUE\n\n", context->which);
 	    sys_post_net(modarg->value.var, typearg->value.var, sizeof(int16_t), &bufarg->value.var, 0, BCAST_ADDRESS);
 	  }
-	  //DEBUG("\n\nBASICLIB (%d): BCAST \n\n", context->which);
+	  //DEBUG("\n\n[BASIC_LIB] (%d): BCAST \n\n", context->which);
 
 	  context->pc += 1;
 	  __asm __volatile("en_bcst:");
@@ -834,7 +836,7 @@ static inline void led_op(uint16_t val)
 {
   uint8_t op = (val >> 3) & 3;
   uint8_t led	= val & 7;
-  DEBUG("BASICLIB: Executing LED with %d and %d\n", op, led);
+  DEBUG("[BASIC_LIB] execute:  Executing LED with %d and %d\n", op, led);
   switch (op) 
     {
     case 0:			/* set */
@@ -905,7 +907,7 @@ static inline int8_t call_op(dvm_state_t* dvm_st, DvmState *eventState, DVMBasic
 
   if (callArgs->type == DVM_TYPE_BUFFER) {
     size = callArgs->buffer.var->size;
-    DEBUG("BASICLIB: OPCALL arg size = %d mod = %d fnid = %d.\n", size, mod_id, fnid);
+    DEBUG("[BASIC_LIB] execute:  OPCALL arg size = %d mod = %d fnid = %d.\n", size, mod_id, fnid);
   } else if (callArgs->type == DVM_TYPE_INTEGER) {
     size = 2;
   } 
@@ -948,12 +950,12 @@ static inline int8_t post_op(dvm_state_t* dvm_st, DvmState *eventState, DVMBasic
   //context->state = DVM_STATE_BLOCKED;
   //queue_enqueue( context, &s->blockedQueue, context);
   context->pc += 1;
-  DEBUG("BASICLIB (%d): Posting to tree routing module.\n",context->which);
+  DEBUG("[BASIC_LIB] (%d): Posting to tree routing module.\n",context->which);
   return SOS_OK;
 }
 //--------------------------------------------------------------------
-static int8_t tryget(dvm_state_t* dvm_st, DvmContext *context, uint8_t sensor_type, DVMBasiclib_state_t *s) {
-
+static int8_t tryget(dvm_state_t* dvm_st, DvmContext *context, uint8_t sensor_type, DVMBasiclib_state_t *s) 
+{
   if (sys_sensor_get_data(sensor_type) == SOS_OK) {
     s->busy = 1;
     s->executing = context;

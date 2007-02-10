@@ -37,7 +37,7 @@ int8_t dvmsched_init(dvm_state_t* dvm_st, Message *msg){
   s->flags.errorFlipFlop = 0;
   s->libraries = 1;	             //Basic library is already there.
   s->runningContext = NULL;
-  DEBUG("Scheduler manager initialized\n");
+  DEBUG("DVM ENGINE: Initialized\n");
   engineReboot(dvm_st);
   return SOS_OK;
 }
@@ -203,7 +203,7 @@ static inline int8_t computeInstruction(dvm_state_t *dvm_st) {
       context->num_executed++;
       //if (r < 0) signal error, halt context, break
     } else {			//Basic Library
-      DEBUG("DVM_ENGINE: Library being called is %d\n", M_BASIC_LIB);
+      DEBUG("DVM_ENGINE: Library being called is %d\n", DVM_MODULE_PID);
       r = execute(dvm_st, getStateBlock(dvm_st, context->which));
       //if (r < 0) signal error, halt context, break
     }
@@ -266,7 +266,6 @@ void engineReboot(dvm_state_t* dvm_st)
 //------------------------------------------------------------------------
 int8_t scheduler_submit(dvm_state_t* dvm_st, DvmContext* context) 
 {
-  DVMScheduler_state_t *s = &(dvm_st->sched_st);
   DEBUG("DVM_ENGINE: VM: Context %i submitted to run.\n", (int)context->which);
   context->state = DVM_STATE_READY;
   return executeContext(dvm_st, context);

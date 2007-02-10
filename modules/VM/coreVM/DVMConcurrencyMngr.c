@@ -11,6 +11,9 @@
 #include <VM/DVMStacks.h>
 #include <VM/DVMEventHandler.h>
 #include <VM/DVMBasiclib.h>
+#ifdef PC_PLATFORM
+#include <sos_sched.h>
+#endif
 
 //-----------------------------------------------------------------
 // STATIC FUNCTION PROTOTYPES

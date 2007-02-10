@@ -27,7 +27,7 @@ typedef int8_t (*execute_lib_func_t)(func_cb_ptr cb, DvmContext* context, DvmOpc
 // STATIC FUNCTIONS
 //------------------------------------------------------------------------
 static int8_t dvm_handler(void* state, Message *msg);
-static int8_t error_8(func_cb_ptr p);
+static int8_t error_dvm(func_cb_ptr p);
 
 //------------------------------------------------------------------------
 // MODULE HEADER
@@ -42,11 +42,11 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
   .num_prov_func  =    0,
   .module_handler =    dvm_handler,
   .funct          = {
-    {error_8, "czy2", M_EXT_LIB, EXECUTE},
-    {error_8, "czy2", M_EXT_LIB, EXECUTE},
-    {error_8, "czy2", M_EXT_LIB, EXECUTE},
-    {error_8, "czy2", M_EXT_LIB, EXECUTE},
-    {error_8, "cCz4", RUNTIME_PID, EXECUTE_SYNCALL},
+    {error_dvm, "czy2", M_EXT_LIB, EXECUTE},
+    {error_dvm, "czy2", M_EXT_LIB, EXECUTE},
+    {error_dvm, "czy2", M_EXT_LIB, EXECUTE},
+    {error_dvm, "czy2", M_EXT_LIB, EXECUTE},
+    {error_dvm, "cCz4", RUNTIME_PID, EXECUTE_SYNCALL},
   },
 };
 
@@ -60,13 +60,13 @@ static int8_t dvm_handler(void* state, Message *msg)
   switch (msg->type){
   case MSG_INIT:
     {
-      DEBUG("Starting VM Initialization\n");
+      DEBUG("DVM: Start of init routines ... \n");
       resmanager_init(dvm_st, msg);
       event_handler_init(dvm_st, msg);
       concurrency_init(dvm_st, msg);
       dvmsched_init(dvm_st, msg);
       basic_library_init(dvm_st, msg);
-      DEBUG("DVM ENGINE: Dvm initializing DONE.\n");
+      DEBUG("DVM: Init done\n");
       break;
     }
     
@@ -143,7 +143,18 @@ static int8_t dvm_handler(void* state, Message *msg)
 //------------------------------------------------------------------------
 // ERROR HANDLER
 //------------------------------------------------------------------------
-static int8_t error_8(func_cb_ptr p)
+static int8_t error_dvm(func_cb_ptr p)
 {
   return -EINVAL;
 }
+//------------------------------------------------------------------------
+// HEADER GRABBER
+//------------------------------------------------------------------------
+#ifndef _MODULE_
+mod_header_ptr dvm_get_header()
+{
+  return sos_get_header_address(mod_header);
+}
+#endif
+
+

@@ -5,6 +5,9 @@
  */
 
 #include <VM/DVMqueue.h>
+#ifdef PC_PLATFORM
+#include <sos_sched.h>
+#endif
 
 //--------------------------------------------------------------------
 // STATIC FUNCTIONS

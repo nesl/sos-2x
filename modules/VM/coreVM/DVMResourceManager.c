@@ -11,6 +11,9 @@
 #include <VM/DVMStacks.h>
 #include <VM/DVMBasiclib.h>
 #include <sys_module.h>
+#ifdef PC_PLATFORM
+#include <sos_sched.h>
+#endif
 
 //----------------------------------------------------------------------------
 // HANDLER FUNCTIONS
@@ -18,10 +21,11 @@
 //  case MSG_INIT: 
 int8_t resmanager_init(dvm_state_t* dvm_st, Message *msg)
 {
+  DEBUG("RES MNGR: Start Init\n");
   uint8_t i;
   DVMResourceManager_state_t *s = &(dvm_st->resmgr_st);
   s->script_block_ptr = (DvmState *)sys_malloc(DVM_DEFAULT_MEM_ALLOC_SIZE);
-  DEBUG("script block got this addr %08x \n", (uint32_t)s->script_block_ptr);
+  DEBUG("script block @ addr %08x \n", (uint32_t)s->script_block_ptr);
   if (s->script_block_ptr == NULL)
     DEBUG("No space for script blocks\n");
   for (i = 0; i < DVM_CAPSULE_NUM; i++) {
@@ -30,7 +34,7 @@ int8_t resmanager_init(dvm_state_t* dvm_st, Message *msg)
   for (i = 0; i < DVM_NUM_SCRIPT_BLOCKS; i++)
     s->script_block_owners[i] = NULL_CAPSULE;
   
-  DEBUG("Resource Manager: Initialized\n");
+  DEBUG("RES MNGR: Initialized\n");
   return SOS_OK;
 }
 //----------------------------------------------------------------------------
@@ -49,7 +53,6 @@ int8_t resmanager_final(dvm_state_t* dvm_st, Message *msg)
 //  case MSG_LOADER_DATA_AVAILABLE:
 int8_t resmanager_loader_data_handler(dvm_state_t* dvm_st, Message *msg)
 {
-  DVMResourceManager_state_t *s = &(dvm_st->resmgr_st);
   MsgParam* params = ( MsgParam * )( msg->data );
   uint8_t id = params->byte;
   codemem_t cm = params->word;

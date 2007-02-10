@@ -22,16 +22,16 @@ static inline void rebootContexts(dvm_state_t *dvms_st) ;
 //  case MSG_INIT: 
 int8_t event_handler_init(dvm_state_t *dvm_st, Message *msg)
 {
+  DEBUG("EV HDLR: Start init\n");
   DVMEventHandler_state_t *s = &(dvm_st->evhdlr_st);                       
   memset(s->stateBlock, 0, DVM_CAPSULE_NUM*sizeof(void*));
-  DEBUG("HANDLER STORE: Initialized\n");
+  DEBUG("EV HDLR: Initialized\n");
   return SOS_OK;
 }
 //--------------------------------------------------------------------
 //  case MSG_FINAL: 
 int8_t event_handler_final(dvm_state_t *dvm_st, Message *msg)
 {
-  DVMEventHandler_state_t *s = &(dvm_st->evhdlr_st);                       
   uint8_t i = 0;
   for (; i < DVM_CAPSULE_NUM; i++)
     mem_free(dvm_st, i);
@@ -43,7 +43,7 @@ int8_t event_handler_timeout(dvm_state_t *dvm_st, Message *msg)
 {
   DVMEventHandler_state_t *s = &(dvm_st->evhdlr_st);                       
   MsgParam *timerID = (MsgParam *)msg->data;
-  DEBUG("EVENT HANDLER: TIMER %d EXPIRED\n", timerID->byte);
+  DEBUG("EV HDLR: TIMER %d EXPIRED\n", timerID->byte);
   if ((s->stateBlock[timerID->byte] != NULL) && (s->stateBlock[timerID->byte]->context.moduleID == TIMER_PID)
       && (s->stateBlock[timerID->byte]->context.type == MSG_TIMER_TIMEOUT)) {
     initializeContext(dvm_st, &s->stateBlock[timerID->byte]->context);
@@ -88,9 +88,9 @@ int8_t initEventHandler(dvm_state_t* dvm_st, DvmState *eventState, uint8_t capsu
   {
 #ifdef PC_PLATFORM
     int i;
-    DEBUG("EventHandler: Installing capsule %d:\n\t", (int)capsuleID);
+    DEBUG("EV HDLR: Installing capsule %d:\n\t", (int)capsuleID);
     for (i = 0; i < s->stateBlock[capsuleID]->context.dataSize; i++) {
-      DEBUG_SHORT("[%hhx]", getOpcode(capsuleID, i));
+      DEBUG_SHORT("[%hhx]", getOpcode(dvm_st, capsuleID, i));
     }
     DEBUG_SHORT("\n");
 #endif
@@ -98,11 +98,9 @@ int8_t initEventHandler(dvm_state_t* dvm_st, DvmState *eventState, uint8_t capsu
   engineReboot(dvm_st);
   rebootContexts(dvm_st);
   if (s->stateBlock[capsuleID]->context.moduleID == TIMER_PID) {
+    // Ram - There is no init in the sys_ API. What should be done here ?
     //sys_timer_init(s->pid, capsuleID, TIMER_REPEAT);
-    // Ram - Does this together constitute an init ??
-    sys_timer_start(capsuleID, 100, TIMER_REPEAT);
-    sys_timer_stop(capsuleID);
-    DEBUG("VM (%d): TIMER INIT\n", capsuleID);
+    DEBUG("[EV HDLR] initEventHandler: Capsule Id = (%d): <<<< WARNING TIMER HAS NOT BEEN INITIALIZED >>>>> \n", capsuleID);
   }
   if (s->stateBlock[DVM_CAPSULE_REBOOT] != NULL) {
     initializeContext(dvm_st, &(s->stateBlock[DVM_CAPSULE_REBOOT]->context));
@@ -140,7 +138,7 @@ DvmOpcode getOpcode(dvm_state_t* dvm_st, uint8_t id, uint16_t which)
     // get the opcode at index "which" from codemem and return it.
     // handler for codemem is in s->stateBlock[id]->script
     if(sys_codemem_read(ds->cm, &(op), sizeof(op), offsetof(DvmScript, data) + which) == SOS_OK) {
-      DEBUG("Event Handler: getOpcode. correct place.\n");
+      DEBUG("EV HDLR: getOpcode. correct place.\n");
       return op;
     }
     return OP_HALT;
