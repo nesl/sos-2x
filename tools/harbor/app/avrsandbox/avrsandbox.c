@@ -78,7 +78,7 @@ int main(int argc, char** argv)
   }
 
   if (-1 == ipstartaddr){
-    startaddr = find_sos_module_handler_addr(&fdesc);
+    startaddr = find_module_start_addr(&fdesc);
   }
   else{
     startaddr = (uint32_t)ipstartaddr;

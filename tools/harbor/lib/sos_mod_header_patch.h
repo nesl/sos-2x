@@ -20,7 +20,7 @@ void sos_patch_mod_header(bblklist_t* blist, uint8_t* mhdr);
  * \param fdesc Input file descriptor
  * \return Address of the module handler
  */
-uint32_t find_sos_module_handler_addr(file_desc_t* fdesc);
+uint32_t find_module_start_addr(file_desc_t* fdesc);
 
 
 /**
