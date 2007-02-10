@@ -267,11 +267,21 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
     switch (previnstr.rawVal & OP_TYPE10_MASK){
     case OP_JMP:
       {
-	succ->branchaddr = (2 * get_optype10_k(&previnstr, &instr));
-	succ->branchflag = 1;
-	succ->fallflag = 0;
-	succ->flag = TWO_WORD_INSTR_FLAG | JMP_INSTR_FLAG;
-	return;
+	uint32_t jmptargetaddr;
+	if (sos_sys_call_check(fdesc, currAddr - sizeof(avr_instr_t), &jmptargetaddr) != 0){
+	  // Jmp internal to a module i.e. forms a basic block
+	  if (BIN_FILE == fdesc->type)
+	    succ->branchaddr = (2 * get_optype10_k(&previnstr, &instr));
+	  else
+	    succ->branchaddr = jmptargetaddr;
+	  succ->branchflag = 1;
+	  succ->fallflag = 0;
+	  succ->flag = TWO_WORD_INSTR_FLAG | JMP_INSTR_FLAG;
+	  return;
+	}
+	fprintf(stderr, "find_succ: Error in module. Cannot jump to an external address.\n");
+	exit(EXIT_FAILURE);
+	break;
       }
     case OP_CALL:
       {
