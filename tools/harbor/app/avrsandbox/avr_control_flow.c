@@ -162,11 +162,16 @@ static void avr_update_cf_instr(avr_instr_t* instrin, basicblk_t* cblk, int* gcf
 	uint32_t calljmpaddr;
 	DEBUG("OPTYPE17: Addr: 0x%x Branch: 0x%x k: %d.\n", (int)(cblk->newaddr + cblk->newsize), (int)cblk->branch->newaddr, k);
 	*gcfupdateflag = 1;
+	cblk->flag = TWO_WORD_INSTR_FLAG;
 	calljmpaddr = ((cblk->branch)->newaddr);
-	if ((instr->rawVal & OP_TYPE17_MASK) == OP_RCALL)
+	if ((instr->rawVal & OP_TYPE17_MASK) == OP_RCALL){
+	  cblk->flag |= CALL_INSTR_FLAG;
 	  newcalljmpinstr = create_optype10(OP_CALL, calljmpaddr);
-	else
+	}
+	else{
+	  cblk->flag |= JMP_INSTR_FLAG;
 	  newcalljmpinstr = create_optype10(OP_JMP, calljmpaddr);
+	}
 	instr->rawVal = (uint16_t)(newcalljmpinstr >> 16);
 	instr++;
 	cblk->newsize += sizeof(avr_instr_t);

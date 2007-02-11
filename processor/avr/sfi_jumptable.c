@@ -12,6 +12,7 @@
 #include <hardware.h>
 #include <cross_domain_cf.h>
 #include <memmap.h>
+#include <avrinstr.h>
 
 #define CONV_DOMAINID_TO_PAGENUM(x) (uint16_t)(SFI_DOM0_TABLE + (uint16_t)x)
 #define CONV_DOMAINID_TO_ADDRESS(x) (uint32_t)((SFI_DOM0_TABLE + (uint32_t)x) * 256)

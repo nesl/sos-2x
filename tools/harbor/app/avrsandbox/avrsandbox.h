@@ -44,6 +44,7 @@ typedef struct _str_sandbox_type {
 #define BLOCK_SLACK_BYTES 40  //! Slack due to control flow changes 
 #define	Flip_int16(type)  (((type >> 8) & 0x00ff) | ((type << 8) & 0xff00))
 #define MAX_SANDBOX_BLK_SIZE 30
+#define MAX_NEW_RELA         100
 
 
 //----------------------------------------------------------------------------

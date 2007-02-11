@@ -82,7 +82,9 @@ static inline int8_t verify_instr(avr_instr_t instr, codemem_t h, uint16_t code_
 			  sizeof(avr_instr_t), code_offset);
 	goto verify_success;
       }
-      if (writeval != instr.rawVal) return -EINVAL;
+      if (writeval == instr.rawVal) goto verify_success;
+      if ((instr.rawVal >= mod_lb) && (instr.rawVal < mod_ub)) goto verify_success;
+      return -EINVAL;
     }  
     
     // Check for CALL instruction

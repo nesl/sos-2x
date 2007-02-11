@@ -307,6 +307,70 @@ static void avr_create_new_rela_text_data(Elf_Data* nedata, Elf* elf,
     }
     nerela++;
   }
+  
+  // Add new relocation records
+  basicblk_t* cblk;
+  Elf32_Rela *newrela;
+  int numnewrecs;
+  int newcalljmpflag;
+  newrela = (Elf32_Rela*)malloc(sizeof(Elf32_Rela) * MAX_NEW_RELA);
+  numnewrecs = 0;
+  for (cblk = blist->blk_st; cblk != NULL; cblk = (basicblk_t*)cblk->link.next){
+    avr_instr_t* instr;
+    int numinstr;
+    uint32_t thisinstroffset;
+    numinstr = cblk->newsize/sizeof(avr_instr_t);
+    if (NULL == cblk->branch) continue;
+    if ((cblk->flag & TWO_WORD_INSTR_FLAG) == 0) continue;
+    instr = &(cblk->newinstr[numinstr - 2]);
+    thisinstroffset = cblk->newaddr + cblk->newsize - 2 * sizeof(avr_instr_t);
+    
+
+    if (((instr->rawVal & OP_TYPE10_MASK) != OP_JMP) &&
+	((instr->rawVal & OP_TYPE10_MASK) != OP_CALL)){
+      fprintf(stderr, "avr_create_new_rela_text_data: Basic block flag corrupted\n");
+      exit(EXIT_FAILURE);
+    }
+
+
+    // Check if there is a rela record with the current offset
+    nerela = (Elf32_Rela*)nedata->d_buf;
+    newcalljmpflag = 1;
+    for (i = 0; i < numRecs; i++){
+      if (nerela->r_offset == thisinstroffset){
+	DEBUG("Curr New Offset: 0x%d -- Found\n", thisinstroffset);
+	newcalljmpflag = 0;
+	break;
+      }
+      nerela++;
+    }
+    
+    if (newcalljmpflag == 0) continue;
+
+
+
+    // Add a new relocation records
+    // r_added = .text + branch target address
+    newrela[numnewrecs].r_info = ELF32_R_INFO(textNdx, R_AVR_CALL);  
+    newrela[numnewrecs].r_offset = thisinstroffset;
+    newrela[numnewrecs].r_addend = (cblk->branch)->newaddr;
+    DEBUG("New Rela: Offset 0x%x  Addend 0x%x\n", newrela[numnewrecs].r_offset, newrela[numnewrecs].r_addend);
+    numnewrecs++;
+  }
+
+  DEBUG("New Rela Recs: %d\n", numnewrecs);
+  
+  uint8_t *new_d_buf, *ptr_d_buf;
+  new_d_buf = (uint8_t*)malloc(numnewrecs * sizeof(Elf32_Rela) + nedata->d_size);
+  memcpy(new_d_buf, nedata->d_buf, nedata->d_size);
+  ptr_d_buf = new_d_buf + nedata->d_size;
+  memcpy(ptr_d_buf, newrela, sizeof(Elf32_Rela)*numnewrecs);
+  free(nedata->d_buf);
+  free(newrela);
+  nedata->d_buf = new_d_buf;
+  nedata->d_size += sizeof(Elf32_Rela) * numnewrecs;
+  
+
   return;
 }
 //-------------------------------------------------------------------
