@@ -58,10 +58,10 @@ ifeq ($(MODE), sfi)
 DEFS += -DSOS_SFI
 #SRCS += malloc_sfi.c memmap.c
 SRCS += malloc.c memmap.c
-ifeq ($(DOMS),8)
-DEFS += -DSFI_DOMS_8
-else
+ifeq ($(DOMS),2)
 DEFS += -DSFI_DOMS_2
+else
+DEFS += -DSFI_DOMS_8
 endif
 endif
 
