@@ -834,8 +834,8 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 //--------------------------------------------------------------------
 static inline void led_op(uint16_t val)
 {
-  uint8_t op = (val >> 3) & 3;
-  uint8_t led	= val & 7;
+  uint8_t op = (val >> 3) & 0x03;
+  uint8_t led	= val & 0x07;
   DEBUG("[BASIC_LIB] execute:  Executing LED with %d and %d\n", op, led);
   switch (op) 
     {
