@@ -24,6 +24,7 @@ import java.util.*;
 public class SOSCrashMonitor extends MonitorFactory {
 
     public final Option.Long CRASHADDR = options.newOption("crash-addr", 0, "Specify byte address of crash site.");
+    public final Option.Bool PROFBEFORE = options.newOption("profie-before-fire", false, "Profile before executing an instruction.");
     public final Option.Long SFIEXCEPTIONADDR = options.newOption("sfi-exception-addr", 0, "Specify byte address of crash site.");
     public final Option.Long TRACELEN  = options.newOption("trace-len", 100, "Specify length of intr. trace");
     public final Option.Long MEMMAPADDR = options.newOption("memmap-addr", 0, "Specify length of intr. trace");
@@ -47,6 +48,7 @@ public class SOSCrashMonitor extends MonitorFactory {
 	public int[] traceR31;
 	public int memmap_addr;
 	public int mallocaddr, freeaddr, chownaddr;
+	public boolean profilebefore;
 
 	Mon(Simulator s) {
 	    simulator = s;
@@ -70,7 +72,6 @@ public class SOSCrashMonitor extends MonitorFactory {
 	    int sfiexceptionaddr = (int)SFIEXCEPTIONADDR.get();
 	    if (sfiexceptionaddr != 0)
 		s.insertProbe(new SOSSFIExceptionProbe(), sfiexceptionaddr);
-	    s.insertProbe(new SOSTraceProbe());
 
 	    mallocaddr = (int)MALLOCADDR.get();
 	    if (mallocaddr != 0)
@@ -88,6 +89,8 @@ public class SOSCrashMonitor extends MonitorFactory {
 	    if (vmpost != 0)
 		s.insertProbe(new SOSDVMProbe(), vmpost);
 
+	    profilebefore = (boolean)PROFBEFORE.get();
+	    s.insertProbe(new SOSTraceProbe());
 	    
 	}
 
@@ -180,11 +183,27 @@ public class SOSCrashMonitor extends MonitorFactory {
 	public class SOSTraceProbe implements Simulator.Probe{
 	    
 	    public void fireBefore(State state, int pc){
+		if (profilebefore)
+		    doSOSProfile(state, pc);
 		return;
 	    }
 
 	    public void fireAfter(State state, int pc){
+		if (!profilebefore)
+		    doSOSProfile(state, pc);
+		return;
+	    }
+
+
+	    public void doSOSProfile(State state, int pc){
 		LegacyState legacystate = (LegacyState)state;
+		/*
+		if ((pc >= 46528) && (pc < 130048)){
+		    Terminal.print("PC: ");
+		    Terminal.print(StringUtil.addrToString(pc));
+		    Terminal.nextln();
+		}
+		*/
 		tracePC[tracePtr] = pc;
 		traceSP[tracePtr] = state.getSP();
 		traceR0[tracePtr] = legacystate.getRegisterUnsigned(LegacyRegister.R0);
@@ -196,6 +215,7 @@ public class SOSCrashMonitor extends MonitorFactory {
 		tracePtr = (tracePtr + 1) % (tracelen);
 		return;
 	    }
+
 	}
 	
 

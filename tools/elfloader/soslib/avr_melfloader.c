@@ -35,9 +35,19 @@ int8_t melf_arch_relocate(melf_desc_t* mdesc, Melf_Rela* rela, Melf_Sym* sym, Me
   case R_AVR_NONE:
   case R_AVR_32:
   case R_AVR_7_PCREL:
-  case R_AVR_13_PCREL:
     return 0;
     
+  case R_AVR_13_PCREL:
+    {
+      uint16_t pc = rela->r_offset >> 1; // Word address, relative to start of .text section
+      uint16_t target_addr = ((uint32_t)sym->st_value + (uint32_t)rela->r_addend) >> 1; // Word address, relative to start of .text section
+      int16_t k = (int16_t)target_addr - (int16_t)pc - 1; // According to AVR ISA: target_addr = pc + k + 1
+      instr[0] = (uint8_t) k;
+      instr[1] = (instr[1] & 0xF0) | ((k >> 8) & 0x0F);
+      ker_codemem_write(mdesc->cmhdl, KER_DFT_LOADER_PID, (void*)instr, 2, reloc_offset);    
+      break;
+    }
+
   case R_AVR_16:
     instr[0] = (uint8_t)reloc_addr;
     instr[1] = (uint8_t)(reloc_addr >> 8);
@@ -129,6 +139,7 @@ int8_t melf_arch_relocate(melf_desc_t* mdesc, Melf_Rela* rela, Melf_Sym* sym, Me
 static inline void WRITE_LDI(uint8_t* instr, uint8_t byte)
 {							
   instr[0] = (instr[0] & 0xf0) | (byte & 0x0f);	
-  instr[1] = (instr[0] & 0xf0) | (byte >> 4);
+  //  instr[1] = (instr[0] & 0xf0) | (byte >> 4);
+  instr[1] = (instr[1] & 0xf0) | (byte >> 4);
   return;
 }

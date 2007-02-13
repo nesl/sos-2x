@@ -209,8 +209,9 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  uint8_t timerID = instr - OP_SETTIMER;
 	  DvmStackVariable* arg = popOperand( eventState);
 	  DEBUG("[BASIC_LIB] execute: Setting Timer %d period to %d.\n", timerID, arg->value.var);
-	  //msec = 102 * arg->value.var + (4 * arg->value.var) / 10; 
-	  msec = arg->value.var; 
+	  //msec = 102 * arg->value.var + (4 * arg->value.var) / 10;
+	  // Set the timer timeout argument in seconds
+	  msec = arg->value.var * 1000; 
 	  DEBUG("[BASIC_LIB] execute: <<<<< WARNING - Timer %d not being stopped >>>>\n", timerID);
 	  //	  sys_timer_stop(timerID);
 	  if (msec > 0) {

@@ -269,5 +269,7 @@ char **argv;
 	
 	if ((DVM_SCRIPT_HEADER_SIZE + i) > 256)
 		exit(printf("Script packet size is greater than 256 bytes. Exiting.\n"));
+
+	system("sos_tool.exe --lddata=./script.dat");
 	
 }
