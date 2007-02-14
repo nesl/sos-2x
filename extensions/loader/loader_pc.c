@@ -30,7 +30,7 @@ void print_mod_header(mod_header_t* mod_hdr);
 
 enum {
   PERIOD_INTERVAL     =   5L * 1024L,    // 1 second
-  MAX_IMAGE_SIZE      =   64L * 256L,
+  MAX_IMAGE_SIZE      =   128L * 256L,
   BUF_SIZE            =   255L,
   RMALL_CODE_ID       =     0L,
 };
