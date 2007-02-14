@@ -17,6 +17,7 @@
 #endif
 #include <led_dbg.h>
 
+//#define SOS_DEBUG_FETCHER
 #ifndef SOS_DEBUG_FETCHER
 #undef DEBUG
 #define DEBUG(...)
