@@ -17,6 +17,7 @@
 #include <VM/DVMBasiclib.h>
 #include <loader/loader.h> // For loader message type
 #include <sys_module.h>
+#include <led.h>
 
 //------------------------------------------------------------------------
 // TYPEDEFS
@@ -61,6 +62,7 @@ static int8_t dvm_handler(void* state, Message *msg)
   case MSG_INIT:
     {
       DEBUG("DVM: Start of init routines ... \n");
+      sys_led(LED_RED_TOGGLE);
       resmanager_init(dvm_st, msg);
       event_handler_init(dvm_st, msg);
       concurrency_init(dvm_st, msg);
@@ -128,6 +130,7 @@ static int8_t dvm_handler(void* state, Message *msg)
 
   case MSG_LOADER_DATA_AVAILABLE:
     {
+      sys_led(LED_GREEN_TOGGLE);
       resmanager_loader_data_handler(dvm_st, msg);
       break;
     }
