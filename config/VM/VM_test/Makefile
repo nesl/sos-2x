@@ -13,7 +13,7 @@ VPATH += $(ROOTDIR)/extensions/loader
 DEFS += -DINCL_VM 
 
 SRCS += loader.c
-#SCRCS += script_loader.c
+SRCS += script_loader.c
 SRCS += dvm.c DVMScheduler.c DVMResourceManager.c DVMEventHandler.c
 SRCS += DVMConcurrencyMngr.c DVMBasiclib.c DVMStacks.c DVMqueue.c
 
