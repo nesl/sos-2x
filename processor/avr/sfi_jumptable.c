@@ -133,16 +133,24 @@ void sfi_modtable_register(mod_header_t* mhdr)
   int8_t domainid;
   func_addr_t module_handler;
 #ifdef MINIELF_LOADER
-  uint16_t mod_hdr_offset, mod_hdr_size, mod_handler_word_addr;
+  uint16_t mod_hdr_offset, mod_hdr_size;
   uint32_t mod_start_addr;
   mod_header_ptr p;
   mod_header_t* mhdr;
+  uint8_t numfuncs;
+  uint8_t buff[100];
   mod_start_addr = ker_codemem_get_start_address(h);
   p = ker_codemem_get_header_address(h);
-  mod_handler_word_addr = sos_read_header_ptr(p, offsetof(mod_header_t, module_handler));
-  mod_hdr_size = (uint16_t)((mod_handler_word_addr - p) << 1);
+  numfuncs = sos_read_header_byte(p, offsetof(mod_header_t, num_sub_func)) +
+    sos_read_header_byte(p, offsetof(mod_header_t, num_prov_func)) +
+    sos_read_header_byte(p, offsetof(mod_header_t, num_dfunc));
+  mod_hdr_size = offsetof(mod_header_t, funct) + sizeof(func_cb_t) * numfuncs;
   mod_hdr_offset = (uint16_t)((uint32_t)((uint32_t)p << 1) - mod_start_addr);
-  mhdr = (mod_header_t*)ker_malloc(mod_hdr_size, KER_DFT_LOADER_PID);
+  mhdr = (mod_header_t*)buff;
+  /*
+  if ((mhdr = (mod_header_t*)ker_malloc(mod_hdr_size, KER_DFT_LOADER_PID)) == NULL)
+    ker_panic();
+  */
   ker_codemem_read(h, KER_DFT_LOADER_PID, mhdr, mod_hdr_size, mod_hdr_offset);
 #endif
 
@@ -171,6 +179,7 @@ void sfi_modtable_register(mod_header_t* mhdr)
   }
   ker_codemem_write(h, KER_DFT_LOADER_PID, mhdr, mod_hdr_size, mod_hdr_offset);
   ker_codemem_flush(h, KER_DFT_LOADER_PID);
+  //  ker_free(mhdr);
 #endif
   return;			       
 }
