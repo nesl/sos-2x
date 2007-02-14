@@ -238,7 +238,6 @@ static int avrsandbox(file_desc_t *fdesc, char* outFileName, uint32_t startaddr,
     basicblk_t* intcalltargetblk;
     uint32_t callinstr;
 
-    // If basic block ends in call or jump then it cannot end in RCALL
     if (cblk->size == 0) continue;
 
     if ((cblk->flag & TWO_WORD_INSTR_FLAG)&&(cblk->flag & CALL_INSTR_FLAG)){

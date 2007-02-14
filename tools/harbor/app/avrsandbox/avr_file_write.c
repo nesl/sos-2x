@@ -206,11 +206,12 @@ static void avr_create_new_symbol_table(Elf_Data* nedata, Elf* elf, Elf* nelf,
 	int j;
 	nerela = (Elf32_Rela*)nreladata->d_buf;
 	for (j = 0; j < numRecs; j++){
-	  if ((ELF32_R_SYM(nerela->r_info) == i) && (ELF32_R_TYPE(nerela->r_info) == R_AVR_CALL)){
+	  if ((ELF32_R_SYM(nerela->r_info) == i) && ((ELF32_R_TYPE(nerela->r_info) == R_AVR_CALL)||
+						     (ELF32_R_TYPE(nerela->r_info) == R_AVR_13_PCREL))){
 	    // Check if it is indeed a call instruction before changing the symbol
 	    avr_instr_t instr;
 	    instr = find_instr_at_new_addr(blist, nerela->r_offset);
-	    if ((instr.rawVal & OP_TYPE10_MASK) == OP_CALL){
+	    if (((instr.rawVal & OP_TYPE10_MASK) == OP_CALL) || ((instr.rawVal & OP_TYPE17_MASK) == OP_RCALL)){
 	      nsym->st_value -= sizeof(avr_instr_t) * 2;
 	      DEBUG("Call target symbol. Modify to accomodate safe stack store.\n");
 	    }
@@ -221,7 +222,7 @@ static void avr_create_new_symbol_table(Elf_Data* nedata, Elf* elf, Elf* nelf,
 	  // Follwing is only for producing a more readable elf.lst
 	  if ((ELF32_ST_BIND(nsym->st_info) == STB_LOCAL) &&
 	      (ELF32_ST_TYPE(nsym->st_info) == STT_FUNC) &&
-	      (ELF32_R_TYPE(nerela->r_info) == R_AVR_CALL) &&
+	      ((ELF32_R_TYPE(nerela->r_info) == R_AVR_CALL) || (ELF32_R_TYPE(nerela->r_info) == R_AVR_13_PCREL)) &&
 	      (nerela->r_addend == (nsym->st_value - (2*sizeof(avr_instr_t))))){
 	    nsym->st_value -= sizeof(avr_instr_t) * 2;
 	    DEBUG("Call target symbol. Modified for ELF pretty print.\n");
@@ -301,6 +302,17 @@ static void avr_create_new_rela_text_data(Elf_Data* nedata, Elf* elf,
 	  }
 	  else
 	    DEBUG("Internal jmp target -> No further modifications.\n");
+	}
+	if (ELF32_R_TYPE(nerela->r_info) == R_AVR_13_PCREL){
+	  // Check if it is indeed a call instruction before changing the addend
+	  avr_instr_t instr;
+	  instr = find_instr_at_new_addr(blist, nerela->r_offset);
+	  if ((instr.rawVal & OP_TYPE17_MASK) == OP_RCALL){
+	    nerela->r_addend -= sizeof(avr_instr_t) * 2;
+	    DEBUG("Internal rcall target -> Modify addend to include safe stack.\n");
+	  }
+	  else
+	    DEBUG("Internal rjmp target -> No further modifications.\n");
 	}
 	DEBUG("Entry: %d Old Addend: 0x%x New Addend: 0x%x\n", i, (int)old_addend, nerela->r_addend);
       }

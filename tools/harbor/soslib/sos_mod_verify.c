@@ -26,11 +26,11 @@ int8_t ker_verify_module(codemem_t h)
   uint16_t code_offset;
   avr_instr_t instr;
   mod_header_ptr pmhdr;
-  uint16_t mod_start_word_addr, mod_handler_sfi_word_addr, mod_handler_word_addr;
+  uint16_t mod_start_word_addr, mod_prog_start_word_addr;
   melf_desc_t mdesc;
   Melf_Shdr progshdr;
   uint16_t mod_ub;
-
+  uint8_t numfuncs;
 
   melf_begin(&mdesc, h);
   mod_start_word_addr = (mdesc.base_addr >> 1); // Module begins here (Word Addr)
@@ -38,17 +38,21 @@ int8_t ker_verify_module(codemem_t h)
   mod_ub = mod_start_word_addr + (uint16_t)(progshdr.sh_offset >> 1) 
     + (uint16_t)(progshdr.sh_size >> 1); // Module .text section ends here (Word Addr)
 
+  // Compute the size of module header. Program begins right after that
   pmhdr = ker_codemem_get_header_address(h);
-  mod_handler_sfi_word_addr = sos_read_header_ptr(pmhdr, offsetof(mod_header_t, module_handler));
-  mod_handler_word_addr = sfi_modtable_get_real_addr(mod_handler_sfi_word_addr); // Module .text starts here (mod_lb)
+  numfuncs = sos_read_header_byte(pmhdr, offsetof(mod_header_t, num_sub_func)) +
+    sos_read_header_byte(pmhdr, offsetof(mod_header_t, num_prov_func)) +
+    sos_read_header_byte(pmhdr, offsetof(mod_header_t, num_dfunc));
+  mod_prog_start_word_addr = ((offsetof(mod_header_t, funct) + sizeof(func_cb_t) * numfuncs) >> 1) 
+    + mod_start_word_addr + (uint16_t)(progshdr.sh_offset >> 1);
   
 
   // Single pass patch and verify
-  for (code_offset = (mod_handler_word_addr - mod_start_word_addr) * sizeof(avr_instr_t); 
+  for (code_offset = (mod_prog_start_word_addr - mod_start_word_addr) * sizeof(avr_instr_t); 
        code_offset < (progshdr.sh_offset + progshdr.sh_size); 
        code_offset += sizeof(avr_instr_t)){
     ker_codemem_read(h, KER_DFT_LOADER_PID, &instr, sizeof(avr_instr_t), code_offset);
-    if (verify_instr(instr, h, code_offset, mod_handler_word_addr, mod_ub) != SOS_OK){
+    if (verify_instr(instr, h, code_offset, mod_prog_start_word_addr, mod_ub) != SOS_OK){
       return -EINVAL;
     }
     /*

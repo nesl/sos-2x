@@ -477,7 +477,7 @@ typedef struct _str_avrinstr
 #define OP_SBRS 0xFE00
   // OPTYPE 7
 #define OP_TYPE7_MASK 0xFC00
-#define OP_BRBC 0xF800
+#define OP_BRBC 0xF400
 #define OP_BRBS 0xF000
   // OPTYPE 8
 #define OP_TYPE8_MASK 0xFC07

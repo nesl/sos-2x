@@ -218,8 +218,8 @@ static uint32_t elf_find_module_start_addr(file_desc_t* fdesc)
   return 0;
 }
 
-// Returns 0 if the call instruction target is sys table else returns -1
-int8_t sos_sys_call_check(file_desc_t* fdesc, uint32_t callInstrAddr, uint32_t* calltargetaddr)
+// Returns 0 if the call/jmp/rcall/rjmp has relocation record
+int8_t check_calljmp_has_reloc_rec(file_desc_t* fdesc, uint32_t callInstrAddr, uint32_t* calltargetaddr)
 {
   Elf_Scn *scn;
   Elf32_Shdr *shdr;
@@ -227,11 +227,11 @@ int8_t sos_sys_call_check(file_desc_t* fdesc, uint32_t callInstrAddr, uint32_t* 
   Elf32_Rela *erela;
   int numRecs;
 
-  if (BIN_FILE == fdesc->type) return -1;
+  if (BIN_FILE == fdesc->type) return 0;
   
   scn = getELFSectionByName(fdesc->elf, ".rela.text");
   if (NULL == scn){
-    fprintf(stderr, "sos_sys_call_check: Cannot find relocation section in ELF file.\n");
+    fprintf(stderr, "check_calljmp_has_reloc_rec: Cannot find relocation section in ELF file.\n");
     exit(EXIT_FAILURE);
   }
 
@@ -257,17 +257,19 @@ int8_t sos_sys_call_check(file_desc_t* fdesc, uint32_t callInstrAddr, uint32_t* 
 	      numSyms = symdata->d_size/symshdr->sh_entsize;
 	      symNdx = ELF32_R_SYM(erela[i].r_info);
 	      if (symNdx >= numSyms){
-		fprintf(stderr, "sos_sys_call_check: Invalid symbol table index in relocation entry\n");
+		fprintf(stderr, "check_calljmp_has_reloc_rec: Invalid symbol table index in relocation entry\n");
 		exit(EXIT_FAILURE);
 	      }
 	      sym = (Elf32_Sym*)((Elf32_Sym*)symdata->d_buf + symNdx);
 	      *calltargetaddr = sym->st_value + erela[i].r_addend;
-	      return -1;
+	      return 0;
 	    }
 	  }
 	}
       }
     }
   }
-  return 0;
+  return -1;
 }
+
+

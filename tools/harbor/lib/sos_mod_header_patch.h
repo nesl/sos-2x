@@ -24,10 +24,12 @@ uint32_t find_module_start_addr(file_desc_t* fdesc);
 
 
 /**
- * \brief Determines if a call instruction calls into system jump table
+ * \brief Determines if a call or jump instruction contains a relocation record
  * \param fdesc Input File Descriptor
- * \return 0 if the call is into the system jump table, -1 otherwise
+ * \return 0 if the call or jump has a relocation record, -1 otherwise
  */
-int8_t sos_sys_call_check(file_desc_t* fdesc, uint32_t callInstrAddr, uint32_t* calltargetaddr);
+int8_t check_calljmp_has_reloc_rec(file_desc_t* fdesc, uint32_t callInstrAddr, uint32_t* calltargetaddr);
+
+
 
 #endif//_SOS_MOD_HEADER_PATCH_H_

@@ -161,7 +161,7 @@ static void link_basic_blocks(file_desc_t* fdesc, bblklist_t* blist, uint32_t st
       currblk->flag = succ.flag;
       if (succ.branchflag == 1){
 	if ((currblk->branch = find_block(blist, succ.branchaddr)) == NULL){
-	  fprintf(stderr, "Blist is not formed correctly.\n");
+	  fprintf(stderr, "link_basic_blocks: branch is NULL. Blist is not formed correctly.\n");
 	  exit(EXIT_FAILURE);
 	}
       }
@@ -169,7 +169,7 @@ static void link_basic_blocks(file_desc_t* fdesc, bblklist_t* blist, uint32_t st
 	currblk->branch = NULL;
       if (succ.fallflag == 1){
 	if ((currblk->fall = find_block(blist, succ.falladdr)) == NULL){
-	  fprintf(stderr, "Blist is not formed correctly.\n");
+	  fprintf(stderr, "link_basic_blocks: succ is NULL. Blist is not formed correctly.\n");
 	  exit(EXIT_FAILURE);
 	}
       }
@@ -268,7 +268,7 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
     case OP_JMP:
       {
 	uint32_t jmptargetaddr;
-	if (sos_sys_call_check(fdesc, currAddr - sizeof(avr_instr_t), &jmptargetaddr) != 0){
+	if (check_calljmp_has_reloc_rec(fdesc, currAddr - sizeof(avr_instr_t), &jmptargetaddr) == 0){
 	  // Jmp internal to a module i.e. forms a basic block
 	  if (BIN_FILE == fdesc->type)
 	    succ->branchaddr = (2 * get_optype10_k(&previnstr, &instr));
@@ -286,7 +286,7 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
     case OP_CALL:
       {
 	uint32_t calltargetaddr;
-	if (sos_sys_call_check(fdesc, currAddr - sizeof(avr_instr_t), &calltargetaddr) != 0){
+	if (check_calljmp_has_reloc_rec(fdesc, currAddr - sizeof(avr_instr_t), &calltargetaddr) == 0){
 	  // Call internal to a module i.e. forms a basic block
 	  if (BIN_FILE == fdesc->type)
 	    succ->branchaddr = (2 * get_optype10_k(&previnstr, &instr));
@@ -298,7 +298,7 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
 	  succ->flag = TWO_WORD_INSTR_FLAG | CALL_INSTR_FLAG;
 	  return;
 	}
-	DEBUG("Call into system jump table. Do not insert basic block boundary\n");
+	DEBUG("Call into system jump table @ 0x%x. Do not insert basic block boundary.\n", (int)(currAddr - sizeof(avr_instr_t)));
 	break;
       }
     default:
@@ -413,7 +413,19 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
   switch (instr.rawVal & OP_TYPE17_MASK){
   case OP_RJMP:
     {
-      succ->branchaddr = currAddr + 2 + (2 * get_optype17_k(&instr));
+      if (BIN_FILE == fdesc->type)
+	succ->branchaddr = currAddr + 2 + (2 * get_optype17_k(&instr));
+      else {
+	// Watch out for PC Relative Call or Jmp relocation records
+	// in ELF file
+	uint32_t jmpaddr;
+	if (check_calljmp_has_reloc_rec(fdesc, currAddr, &jmpaddr) == 0){
+	  DEBUG("Patched Relative JMP @ Addr: 0x%x. Target Addr: 0x%x\n", currAddr, jmpaddr);
+	  succ->branchaddr = jmpaddr;
+	}
+	else
+	  succ->branchaddr = currAddr + 2 + (2 * get_optype17_k(&instr));
+      }
       succ->branchflag = 1;
       succ->fallflag = 0;
       succ->flag = JMP_INSTR_FLAG;
@@ -421,13 +433,25 @@ static void find_succ(file_desc_t* fdesc, uint32_t currAddr, avr_instr_t* instri
     }
   case OP_RCALL:
     {
-      succ->branchaddr = currAddr + 2 + (2 * get_optype17_k(&instr));
+      if (BIN_FILE == fdesc->type)
+	succ->branchaddr = currAddr + 2 + (2 * get_optype17_k(&instr));
+      else {
+	// Watch out for PC Relative Call or Jmp relocation records
+	// in ELF file
+	uint32_t calladdr;
+      	if (check_calljmp_has_reloc_rec(fdesc, currAddr, &calladdr) == 0){
+	  DEBUG("Patched Relative CALL @ Addr: 0x%x. Target Addr: 0x%x\n", currAddr, calladdr);
+	  succ->branchaddr = calladdr;
+	}
+	else
+	  succ->branchaddr = currAddr + 2 + (2 * get_optype17_k(&instr));
+      }
       succ->branchflag = 1;
       succ->falladdr = currAddr + 2;
       succ->fallflag = 1;
       succ->flag = CALL_INSTR_FLAG;
       return;
-      }
+    }
   default:
     break;
   }
