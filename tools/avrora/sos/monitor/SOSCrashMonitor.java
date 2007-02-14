@@ -90,6 +90,7 @@ public class SOSCrashMonitor extends MonitorFactory {
 		s.insertProbe(new SOSDVMProbe(), vmpost);
 
 	    profilebefore = (boolean)PROFBEFORE.get();
+
 	    s.insertProbe(new SOSTraceProbe());
 	    
 	}
@@ -183,6 +184,19 @@ public class SOSCrashMonitor extends MonitorFactory {
 	public class SOSTraceProbe implements Simulator.Probe{
 	    
 	    public void fireBefore(State state, int pc){
+		/*
+		  LegacyState legacystate = (LegacyState)state;
+		if (pc == 0xDF44){
+		    Terminal.print("PC: ");
+		    Terminal.print(StringUtil.addrToString(pc));
+		    Terminal.nextln();
+		    Terminal.print(StringUtil.addrToString(legacystate.getProgramByte(pc)));
+		    Terminal.nextln();
+		    Terminal.print(StringUtil.addrToString(legacystate.getProgramByte(pc+1)));
+		    Terminal.nextln();
+		}
+		*/
+		
 		if (profilebefore)
 		    doSOSProfile(state, pc);
 		return;
@@ -197,13 +211,6 @@ public class SOSCrashMonitor extends MonitorFactory {
 
 	    public void doSOSProfile(State state, int pc){
 		LegacyState legacystate = (LegacyState)state;
-		/*
-		if ((pc >= 46528) && (pc < 130048)){
-		    Terminal.print("PC: ");
-		    Terminal.print(StringUtil.addrToString(pc));
-		    Terminal.nextln();
-		}
-		*/
 		tracePC[tracePtr] = pc;
 		traceSP[tracePtr] = state.getSP();
 		traceR0[tracePtr] = legacystate.getRegisterUnsigned(LegacyRegister.R0);
