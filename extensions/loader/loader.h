@@ -33,7 +33,7 @@ enum {
 	NUM_LOADER_MODULE_ENTRIES     =    8,
 	NUM_LOADER_KERNEL_ENTRIES     =    1,
 	LOADER_PARAM_SIZE             =  256L,
-	LOADER_SIZE_MULTIPLIER        =   32L,   
+	LOADER_SIZE_MULTIPLIER        =  256L,   
 };
 
 /**                                                           
