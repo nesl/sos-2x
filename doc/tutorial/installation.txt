@@ -68,7 +68,7 @@ checkout:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-svn co svn://projects.nesl.ucla.edu/sos-2x
+svn co svn://projects.nesl.ucla.edu/sos-2x/trunk
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Setup some environment variables before proceeding further. The installation
