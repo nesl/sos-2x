@@ -68,7 +68,7 @@ checkout:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-svn co svn://projects.nesl.ucla.edu/sos-2x/trunk
+svn co svn://projects.nesl.ucla.edu/sos-2x/trunk sos-2x
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Setup some environment variables before proceeding further. The installation
@@ -78,8 +78,8 @@ scripts depend on these variables for correct functioning. Edit the file
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SOSROOT points to the trunk directory of SOS 2.x downloaded on your system
-export SOSROOT=~/sos-2x/trunk
+# SOSROOT points to the SOS 2.x directory downloaded on your system
+export SOSROOT=~/sos-2x
 
 # SOSTOOLDIR points to the directory where you want to install the toolchain
 # (esp. the AVR tool chain).
@@ -200,7 +200,7 @@ checkout:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-svn co svn://projects.nesl.ucla.edu/sos-2x
+svn co svn://projects.nesl.ucla.edu/sos-2x/trunk sos-2x
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Setup some environment variables before proceeding further. The installation
@@ -213,8 +213,8 @@ NOTE: The lines below are for *PowerPC* based Mac.
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SOSROOT points to the trunk directory of SOS 2.x downloaded on your system
-export SOSROOT=~/sos-2x/trunk
+# SOSROOT points to the SOS 2.x directory downloaded on your system
+export SOSROOT=~/sos-2x
 
 # SOSTOOLDIR points to the directory where you want to install the toolchain.
 # Keeping it in your home directory removes the need to have administrator
@@ -233,8 +233,8 @@ NOTE: The lines below are for *Intel* based Mac.
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SOSROOT points to the trunk directory of SOS 2.x downloaded on your system
-export SOSROOT=~/sos-2x/trunk
+# SOSROOT points to the SOS 2.x directory downloaded on your system
+export SOSROOT=~/sos-2x
 
 # SOSTOOLDIR points to the directory where you want to install the toolchain.
 # Keeping it in your home directory removes the need to have administrator
@@ -353,7 +353,7 @@ checkout:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-svn co svn://projects.nesl.ucla.edu/sos-2x
+svn co svn://projects.nesl.ucla.edu/sos-2x/trunk sos-2x
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Setup some environment variables in cygwin before proceeding further. The installation
@@ -363,8 +363,8 @@ scripts depend on these variables for correct functioning. Edit the file
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SOSROOT points to the trunk directory of SOS 2.x downloaded on your system
-export SOSROOT=~/sos-2x/trunk
+# SOSROOT points to the SOS 2.x directory downloaded on your system
+export SOSROOT=~/sos-2x
 
 # SOSTOOLDIR points to the directory where you want to install the toolchain.
 # Keeping it in your home directory removes the need to have administrator
