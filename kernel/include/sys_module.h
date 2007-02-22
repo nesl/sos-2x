@@ -655,7 +655,7 @@ typedef void (* sys_led_ker_func_t)( uint8_t op );
  * LEDs
  *
  * \param op Bitmask used to turn on and off LEDs.
- * \return Pseudo-random number
+ * \return Zero
  * 
  * Legal values of op on the mica2 node incnlude:
  * 
