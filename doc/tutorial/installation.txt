@@ -255,7 +255,7 @@ that folder with the following command:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-mkdir $SOSTOOLDIR.
+mkdir $SOSTOOLDIR
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Install Libraries for Cross-compilation
