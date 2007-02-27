@@ -103,19 +103,19 @@ FLASHLED	{if (inc) {inc = 0;} data_ptr[i++] = OP_FLASHLED;}
 ENABLE_CLIFF	{if (inc) {inc = 0;} data_ptr[i++] = OP_ENABLE_CLIFF;}
 ENABLE_PUSHBUTTON {if (inc) {inc = 0;} data_ptr[i++] = OP_ENABLE_PUSHBUTTON;}
 PHOTO  { if (local) {
-		data_ptr[i++] += 0;
-		local = 0;
-	 } else
-		data_ptr[i++] = 0;
-       }
-TEMPERATURE  { if (local) {
 		data_ptr[i++] += 1;
 		local = 0;
 	 } else
 		data_ptr[i++] = 0;
        }
-MIC  { if (local) {
+TEMPERATURE  { if (local) {
 		data_ptr[i++] += 2;
+		local = 0;
+	 } else
+		data_ptr[i++] = 0;
+       }
+MIC  { if (local) {
+		data_ptr[i++] += 0;
 		local = 0;
 	 } else
 		data_ptr[i++] = 0;
@@ -270,6 +270,6 @@ char **argv;
 	if ((DVM_SCRIPT_HEADER_SIZE + i) > 256)
 		exit(printf("Script packet size is greater than 256 bytes. Exiting.\n"));
 
-	system("sos_tool.exe --lddata=./script.dat");
+	system("../../../tools/sos_tool/sos_tool.exe --lddata=./script.dat");
 	
 }

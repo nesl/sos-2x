@@ -1,0 +1,16 @@
+LOCAL 0 = No. of samples in the buffer
+LOCAL 1 = Sequence No. of the packet
+BUFFER 0 = Packet to be sent out
+typedef struct _pkt_format {
+ uint16_t seq_no;
+ uint16_t samples[]; // No. of samples is push value in line 19
+} pkt_format_t;
+
+Packet is broadcast to 
+Message Type: Push value in line 30
+Module Id: Push value in line 32
+
+
+Timer Restart period is push value in line 38.
+This value should be the same as the value set in 
+reboot timer script.

@@ -3,7 +3,7 @@
  * \author Rahul Balani
  * \author Ram Kumar - Port to sos-2.x
  */
-
+//#define OUTLIER_SCRIPT_DBG
 #include <VM/DVMBasiclib.h>
 #include <VM/DVMEventHandler.h>
 #include <VM/DVMConcurrencyMngr.h>
@@ -13,6 +13,11 @@
 #include <VM/DVMMathlib.h>
 #include <led.h>
 #include <sys_module.h>
+
+#ifdef OUTLIER_SCRIPT_DBG
+#include <demos/outlier_avg/outlier_avg.h>
+#endif
+
 
 //--------------------------------------------------------------------
 // CONSTANTS
@@ -70,18 +75,23 @@ int8_t basic_library_final(dvm_state_t* dvm_st, Message* msg)
 int8_t basic_library_data_ready(dvm_state_t* dvm_st, Message *msg)
 {
   DVMBasiclib_state_t *s =  (&dvm_st->basiclib_st);
-  __asm __volatile("en_rcv:");
-  __asm __volatile("nop");
-  __asm __volatile("nop");
-  __asm __volatile("st_data:");
   MsgParam* param = (MsgParam*) (msg->data);
   uint16_t photo_data = param->word;
   s->busy = 0;
   if (s->executing != NULL) {
     DEBUG("[BASIC_LIB] basic_lib_data_ready: Context %d resumed.\n",s->executing->which);
+    DEBUG("[BASIC_LIB] basic_lib_data_ready: Sensor Value: %d\n", photo_data);
     pushValue( (DvmState *)(s->executing), photo_data, DVM_TYPE_INTEGER); 
     resumeContext(dvm_st, s->executing, s->executing);
     s->executing = NULL;
+#ifdef OUTLIER_SCRIPT_DBG
+    uint16_t* sensor_val;
+    sensor_val = (uint16_t*)sys_malloc(sizeof(uint16_t));
+    *sensor_val = param->word;
+    sys_post_uart(OUTLIER_DETECTION_PID, MSG_SENSOR_VALUE, sizeof(uint16_t), 
+		  sensor_val, SOS_MSG_RELEASE , UART_ADDRESS);
+#endif
+
   }
   
   if (!queue_empty(&(s->getDataWaitQueue))) {
@@ -89,8 +99,6 @@ int8_t basic_library_data_ready(dvm_state_t* dvm_st, Message *msg)
     DEBUG("[BASIC_LIB] basic_lib_data_ready: Context %d waiting to get photo data.\n",current->which);
     tryget(dvm_st, current, PHOTO, s);
   }
-  __asm __volatile("en_data:");
-  __asm __volatile("nop");
   return SOS_OK;
 }			
 //--------------------------------------------------------------------   
@@ -103,6 +111,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	
   while ((context->state == DVM_STATE_RUN) && (context->num_executed < DVM_CPU_SLICE)) { 
     DvmOpcode instr = getOpcode(dvm_st, context->which, context->pc);
+    DEBUG("-----------------------------------------------\n");
     DEBUG("[BASIC_LIB] execute: (%d) PC: %d. INSTR: %d\n",context->which, context->pc, instr);
     if(instr & LIB_ID_BIT)
       {	//Extension Library opcode encountered
@@ -113,18 +122,18 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
       {
       case OP_START:
 	{
-	  __asm __volatile("st_sos:");
+	  __asm __volatile("__sleep_measure_start:");
 	  context->pc += 1;
 	  break;
 	}
       case OP_STOP:
 	{
-	  __asm __volatile("en_sos:");
 	  context->pc += 1;
 	  break;
 	}
       case OP_HALT:
 	{
+	  DEBUG("<<<<<<<<<<<=====================>>>>>>>>>>>\n");
 	  DEBUG("[BASIC_LIB] execute: (%d): HALT executed.\n", (int)context->which);
 	  haltContext(dvm_st, context);
 	  context->state = DVM_STATE_HALT;
@@ -143,27 +152,21 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
       case OP_GETVAR + 3: case OP_GETVAR + 4: case OP_GETVAR + 5:
       case OP_GETVAR + 6: case OP_GETVAR + 7:
 	{
-	  __asm __volatile("st_getv:");
 	  uint8_t arg = instr - OP_GETVAR;
 	  DEBUG("[BASIC_LIB] execute: OPGETVAR (%d):: Pushing value %d.\n", (int)arg,(int)s->shared_vars[arg].value.var);
 	  pushOperand( eventState, &s->shared_vars[arg]);
 	  context->pc += 1;
-	  __asm __volatile("en_getv:");
-	  __asm __volatile("nop");
 	  break;
 	}
       case OP_SETVAR + 0: case OP_SETVAR + 1: case OP_SETVAR + 2:
       case OP_SETVAR + 3: case OP_SETVAR + 4: case OP_SETVAR + 5:
       case OP_SETVAR + 6: case OP_SETVAR + 7:
 	{
-	  __asm __volatile("st_setv:");
 	  uint8_t arg = instr - OP_SETVAR;
 	  DvmStackVariable* var = popOperand( eventState);
 	  DEBUG("[BASIC_LIB] execute: OPSETVAR (%d):: Setting value to %d.\n",(int)arg,(int)var->value.var);
 	  s->shared_vars[arg] = *var;
 	  context->pc += 1;
-	  __asm __volatile("en_setv:");
-	  __asm __volatile("nop");
 	  break;
 	}
       case OP_GETVARF + 0: case OP_GETVARF + 1: case OP_GETVARF + 2:
@@ -211,7 +214,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  DEBUG("[BASIC_LIB] execute: Setting Timer %d period to %d.\n", timerID, arg->value.var);
 	  //msec = 102 * arg->value.var + (4 * arg->value.var) / 10;
 	  // Set the timer timeout argument in seconds
-	  msec = arg->value.var * 1000; 
+	  msec = arg->value.var * 1024;
 	  DEBUG("[BASIC_LIB] execute: <<<<< WARNING - Timer %d not being stopped >>>>\n", timerID);
 	  //	  sys_timer_stop(timerID);
 	  if (msec > 0) {
@@ -254,31 +257,50 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  int32_t fl_arg1, fl_arg2;
 	  int32_t res = 0;
 	  uint16_t res_part;
+	  int16_t int_res = 0;
 
 	  if (arg1->type == DVM_TYPE_FLOAT) {
 	    fl_arg1 = convert_to_float(arg1, arg2);
 	    arg3 = popOperand( eventState);
 	    if (arg3->type == DVM_TYPE_FLOAT) {
+	      // FLOAT <op> FLOAT
 	      arg4 = popOperand( eventState);
 	      fl_arg2 = convert_to_float(arg3, arg4);
 	      if(instr == OP_ADD) {
 		res = (int32_t)(fl_arg1 + fl_arg2);
+		DEBUG("[BASIC_LIB] execute: FLOAT ADD FLOAT %d\n", res);
 	      } else if(instr == OP_SUB) {
-		res = (int32_t)(fl_arg1 - fl_arg2);               
+		res = (int32_t)(fl_arg1 - fl_arg2);
+		DEBUG("[BASIC_LIB] execute: FLOAT SUB FLOAT %d\n", res);               
 	      } else if(instr == OP_DIV) {
-		res = (int32_t)((fl_arg1 / fl_arg2) * FLOAT_PRECISION);  
+		res = (int32_t)((fl_arg1 * FLOAT_PRECISION) / fl_arg2);
+		DEBUG("[BASIC_LIB] execute: FLOAT DIV FLOAT: %d\n", res);
 	      } else if(instr == OP_MUL) {
 		res = (int32_t)((fl_arg1 * fl_arg2) / FLOAT_PRECISION);
+		DEBUG("[BASIC_LIB] execute: FLOAT MULT FLOAT %d\n", res);
 	      }
 	    } else {
+	      // FLOAT <OP> INTEGER
 	      if(instr == OP_ADD) {
 		res = (int32_t)(fl_arg1 + (arg3->value.var * FLOAT_PRECISION));
+		DEBUG("[BASIC_LIB] execute: FLOAT ADD INT: %d\n", res);
 	      } else if(instr == OP_SUB) {
 		res = (int32_t)(fl_arg1 - (arg3->value.var * FLOAT_PRECISION)); 
+		DEBUG("[BASIC_LIB] execute: FLOAT SUB INT: %d\n", res);
 	      } else if(instr == OP_DIV) {
 		res = (int32_t)(fl_arg1 / arg3->value.var); 
+		DEBUG("[BASIC_LIB] execute: FLOAT DIV INT: %d\n", res);
+		sys_led(LED_RED_TOGGLE);
+#ifdef OUTLIER_SCRIPT_DBG
+		int32_t* post_avg;
+		post_avg = (int32_t*)sys_malloc(sizeof(int32_t));
+		*post_avg = res;
+		sys_post_uart(OUTLIER_DETECTION_PID, MSG_AVERAGE, sizeof(int32_t),
+			      post_avg, SOS_MSG_RELEASE, UART_ADDRESS);
+#endif
 	      } else if(instr == OP_MUL) {
 		res = (int32_t)(fl_arg1 * arg3->value.var);           
+		DEBUG("[BASIC_LIB] execute: FLOAT MULT INT %d\n", res);
 	      }
 	    }
 	    res_part = res & 0xFFFF;
@@ -292,12 +314,16 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	    fl_arg2 = convert_to_float(arg2, arg3);
 	    if(instr == OP_ADD) {
 	      res = (int32_t)((arg1->value.var * FLOAT_PRECISION) + fl_arg2) ;
+	      DEBUG("[BASIC_LIB] execute: INT ADD FLOAT: %d\n", res);
 	    } else if(instr == OP_SUB) {
 	      res = (int32_t)((arg1->value.var * FLOAT_PRECISION) - fl_arg2);     
+	      DEBUG("[BASIC_LIB] execute: INT SUB FLOAT: %d\n", res);
 	    } else if(instr == OP_DIV) {
 	      res = (int32_t)((arg1->value.var * FLOAT_PRECISION) / fl_arg2);
+	      DEBUG("[BASIC_LIB] execute: INT DIV FLOAT: %d\n", res);
 	    } else if(instr == OP_MUL) {
 	      res = (int32_t)((arg1->value.var * FLOAT_PRECISION) * fl_arg2);               
+	      DEBUG("[BASIC_LIB] execute: INT MULT FLOAT: %d\n", res);
 	    }
 	    res_part = res & 0xFFFF;
 	    pushValue( eventState, res_part, DVM_TYPE_FLOAT_DEC);
@@ -307,14 +333,19 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	    break;
 	  }
 	  if(instr == OP_ADD) {
-	    pushValue( eventState, arg1->value.var + arg2->value.var, DVM_TYPE_INTEGER);
+	    int_res = arg1->value.var + arg2->value.var;
+	    DEBUG("[BASIC_LIB] execute: INT ADD INT: %d\n", int_res);
 	  } else if(instr == OP_SUB) {
-	    pushValue( eventState, arg1->value.var - arg2->value.var, DVM_TYPE_INTEGER);                                                                 
+	    int_res = arg1->value.var - arg2->value.var;
+	    DEBUG("[BASIC_LIB] execute: INT SUB INT: %d\n", int_res);
 	  } else if(instr == OP_DIV) {
-	    pushValue( eventState, arg1->value.var/arg2->value.var, DVM_TYPE_INTEGER);
+	    int_res = (int16_t)(arg1->value.var / arg2->value.var);
+	    DEBUG("[BASIC_LIB] execute: INT DIV INT: %d\n", int_res);                                                          
 	  } else if(instr == OP_MUL) {
-	    pushValue( eventState, (int16_t)(arg1->value.var*arg2->value.var), DVM_TYPE_INTEGER);
+	    int_res = (int16_t)(arg1->value.var * arg2->value.var);
+	    DEBUG("[BASIC_LIB] execute: INT MULT INT: %d\n", int_res);
 	  }
+	  pushValue( eventState, int_res, DVM_TYPE_INTEGER);
 	  context->pc += 1;
 	  break;
 	}
@@ -330,14 +361,20 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  if (arg1->type == DVM_TYPE_FLOAT) {                       
 	    DvmStackVariable* arg2 = popOperand( eventState);
 	    fl_arg1 = convert_to_float(arg1, arg2);               
-	    if( instr == OP_ABS ) {
+	    if( instr == OP_ABS ) {	      
 	      if (fl_arg1 < 0) {                                    
-		res = 0 - fl_arg1;                                
-	      }                                                     
+		res = 0 - fl_arg1; 
+	      }
+	      else{
+		res = fl_arg1;
+	      }
+	      DEBUG("[BASIC_LIB] execute: ABS FLOAT: %d\n", res);                               		
 	    } else if( instr == OP_INCR ) {
-	      res = (int32_t)(fl_arg1 + (1 * FLOAT_PRECISION));     
+	      res = (int32_t)(fl_arg1 + (1 * FLOAT_PRECISION));
+	      DEBUG("[BASIC_LIB] execute: INCR FLOAT: %d\n", res);                               		     
 	    } else if( instr == OP_DECR ) {
 	      res = (int32_t)(fl_arg1 - (1 * FLOAT_PRECISION));     
+	      DEBUG("[BASIC_LIB] execute: DECR FLOAT: %d\n", res);                               		     
 	    }
 	    res_part = res & 0xFFFF;                              
 	    pushValue( eventState, res_part, DVM_TYPE_FLOAT_DEC);            
@@ -351,11 +388,14 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 		res = 0 - arg1->value.var;
 	      } else {
 		res = arg1->value.var;
-	      }						
+	      }
+	      DEBUG("[BASIC_LIB] execute: ABS INT: %d\n", res); 								
 	    } else if( instr == OP_INCR ) {
 	      res = arg1->value.var + 1;
+	      DEBUG("[BASIC_LIB] execute: INCR INT: %d\n", res); 								
 	    } else if( instr == OP_DECR ) {
 	      res = arg1->value.var - 1;
+	      DEBUG("[BASIC_LIB] execute: DECR INT: %d\n", res); 								
 	    }
 	    pushValue( eventState, (uint16_t)(res & 0xFFFF), DVM_TYPE_INTEGER);   
 	  }                                                         
@@ -369,7 +409,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  DvmStackVariable* arg2 = popOperand( eventState);    
 
 	  pushValue( eventState, arg1->value.var % arg2->value.var, DVM_TYPE_INTEGER);
-
+	  DEBUG("[BASIC_LIB] execute: MOD INT: %d\n", arg1->value.var % arg2->value.var);
 	  context->pc += 1;                                         
 	  break;                                                    
 	}                                                             
@@ -377,6 +417,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	{
 	  DvmOpcode line_num = getOpcode(dvm_st, context->which, ++context->pc);
 	  context->pc = line_num;
+	  DEBUG("[BASIC_LIB] execute: JMP to %d\n", context->pc);
 	  break;
 	}
       case OP_JNZ:
@@ -416,7 +457,6 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
       case OP_JE:                                        
       case OP_JNE:
 	{
-	  __asm __volatile("st_jg:");
 	  DvmStackVariable* arg1 = popOperand( eventState);
 	  DvmStackVariable* arg2 = popOperand( eventState);
 	  DvmOpcode line_num = getOpcode( dvm_st,  context->which, context->pc + 1);
@@ -455,8 +495,6 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  } else {
 	    context->pc += 1;                          
 	  }
-	  __asm __volatile("en_jg:");
-	  __asm __volatile("nop");
 	  break;                                         
 	}
 		
@@ -465,7 +503,6 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
       case OP_GET_DATA + 3: case OP_GET_DATA + 4: case OP_GET_DATA + 5:
       case OP_GET_DATA + 6:
 	{
-	  __asm __volatile("st_get:");
 	  uint8_t sensor_type = instr - OP_GET_DATA;
 	  int8_t res = SOS_OK;
 	  context->pc += 1;
@@ -478,11 +515,6 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	    DEBUG("[BASIC_LIB] execute: (%d) Calling get sensor data - Sensor ID: %d\n",context->which, sensor_type);
 	    res = tryget(dvm_st, context, sensor_type, s);
 	  }
-	  __asm __volatile("en_get:");
-	  __asm __volatile("nop");
-	  __asm __volatile("nop");
-	  __asm __volatile("st_rcv:");
-	  __asm __volatile("nop");
 	  return res;
 	}
       case OP_NOP:
@@ -509,59 +541,29 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
       case OP_BPUSH + 0: case OP_BPUSH + 1:
       case OP_BPUSH + 2: case OP_BPUSH + 3:
 	{
-	  __asm __volatile("st_bp:");
 	  uint8_t buf_idx = instr - OP_BPUSH;
 	  DEBUG("[BASIC_LIB] execute: (%d) BPUSH %d\n", context->pc, buf_idx);
 	  pushBuffer( eventState, &(s->buffers[buf_idx]));
-	  __asm __volatile("en_bp:");
 	  context->pc += 1;
 	  break;
 	}
-	/*
-	  case OP_BAPPEND + 0:	case OP_BAPPEND + 1:	
-	  case OP_BAPPEND + 2:	case OP_BAPPEND + 3:	
-	  case OP_BAPPEND + 4:	case OP_BAPPEND + 5:	
-	  case OP_BAPPEND + 6:	//Always leaves the buffer on the stack
-	  case OP_BCLEAR:
-	  case OP_BREADF:
-	  case OP_BSET:
-	  case OP_GETLOCAL + 0: case OP_GETLOCAL + 1: case OP_GETLOCAL + 2:
-	  case OP_GETLOCAL + 3: case OP_GETLOCAL + 4:
-	  case OP_SETLOCAL + 0: case OP_SETLOCAL + 1: case OP_SETLOCAL + 2:
-	  case OP_SETLOCAL + 3: case OP_SETLOCAL + 4:
-	  case OP_GETLOCALF + 0: case OP_GETLOCALF + 1: case OP_GETLOCALF + 2:
-	  case OP_GETLOCALF + 3: case OP_GETLOCALF + 4:
-	  case OP_SETLOCALF + 0: case OP_SETLOCALF + 1:
-	  case OP_SETLOCALF + 2: case OP_SETLOCALF + 3:
-	  case OP_PUSH:
-	  case OP_PUSHF:
-	  case OP_POP:
-	  case OP_POSTNET:
-	  case OP_BCAST:
-	  {
-	  buffer_executeDL(s->buffer_execute, eventState, instr);
-	  break;
-	  }
-	*/
+
       case OP_GETLOCAL + 0: case OP_GETLOCAL + 1: case OP_GETLOCAL + 2:
       case OP_GETLOCAL + 3: case OP_GETLOCAL + 4:
 	{
-	  __asm __volatile("st_getl:");
 	  uint8_t arg = instr - OP_GETLOCAL;
-	  DEBUG("[BASIC_LIB] execute: OPGETLOCAL (%d):: Pushing value %d.\n", (int)arg,(int)eventState->vars[arg].value.var);
 	  if (eventState->vars[arg].type == DVM_TYPE_FLOAT) {
+	    DEBUG("[BASIC_LIB] execute: OPGETLOCAL (%d):: Pushing LSB value %d.\n", (int)arg,(int)eventState->vars[arg+1].value.var);
 	    pushOperand( eventState, &eventState->vars[arg+1]);
 	  }
+	  DEBUG("[BASIC_LIB] execute: OPGETLOCAL (%d):: Pushing value %d.\n", (int)arg,(int)eventState->vars[arg].value.var);
 	  pushOperand( eventState, &eventState->vars[arg]);
 	  context->pc += 1;
-	  __asm __volatile("en_getl:");
-	  __asm __volatile("nop");
 	  break;
 	}
       case OP_SETLOCAL + 0: case OP_SETLOCAL + 1: case OP_SETLOCAL + 2:
       case OP_SETLOCAL + 3: case OP_SETLOCAL + 4:
 	{
-	  __asm __volatile("st_setl:");
 	  uint8_t arg = instr - OP_SETLOCAL;
 	  DvmStackVariable* var = popOperand( eventState), *var1 = NULL;
 	  DEBUG("[BASIC_LIB] execute: OPSETLOCAL (%d):: Setting value to %d.\n",(int)arg,(int)var->value.var);
@@ -572,15 +574,11 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	    DEBUG("[BASIC_LIB] execute: OPSETLOCAL (%d):: Setting LSB value to %d.\n",(int)arg,(int)var1->value.var);
 	  }
 	  context->pc += 1;
-	  __asm __volatile("en_setl:");
-	  __asm __volatile("nop");
-	  __asm __volatile("nop");
 	  break;
 	}
       case OP_GETLOCALF + 0: case OP_GETLOCALF + 1: case OP_GETLOCALF + 2:
       case OP_GETLOCALF + 3: case OP_GETLOCALF + 4:
 	{	// Only used for type-casting integer to float
-	  __asm __volatile("st_getf:");
 	  uint8_t arg = instr - OP_GETLOCALF;
 	  int32_t res = 0;
 	  uint16_t res_part = 0;
@@ -597,8 +595,6 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	    pushOperand( eventState, &eventState->vars[arg]);
 	  }
 	  context->pc += 1;
-	  __asm __volatile("en_getf:");
-	  __asm __volatile("nop");
 	  break;
 	}
       case OP_SETLOCALF + 0: case OP_SETLOCALF + 1:
@@ -629,14 +625,11 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 
       case OP_PUSH:
 	{
-	  __asm __volatile("st_push:");
 	  context->pc += 1;
 	  DvmOpcode arg = getOpcode( dvm_st,  context->which, context->pc);
 	  pushValue( eventState, arg, DVM_TYPE_INTEGER);
 	  context->pc += 1;
-	  DEBUG("[BASIC_LIB] execute: (%i) Executing PUSH with arg %hi\n", (int)context->which, arg);
-	  __asm __volatile("en_push:");
-	  __asm __volatile("nop");
+	  DEBUG("[BASIC_LIB] execute: (%i) PUSH %hi\n", (int)context->which, arg);
 	  break;
 	}
       case OP_PUSHF:
@@ -653,16 +646,17 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  arg = arg3;
 	  arg = (arg << 8) + arg4;
 	  pushValue( eventState, arg, DVM_TYPE_FLOAT_DEC);
-	  DEBUG("[BASIC_LIB] execute: (%i) Executing PUSHF with decimal %d\n", (int)context->which, arg);
+	  DEBUG("[BASIC_LIB] execute: (%i) PUSHF LSW %d\n", (int)context->which, arg);
 	  arg = arg1;
 	  arg = (arg << 8) + arg2;
 	  pushValue( eventState, arg, DVM_TYPE_FLOAT);
-	  DEBUG("[BASIC_LIB] execute: (%i) Executing PUSHF with arg %d \n", (int)context->which, arg);
+	  DEBUG("[BASIC_LIB] execute: (%i) PUSHF MSW %d \n", (int)context->which, arg);
 	  context->pc += 1;
 	  break;
 	}
       case OP_POP:
 	{
+	  DEBUG("[BASIC_LIB execute: (%i) POP\n", (int)context->which);
 	  popOperand( eventState);
 	  context->pc += 1;
 	  break;
@@ -677,75 +671,64 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
       case OP_BAPPEND + 5:               
       case OP_BAPPEND + 6:    //Always leaves the buffer on the stack
 	{
-	  __asm __volatile("st_bapp1:");
 	  uint8_t opt = instr - OP_BAPPEND + 1;    
 	  uint8_t i = 0;    
 	  DvmStackVariable* bufarg;
 
-	  DEBUG("VM(%d) BAPPEND %d\n", context->pc, opt);
 	  bufarg = popOperand( eventState);     
-	  __asm __volatile("en_bapp1:");    
-	  __asm __volatile("nop");    
+	  DEBUG("[BASIC_LIB] execute: Before BAPPEND. Buffer size is %d.\n",bufarg->buffer.var->size);
 	  for (; i < opt; i++) {   
-	    __asm __volatile("st_bapp2:");   
 	    DvmStackVariable* apparg = popOperand( eventState);  
-	    if (apparg->type == DVM_TYPE_BUFFER) {    
+	    if (apparg->type == DVM_TYPE_BUFFER) {
+	      DEBUG("[BASIC_LIB] execute: OPBAPPEND (%d) BUFFER\n", opt);
 	      buffer_concatenate(bufarg->buffer.var, apparg->buffer.var); 
 	    } else if (apparg->type == DVM_TYPE_FLOAT) {  
 	      DvmStackVariable* apparg_dec = popOperand( eventState);
 	      buffer_append(bufarg->buffer.var, 2, apparg_dec->value.var);
 	      buffer_append(bufarg->buffer.var, 2, apparg->value.var);
-	      DEBUG("[BASIC_LIB] execute:  OPBAPPEND. %d %d \n", apparg->value.var, apparg_dec->value.var); 
+#ifdef PC_PLATFORM
+	      int32_t float_val;
+	      float_val = convert_to_float(apparg, apparg_dec);
+	      DEBUG("[BASIC_LIB] execute: OPBAPPEND (%d) FLOAT %d\n", opt, float_val);
+#endif
 	    } else {
 	      buffer_append(bufarg->buffer.var, 2, apparg->value.var);   
-	      DEBUG("[BASIC_LIB] execute:  OPBAPPEND. %d \n", apparg->value.var);
+	      DEBUG("[BASIC_LIB] execute:  OPBAPPEND (%d) INT %d\n", opt, apparg->value.var);
 	    }
-	    __asm __volatile("en_bapp2:");
-	    __asm __volatile("nop");
 	  }
-	  DEBUG("[BASIC_LIB] execute:  After BAPPEND. buffer size is %d.\n",bufarg->buffer.var->size);
-	  __asm __volatile("st_bapp3:");                
+	  DEBUG("[BASIC_LIB] execute: After BAPPEND. Buffer size is %d.\n",bufarg->buffer.var->size);
 	  pushOperand( eventState, bufarg);        
 	  context->pc += 1;                             
-	  __asm __volatile("en_bapp3:");                
-	  __asm __volatile("nop");                      
 	  break;              
 	}
       case OP_BCLEAR:                                   
         {                                                 
-	  __asm __volatile("st_bclr:");                 
 	  DvmStackVariable* bufarg;
-	  DEBUG("VM(%d) BCLEAR\n", context->pc);
+	  DEBUG("[BASIC_LIB] execute: BCLEAR\n");
 	  bufarg = popOperand( eventState);    
 	  buffer_clear(bufarg->buffer.var);             
 	  pushOperand( eventState, bufarg);        
 	  context->pc += 1;                             
-	  __asm __volatile("en_bclr:");                 
-	  __asm __volatile("nop");                      
 	  break;                                        
 	} 
       case OP_BREADF:
 	{                                                 
-	  __asm __volatile("st_brd:");                  
 	  DvmStackVariable* bufarg = popOperand( eventState);
 	  DvmStackVariable* indexarg = popOperand( eventState);  
 	  uint16_t res_part, res_part2;
 
 	  buffer_get(bufarg->buffer.var, 2, indexarg->value.var, &res_part);
-	  DEBUG("[BASIC_LIB] execute:  OPBREADF. read decimal part %d\n", res_part);
+	  DEBUG("[BASIC_LIB] execute:  OPBREADF. Read LSW %d at index %d\n", res_part, indexarg->value.var);
 	  buffer_get(bufarg->buffer.var, 2, indexarg->value.var+2, &res_part2);                                                         
-	  DEBUG("[BASIC_LIB] execute:  OPBREADF. read MSB %d\n", res_part2);
+	  DEBUG("[BASIC_LIB] execute:  OPBREADF. Read MSW %d at index %d\n", res_part2, (indexarg->value.var+2));
+	  //	  DEBUG("[BASIC_LIB] execute:  OPBREADF. Read Float 32-bit %d from index %d\n", (int32_t)(((int32_t)res_part2 << 16) + res_part), indexarg->value.var);
 	  pushValue( eventState, res_part, DVM_TYPE_FLOAT_DEC);  
 	  pushValue( eventState, res_part2, DVM_TYPE_FLOAT);     
-
 	  context->pc += 1;                             
-	  __asm __volatile("en_brd:");                  
-	  __asm __volatile("nop");                      
 	  break;                                        
 	}
       case OP_BSET:                                     
 	{                                                 
-	  __asm __volatile("st_bset:");                 
 	  DvmStackVariable* bufarg = popOperand( eventState);    
 	  DvmStackVariable* valuearg = popOperand( eventState);  
 	  DvmStackVariable* indexarg = NULL;            
@@ -754,18 +737,16 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	    DvmStackVariable* valuearg1 = popOperand( eventState);
 	    indexarg = popOperand( eventState);  
 	    buffer_set(bufarg->buffer.var, 2, indexarg->value.var, valuearg1->value.var);                                             
-	    DEBUG("[BASIC_LIB] execute:  OPBSET. set float LSB in buffer %d\n", valuearg1->value.var);                                            
+	    DEBUG("[BASIC_LIB] execute:  OPBSET. Float LSW in buffer set to %d at index %d\n", valuearg1->value.var, indexarg->value.var);                                            
 	    buffer_set(bufarg->buffer.var, 2, indexarg->value.var+2, valuearg->value.var);                                            
-	    DEBUG("[BASIC_LIB] execute:  OPBSET. set float MSB in buffer %d\n", valuearg->value.var);
+	    DEBUG("[BASIC_LIB] execute:  OPBSET. Float MSW in buffer set to %d at index %d\n", valuearg->value.var, (indexarg->value.var + 2));
 	  } else {                                      
 	    indexarg = popOperand( eventState);  
 	    buffer_set(bufarg->buffer.var, 2, indexarg->value.var, valuearg->value.var);                                              
-	    DEBUG("[BASIC_LIB] execute:  OPSET. set integer in buffer %d\n", valuearg->value.var);                                                
+	    DEBUG("[BASIC_LIB] execute:  OPSET. Integer in buffer set to %d at index %d\n", valuearg->value.var, indexarg->value.var);                                                
 	  }                                             
 
 	  context->pc += 1;                             
-	  __asm __volatile("en_bset:");                 
-	  __asm __volatile("nop");                      
 	  break;                                        
 	}
 		
@@ -794,7 +775,6 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	}	
       case OP_BCAST:
 	{
-	  __asm __volatile("st_bcst:");
 	  DvmStackVariable* modarg = popOperand( eventState);
 	  DvmStackVariable* typearg = popOperand( eventState);
 	  DvmStackVariable* bufarg = popOperand( eventState);
@@ -815,8 +795,6 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  //DEBUG("\n\n[BASIC_LIB] (%d): BCAST \n\n", context->which);
 
 	  context->pc += 1;
-	  __asm __volatile("en_bcst:");
-	  __asm __volatile("nop");
 	  break;
 	}
 
@@ -1119,9 +1097,52 @@ static void buffer_concatenate(DvmDataBuffer *dst, DvmDataBuffer *src)
 //--------------------------------------------------------------------------------------------  
 static int32_t convert_to_float(DvmStackVariable *arg1, DvmStackVariable *arg2) 
 {
+  int32_t float_val;
+  float_val = (((uint32_t)arg1->value.var << 16) & 0xFFFF0000)|(arg2->value.var & 0xFFFF);
+  return float_val;
+  /*
+
   uint32_t res = (uint16_t)arg1->value.var;
   res <<= 16;
   res += (uint16_t)arg2->value.var;
   return (int32_t)res;
+  */
 }
 //--------------------------------------------------------------------------------------------  
+// The following code is used to debug the
+/*
+#ifdef OUTLIER_SCRIPT_DBG
+#ifdef PC_PLATFORM
+    if (148 == context->pc){
+      DvmDataBuffer* dbuff;
+      int32_t *ratings, *readings;
+      int32_t i, j;
+      printf("#####################################################\n");
+      dbuff = &(s->buffers[2]);
+      ratings = (int32_t*)dbuff->entries;
+      printf("Ratings: ");
+      for (i = 0; i < 4; i++)
+	printf("%3d ", ratings[i]);
+      printf("\n");
+      dbuff = &(s->buffers[0]);
+      readings = (int32_t*)dbuff->entries;
+      printf("Distance: ");
+      for (i = 0; i < 4; i++){
+	for (j = 0; j < 4; j++){
+	  printf("dist [%d][%d] = %4d, ", i, j , readings[i*4+j]);
+	}
+	printf("\n");
+      }
+      printf("#####################################################\n");
+    }
+    if (51 == context->pc){
+      printf("#####################################################\n");
+      printf("Counter j\n");
+    }
+    if (57 == context->pc){
+      printf("#####################################################\n");
+      printf("Counter i\n");
+    }
+#endif
+#endif
+*/

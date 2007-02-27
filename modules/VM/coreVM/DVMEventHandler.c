@@ -11,6 +11,7 @@
 #include <VM/DVMStacks.h>
 #include <VM/DVMResourceManager.h>
 #include <sys_module.h>
+#include <led.h>
 
 //--------------------------------------------------------------------
 // STATIC FUNCTION DEFINITIONS
@@ -43,7 +44,9 @@ int8_t event_handler_timeout(dvm_state_t *dvm_st, Message *msg)
 {
   DVMEventHandler_state_t *s = &(dvm_st->evhdlr_st);                       
   MsgParam *timerID = (MsgParam *)msg->data;
+  DEBUG("********************************************\n");
   DEBUG("EV HDLR: TIMER %d EXPIRED\n", timerID->byte);
+  sys_led(LED_GREEN_TOGGLE);
   if ((s->stateBlock[timerID->byte] != NULL) && (s->stateBlock[timerID->byte]->context.moduleID == TIMER_PID)
       && (s->stateBlock[timerID->byte]->context.type == MSG_TIMER_TIMEOUT)) {
     initializeContext(dvm_st, &s->stateBlock[timerID->byte]->context);

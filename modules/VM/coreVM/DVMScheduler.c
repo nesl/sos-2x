@@ -197,9 +197,7 @@ static inline int8_t computeInstruction(dvm_state_t *dvm_st) {
   while ((context->state == DVM_STATE_RUN) && (context->num_executed < DVM_CPU_SLICE)) {
     if (instr & LIB_ID_BIT) {	//Extension Library
       uint8_t library_mod = (instr ^ LIB_ID_BIT) >> EXT_LIB_OP_SHIFT;
-      __asm __volatile("st_call1:");
       r = SOS_CALL(s->ext_execute[library_mod], execute_lib_func_t, s->runningContext, instr);
-      __asm __volatile("en_call1:");
       context->num_executed++;
       //if (r < 0) signal error, halt context, break
     } else {			//Basic Library
@@ -273,6 +271,10 @@ int8_t scheduler_submit(dvm_state_t* dvm_st, DvmContext* context)
 //------------------------------------------------------------------------
 int8_t error(DvmContext* context, uint8_t cause) 
 {
+#ifdef PC_PLATFORM
+  fprintf(stderr, "[SCHEDULER] error\n");
+  exit(EXIT_FAILURE);
+#endif
   dvm_state_t* dvm_st = sys_get_state();
   DVMScheduler_state_t *s = &(dvm_st->sched_st);
   s->flags.inErrorState = TRUE;

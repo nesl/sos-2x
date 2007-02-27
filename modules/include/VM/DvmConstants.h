@@ -13,13 +13,13 @@
 
 enum {
   DVM_OPDEPTH      	= 8,
-  DVM_BUF_LEN      	= 32,//20
+  DVM_BUF_LEN      	= 64, //Ram - This has to be 64 for outlier detection//32,//20
   DVM_CAPSULE_SIZE 	= 28,
   DVM_CAPSULE_NUM	= 8, 
   DVM_CPU_SLICE    	= 50,
   DVM_NUM_SHARED_VARS	= 8,
   DVM_NUM_LOCAL_VARS	= 5,//4
-  DVM_NUM_BUFS		= 2,
+  DVM_NUM_BUFS		= 4,
   DVM_LOCK_COUNT   	= DVM_NUM_SHARED_VARS + DVM_NUM_BUFS, 
   DVM_MAX_SCRIPT_LENGTH = 255,
 };
