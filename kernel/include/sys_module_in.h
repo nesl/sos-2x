@@ -350,7 +350,7 @@ uint16_t sys_hw_type(void);
  * \verbatim make mica2 install ADDRESS=<node_address> \endverbatim
  *
  * when building the image for the node.  The address is explicitly set in the
- * binary loaded onto the node using $(ROOTDIR)/tools/admin/set-mote-id
+ * binary loaded onto the node using $(ROOTDIR)/tools/utils/set-mote-id
  * utility.
  *
  */

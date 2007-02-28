@@ -83,7 +83,7 @@ endif
 #######
 
 cyclops_install: $(PROJ).srec
-	$(ROOTDIR)/tools/admin/set-mote-id $(PROJ).srec $(PROJ).srec.out.$(ADDRESS) $(ADDRESS)
+	$(ROOTDIR)/tools/utils/set-mote-id $(PROJ).srec $(PROJ).srec.out.$(ADDRESS) $(ADDRESS)
 ifneq ($(PROG),jtag)
 # Disable watchdog for Cyclops
 	$(INSTALLER) --wr_fuse_e=0xff
