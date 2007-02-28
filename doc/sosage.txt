@@ -6,19 +6,20 @@ installed all the necessary libraries and tools to compile, debug, and run
 SOS applications. This will make sure that you have the necessary
 dependencies and that we can easily reproduce errors you encounter.
 
-Where to Get SOS Appliance
+Where to Get SOSage
 --------------------------
 You can download the latest SOSage from the
 link:download.html[downloadpage]. Note that the compressed virtual machine
 is about 1.2 GB and might thus take a while to download from our servers.
 
-How to Use the SOS Appliance
+How to Use SOSage
 ----------------------------
 
 - You need to get VMWare Player from the VMWare website
-  link:http://www.vmware.com/download/player/. The player is currently only
+  link:http://www.vmware.com/download/player/[http://www.vmware.com/download/player/]. The player is currently only
   available for Linux and Windows. If you are using Mac OS X, you need to
-  use VMWare for Mac Beta link:http://www.vmware.com/products/beta/fusion/.
+  use VMWare for Mac Beta
+  link:http://www.vmware.com/products/beta/fusion/[http://www.vmware.com/products/beta/fusion/].
   Note that you can also use VMWare Server, but this application bigger
   and more complicated to use.
 - Once you installed the VMWare Player, run the appliance by opening
