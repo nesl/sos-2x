@@ -12,6 +12,7 @@ $ASCIIDOC_HTML --conf-file=${LAYOUT}.conf --attribute iconsdir=./icons --attribu
 $ASCIIDOC_HTML --conf-file=${LAYOUT}.conf --attribute iconsdir=./icons --attribute=index-only downloads.txt
 $ASCIIDOC_HTML --conf-file=${LAYOUT}.conf --attribute iconsdir=./icons --attribute=index-only acknowledgments.txt
 $ASCIIDOC_HTML --conf-file=${LAYOUT}.conf --attribute iconsdir=./icons --attribute=index-only policies.txt
+$ASCIIDOC_HTML --conf-file=${LAYOUT}.conf --attribute iconsdir=./icons --attribute=index-only sosage.txt
 
 cd publications
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute=styledir=.. publications.txt
