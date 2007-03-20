@@ -36,8 +36,8 @@ static int fdmax = 0;
 
 static timeout_callback to_callback = {0};
 
-static void_callback_t callback_list[NUM_CALLBACKS];
-static int num_callbacks = 0;
+static volatile void_callback_t callback_list[NUM_CALLBACKS];
+static volatile int num_callbacks = 0;
 
 static int elapsed_time(struct timeval *starttime)
 {
@@ -121,6 +121,10 @@ void interrupt_set_timeout(int timeout, void (*callback)(void) )
 
 void interrupt_add_callbacks( void (*callback)(void) )
 {
+	if( num_callbacks >= NUM_CALLBACKS ) {
+		fprintf(stderr, "Panic: Too many callbacks. Increase NUM_CALLBACKS in interrupt.c\n");
+		exit(1);
+	}
 	callback_list[num_callbacks] = callback;
 	num_callbacks++;
 }
@@ -130,15 +134,27 @@ void interrupt_loop( void )
 	int curr_sock_fd;
 	fd_set read_fds = master_fds;
 	struct timeval to = {0};
+	void_callback_t current_callback_list[NUM_CALLBACKS];
+	int current_num_callbacks = 0;
 	int i;
 
 	int ret;
 
-	// Calling callbacks
-	for(i = 0; i < num_callbacks; i++) {
-		callback_list[i]();
+	//
+	// Flush all pending events
+	// Note the use of "while".  This is because callbacks will 
+	// generate more events.
+	while( num_callbacks != 0 ) {
+		current_num_callbacks = num_callbacks;
+		for(i = 0; i < current_num_callbacks; i++ ) {
+			current_callback_list[i] = callback_list[i];
+		}
+		num_callbacks = 0;
+		// Calling callbacks
+		for(i = 0; i < current_num_callbacks; i++) {
+			current_callback_list[i]();
+		}
 	}
-	num_callbacks = 0;
 
 
 	if(to_callback.callback != NULL) {
