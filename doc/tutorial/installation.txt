@@ -395,7 +395,7 @@ Install Libraries for Cross-compilation
 - AVR tool chain for Mica2 and Micaz
 	* Already installed with WinAVR above.
 	* Download a patched version of uisp from 
-	link:http://nesl.ee.ucla.edu/projects/sos-1.x/tutorial/winxp_uisp/uisp.exe[here].
+	link: https://projects.nesl.ucla.edu/view/viewcvs.cgi/*checkout*/sos-2x/trunk/doc/executables/uisp/winxp/uisp.exe?rev=164[here].
 	This patched version is required for use of the CrossBow programming boards. 
 	Save the binary into the "/usr/bin" directory of the Cygwin installation,
 	and modify its permissions to make it executable (chmod +x /usr/bin/uisp.exe), 
