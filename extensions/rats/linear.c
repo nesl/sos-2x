@@ -52,12 +52,12 @@ float normalize(float* pTSParentArray, float* pTSMyArray, uint8_t max_window, ui
 
 //The following functions are used to convert from clock ticks to milliseconds
 //and the opposite. The used clock frequency is supposed to be 115.2KHz.
-static inline float ticks_to_msec_float(uint32_t ticks) 
+static inline float ticks_to_msec_float(int32_t ticks) 
 {
 	return ticks/115.2;
 }
 
-static inline float msec_to_ticks_float(uint32_t msec) 
+static inline float msec_to_ticks_float(int32_t msec) 
 {
 	return msec*115.2;
 }				

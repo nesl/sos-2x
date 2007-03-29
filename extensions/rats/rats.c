@@ -35,6 +35,7 @@
  */
  
 #include <module.h>
+#include <sys_module.h>
 #include <string.h> // for memcpy
 #include <systime.h>
 //#define LED_DEBUG
@@ -163,12 +164,12 @@ float getError(uint32_t* pTSParentArray, uint32_t* pTSMyArray, uint8_t max_windo
 
 //The following functions are used to convert from clock ticks to milliseconds
 //and the opposite. The used clock frequency is supposed to be 115.2KHz.
-static inline float ticks_to_msec_float(uint32_t ticks) 
+static inline float ticks_to_msec_float(int32_t ticks) 
 {
 	return ticks/115.2;
 }
 
-static inline float msec_to_ticks_float(uint32_t msec) 
+static inline float msec_to_ticks_float(int32_t msec) 
 {
 	return msec*115.2;
 }				
@@ -211,14 +212,6 @@ static int8_t module(void *state, Message *msg)
 			s->ts_list = NULL;
 			s->ts_packet.type = NORMAL_PACKET;
 
-			//Initialize timers
-			ker_timer_init(s->pid, TRANSMIT_TIMER, TIMER_REPEAT);
-			ker_timer_init(s->pid, VALIDATION_TIMER, TIMER_REPEAT);
-			
-			#ifdef USE_PANIC_PACKETS
-			ker_timer_init(s->pid, PANIC_TIMER, TIMER_REPEAT);
-			#endif //USE_PANIC_PACKETS
-			
 			//Notify neighbors that RATS is starting (in case node rebooted while it was
 			//synchronizing with another node
 			post_net(s->pid, s->pid, MSG_INVALIDATE_ENTRY, 0, NULL, 0, BCAST_ADDRESS);
@@ -252,7 +245,7 @@ static int8_t module(void *state, Message *msg)
 				DEBUG("RATS: PANIC_TIMER started\n");
 				
 				#ifdef USE_PANIC_PACKETS
-				ker_timer_start(s->pid, PANIC_TIMER, MIN_SAMPLING_PERIOD*1024);
+				sys_timer_start(PANIC_TIMER, MIN_SAMPLING_PERIOD*1024, TIMER_REPEAT);
 				#endif //USE_PANIC_PACKETS
 			}			
 
@@ -270,15 +263,15 @@ static int8_t module(void *state, Message *msg)
 				LED_DBG(LED_RED_TOGGLE);
 				//If request is coming from node, with whom the node is not synchronizing, then
 				//synchronization is starting
-				ker_timer_stop(s->pid, TRANSMIT_TIMER);
-				ker_timer_stop(s->pid, VALIDATION_TIMER);				
+				sys_timer_stop(TRANSMIT_TIMER);
+				sys_timer_stop(VALIDATION_TIMER);				
 				s->ts_packet.transmission_period = INITIAL_TRANSMISSION_PERIOD;	
 				s->ts_packet.min_period_node_id = msg->saddr;	
 				s->transmit_timer_counter = 1; //s->ts_packet.transmission_period/INITIAL_TRANSMISSION_PERIOD;
 				s->validation_timer_counter = 5; //s->transmit_timer_counter + 4;
 				s->validation_timer_retransmissions = TOTAL_VALIDATION_RETRANSMISSIONS;
-				ker_timer_start(s->pid, TRANSMIT_TIMER, MIN_SAMPLING_PERIOD*1024);	
-				ker_timer_start(s->pid, VALIDATION_TIMER, MIN_SAMPLING_PERIOD*1024);				
+				sys_timer_start(TRANSMIT_TIMER, MIN_SAMPLING_PERIOD*1024, TIMER_REPEAT);	
+				sys_timer_start(VALIDATION_TIMER, MIN_SAMPLING_PERIOD*1024, TIMER_REPEAT);				
 			}
 
 			return SOS_OK;
@@ -295,7 +288,7 @@ static int8_t module(void *state, Message *msg)
 				DEBUG("RATS: Invalid data received in MSG_RATS_GET_TIME\n");
 				break;
 			}
-			rats_t * rats_ptr = (rats_t *)ker_msg_take_data(s->pid, msg);
+			rats_t * rats_ptr = (rats_t *)sys_msg_take_data(msg);
 			DEBUG("RATS: Received MSG_RATS_GET_TIME (mod_id=%d node=%d)\n", rats_ptr->mod_id, msg->saddr);			
 			
 			if(rats_ptr->source_node_id == ker_id())
@@ -304,7 +297,7 @@ static int8_t module(void *state, Message *msg)
 				if(temp_ts_ptr == NULL)
 				{
 					DEBUG("RATS: Target node %d is not time synced\n", rats_ptr->target_node_id);
-					ker_free(rats_ptr);
+					sys_free(rats_ptr);
 					break;
 				}
 				else
@@ -329,7 +322,7 @@ static int8_t module(void *state, Message *msg)
 				if(temp_ts_ptr == NULL)
 				{
 					DEBUG("RATS: Source node %d is not time synced\n", rats_ptr->source_node_id);
-					ker_free(rats_ptr);
+					sys_free(rats_ptr);
 					break;
 				}
 				else
@@ -352,7 +345,7 @@ static int8_t module(void *state, Message *msg)
 			else
 			{
 				DEBUG("RATS: Invalid request (source = %d, target - %d)\n", rats_ptr->source_node_id, rats_ptr->target_node_id);
-				ker_free(rats_ptr);
+				sys_free(rats_ptr);
 				break;
 			}
 
@@ -394,7 +387,7 @@ static int8_t module(void *state, Message *msg)
 					ts_list_ptr = ts_list_ptr->next;
 					
 					/* Free the node */
-					ker_free( ts_delete_list_ptr );
+					sys_free( ts_delete_list_ptr );
 					
 					//If the parent list is empty, then we're stopping the panic timer
 					if(s->ts_list == NULL)
@@ -402,7 +395,7 @@ static int8_t module(void *state, Message *msg)
 						DEBUG("RATS: Parent list is empty. Stopping panic timer\n");
 						
 						#ifdef USE_PANIC_PACKETS
-						ker_timer_stop(s->pid, PANIC_TIMER);
+						sys_timer_stop(PANIC_TIMER);
 						#endif //USE_PANIC_PACKETS
 					}					
 					
@@ -483,8 +476,8 @@ static int8_t module(void *state, Message *msg)
 						}
 						else //s->validation_timer_retransmissions == 0
 						{
-							ker_timer_stop(s->pid, TRANSMIT_TIMER);
-							ker_timer_stop(s->pid, VALIDATION_TIMER);
+							sys_timer_stop(TRANSMIT_TIMER);
+							sys_timer_stop(VALIDATION_TIMER);
 							
 							//Restart normal procedure only if there was a reply
 							if(ker_id() != s->validation_node_id)
@@ -496,14 +489,14 @@ static int8_t module(void *state, Message *msg)
 								s->transmit_timer_counter = s->ts_packet.transmission_period/INITIAL_TRANSMISSION_PERIOD;
 								s->validation_timer_counter = s->transmit_timer_counter + 4;
 								s->validation_timer_retransmissions = TOTAL_VALIDATION_RETRANSMISSIONS;
-								ker_timer_start(s->pid, TRANSMIT_TIMER, MIN_SAMPLING_PERIOD*1024);
-								ker_timer_start(s->pid, VALIDATION_TIMER, MIN_SAMPLING_PERIOD*1024);
+								sys_timer_start(TRANSMIT_TIMER, MIN_SAMPLING_PERIOD*1024, TIMER_REPEAT);
+								sys_timer_start(VALIDATION_TIMER, MIN_SAMPLING_PERIOD*1024, TIMER_REPEAT);
 							}
 							else
 							{
 								DEBUG("RATS: Validation timer expired, without receiving any packets\n");
-								ker_timer_stop(s->pid, TRANSMIT_TIMER);
-								ker_timer_stop(s->pid, VALIDATION_TIMER);								
+								sys_timer_stop(TRANSMIT_TIMER);
+								sys_timer_stop(VALIDATION_TIMER);								
 							}							
 						}
 					}
@@ -549,7 +542,7 @@ static int8_t module(void *state, Message *msg)
 								ts_list_ptr = ts_list_ptr->next;
 				
 								/* Free the node */
-								ker_free( ts_delete_list_ptr );
+								sys_free( ts_delete_list_ptr );
 								continue;
 							}
 						}						
@@ -562,7 +555,7 @@ static int8_t module(void *state, Message *msg)
 					{
 						DEBUG("RATS: Parent list is empty. Stopping panic timer\n");
 						#ifdef USE_PANIC_PACKETS
-						ker_timer_stop(s->pid, PANIC_TIMER);
+						sys_timer_stop(PANIC_TIMER);
 						#endif //USE_PANIC_PACKETS
 					}
 					
@@ -595,11 +588,11 @@ static int8_t module(void *state, Message *msg)
 				|| (s->ts_packet.min_period_node_id == ker_id()) )
 			{
 				DEBUG("RATS: Changing period (new_period=%d new_node=%d). Sending to UART\n", temp_transmission_period, msg->saddr);
-				ker_timer_stop(s->pid, TRANSMIT_TIMER);
-				ker_timer_stop(s->pid, VALIDATION_TIMER);
+				sys_timer_stop(TRANSMIT_TIMER);
+			    sys_timer_stop(VALIDATION_TIMER);
 				
 				#ifdef UART_DEBUG
-				period_packet_t * period_packet_ptr = ker_malloc(sizeof(period_packet_t), s->pid);
+				period_packet_t * period_packet_ptr = sys_malloc(sizeof(period_packet_t));
 				period_packet_ptr->saddr = msg->saddr;
 				period_packet_ptr->old_period = s->ts_packet.transmission_period;
 				period_packet_ptr->new_period = temp_transmission_period;
@@ -611,8 +604,8 @@ static int8_t module(void *state, Message *msg)
 				s->transmit_timer_counter = (uint16_t)(s->ts_packet.transmission_period / MIN_SAMPLING_PERIOD);
 				s->validation_timer_counter = s->transmit_timer_counter + 4;
 				s->validation_timer_retransmissions = TOTAL_VALIDATION_RETRANSMISSIONS;
-				ker_timer_start(s->pid, TRANSMIT_TIMER, INITIAL_TRANSMISSION_PERIOD*1024);
-				ker_timer_start(s->pid, VALIDATION_TIMER, INITIAL_TRANSMISSION_PERIOD*1024);
+				sys_timer_start(TRANSMIT_TIMER, INITIAL_TRANSMISSION_PERIOD*1024, TIMER_REPEAT);
+				sys_timer_start(VALIDATION_TIMER, INITIAL_TRANSMISSION_PERIOD*1024, TIMER_REPEAT);
 			}
 			return SOS_OK;	
 		}
@@ -640,7 +633,7 @@ static int8_t module(void *state, Message *msg)
 					DEBUG("RATS: Receiving test data from node %d. Sending to UART\n", msg->saddr);
 					#ifdef UART_DEBUG
 					ext_packet_t * ext_packet_ptr = (ext_packet_t *)msg->data;
-					debug_packet_t * debug_packet_ptr = (debug_packet_t *)ker_malloc(sizeof(debug_packet_t), s->pid);
+					debug_packet_t * debug_packet_ptr = (debug_packet_t *)sys_malloc(sizeof(debug_packet_t));
 					debug_packet_ptr->time[0] = ticks_to_msec_float(ext_packet_ptr->time[0]);
 					debug_packet_ptr->time[1] = ticks_to_msec_float(ext_packet_ptr->time[1]);
 					debug_packet_ptr->node_id = ker_id();
@@ -661,7 +654,7 @@ static int8_t module(void *state, Message *msg)
 						break;
 					}
 					
-					debug_packet_t * debug_packet_ptr = (debug_packet_t *)ker_malloc(sizeof(debug_packet_t), s->pid);
+					debug_packet_t * debug_packet_ptr = (debug_packet_t *)sys_malloc(sizeof(debug_packet_t));
 					debug_packet_ptr->time[0] = ticks_to_msec_float(ext_packet_ptr->time[0]);
 					debug_packet_ptr->time[1] = ticks_to_msec_float(parent_time);
 					debug_packet_ptr->int_parent_time = parent_time;
@@ -682,7 +675,7 @@ static int8_t module(void *state, Message *msg)
 				break;
 			}
 
-			uint16_t *sampling_period = (uint16_t *)ker_malloc(sizeof(uint16_t), s->pid);
+			uint16_t *sampling_period = (uint16_t *)sys_malloc(sizeof(uint16_t));
 			if(sampling_period != NULL)
 			{
 				*sampling_period = temp_ts_ptr->sampling_period;
@@ -709,11 +702,11 @@ static int8_t module(void *state, Message *msg)
 		case MSG_PANIC:
 		{
 			//Transmit MSG_TIMESTAMP, restart timer, recalculate value for transmit_timer_counter
-			ker_timer_stop(s->pid, TRANSMIT_TIMER);
-			ker_timer_stop(s->pid, VALIDATION_TIMER);
+			sys_timer_stop(TRANSMIT_TIMER);
+			sys_timer_stop(VALIDATION_TIMER);
 			
 			#ifdef UART_DEBUG
-			uint16_t *data = (uint16_t *)ker_malloc(sizeof(uint16_t), s->pid);
+			uint16_t *data = (uint16_t *)sys_malloc(sizeof(uint16_t));
 			*data = msg->saddr;
 			post_uart(s->pid, s->pid, UART_PANIC, sizeof(uint16_t), data, SOS_MSG_RELEASE, UART_ADDRESS);
 			#endif //UART_DEBUG
@@ -722,8 +715,8 @@ static int8_t module(void *state, Message *msg)
 			s->transmit_timer_counter = (uint16_t)(s->ts_packet.transmission_period / MIN_SAMPLING_PERIOD);
 			s->validation_timer_counter = s->transmit_timer_counter + 4;
 			s->validation_timer_retransmissions = TOTAL_VALIDATION_RETRANSMISSIONS;
-			ker_timer_start(s->pid, TRANSMIT_TIMER, INITIAL_TRANSMISSION_PERIOD*1024);
-			ker_timer_start(s->pid, VALIDATION_TIMER, INITIAL_TRANSMISSION_PERIOD*1024);
+			sys_timer_start(TRANSMIT_TIMER, INITIAL_TRANSMISSION_PERIOD*1024, TIMER_REPEAT);
+			sys_timer_start(VALIDATION_TIMER, INITIAL_TRANSMISSION_PERIOD*1024, TIMER_REPEAT);
 			break;
 		}
 		case MSG_INVALIDATE_ENTRY:
@@ -744,6 +737,9 @@ static int8_t module(void *state, Message *msg)
 			temp_ts_ptr->window_size = (uint8_t)BUFFER_SIZE;
 			temp_ts_ptr->panic_timer_counter = 5; //(s->ts_list->sampling_period / INITIAL_TRANSMISSION_PERIOD) + 4;
 			temp_ts_ptr->panic_timer_retransmissions = PANIC_TIMER_RETRANSMISSIONS;			
+			memset(temp_ts_ptr->timestamps, 0, BUFFER_SIZE*sizeof(uint32_t));
+			memset(temp_ts_ptr->my_time, 0, BUFFER_SIZE*sizeof(uint32_t));
+
 
 			//Notify node to start procedure from beginning
 			post_net(s->pid, s->pid, MSG_RATS_SERVER_START, 0, NULL, 0, msg->saddr);
@@ -751,11 +747,11 @@ static int8_t module(void *state, Message *msg)
 		}
         case MSG_FINAL:
         {
-			ker_timer_stop(s->pid, TRANSMIT_TIMER);
-			ker_timer_stop(s->pid, VALIDATION_TIMER);
+			sys_timer_stop(TRANSMIT_TIMER);
+			sys_timer_stop(VALIDATION_TIMER);
 			
 			#ifdef USE_PANIC_PACKETS
-			ker_timer_stop(s->pid, PANIC_TIMER);
+			sys_timer_stop(PANIC_TIMER);
 			#endif //USE_PANIC_PACKETS
 			
 			return SOS_OK;
@@ -778,11 +774,11 @@ static uint8_t add_request(app_state_t *s, uint16_t node_id, uint8_t sync_precis
 	if(s->ts_list == NULL)
 	{
 		DEBUG("RATS: Adding first request for node %d\n", node_id);
-		s->ts_list = (timesync_t *)ker_malloc(sizeof(timesync_t), s->pid);
+		s->ts_list = (timesync_t *)sys_malloc(sizeof(timesync_t));
 		memset(s->ts_list, 0, sizeof(timesync_t));
 		s->ts_list->node_id = node_id;
-		s->ts_list->timestamps = (uint32_t *)ker_malloc(BUFFER_SIZE*sizeof(uint32_t), s->pid);
-		s->ts_list->my_time = (uint32_t *)ker_malloc(BUFFER_SIZE*sizeof(uint32_t), s->pid);
+		s->ts_list->timestamps = (uint32_t *)sys_malloc(BUFFER_SIZE*sizeof(uint32_t));
+		s->ts_list->my_time = (uint32_t *)sys_malloc(BUFFER_SIZE*sizeof(uint32_t));
 		memset(s->ts_list->timestamps, 0, BUFFER_SIZE*sizeof(uint32_t));
 		memset(s->ts_list->my_time, 0, BUFFER_SIZE*sizeof(uint32_t));	
 		s->ts_list->a = 0;
@@ -822,12 +818,12 @@ static uint8_t add_request(app_state_t *s, uint16_t node_id, uint8_t sync_precis
 
 	// Case 3: Entry not found
 	DEBUG("RATS: Adding new request for node %d\n", node_id);
-	ts_list_ptr->next = (timesync_t *)ker_malloc(sizeof(timesync_t), s->pid);
+	ts_list_ptr->next = (timesync_t *)sys_malloc(sizeof(timesync_t));
 	ts_list_ptr = ts_list_ptr->next;
 	memset(ts_list_ptr, 0, sizeof(timesync_t));
 	ts_list_ptr->node_id = node_id;
-	ts_list_ptr->timestamps = (uint32_t *)ker_malloc(BUFFER_SIZE*sizeof(uint32_t), s->pid);
-	ts_list_ptr->my_time = (uint32_t *)ker_malloc(BUFFER_SIZE*sizeof(uint32_t), s->pid);
+	ts_list_ptr->timestamps = (uint32_t *)sys_malloc(BUFFER_SIZE*sizeof(uint32_t));
+	ts_list_ptr->my_time = (uint32_t *)sys_malloc(BUFFER_SIZE*sizeof(uint32_t));
 	memset(ts_list_ptr->timestamps, 0, BUFFER_SIZE*sizeof(uint32_t));
 	memset(ts_list_ptr->my_time, 0, BUFFER_SIZE*sizeof(uint32_t));	
 	ts_list_ptr->a = 0;
@@ -1073,7 +1069,7 @@ void send_buffer(app_state_t *s, uint16_t root_node_id)
 	if(temp_ts_ptr == NULL)
 		return;
 	
-	uint32_t *buffer = (uint32_t *)ker_malloc(BUFFER_SIZE*sizeof(uint32_t), s->pid);
+	uint32_t *buffer = (uint32_t *)sys_malloc(BUFFER_SIZE*sizeof(uint32_t));
 
 	for(i=0; i<BUFFER_SIZE; i++)
 	{
@@ -1092,7 +1088,7 @@ void send_buffer2(app_state_t *s, uint16_t root_node_id)
 	if(temp_ts_ptr == NULL)
 		return;
 	
-	uint32_t *buffer = (uint32_t *)ker_malloc(BUFFER_SIZE*sizeof(uint32_t), s->pid);
+	uint32_t *buffer = (uint32_t *)sys_malloc(BUFFER_SIZE*sizeof(uint32_t));
 
 	for(i=0; i<BUFFER_SIZE; i++)
 	{
@@ -1108,7 +1104,7 @@ void send_buffer2(app_state_t *s, uint16_t root_node_id)
 void send_debug_packet(app_state_t *s, ts_packet_t *ts_packet_ptr, float est_error)
 {
 	timesync_t * temp_ts_ptr = get_timesync_ptr(s, ROOT_NODE);
-	test_packet_t *test_packet_ptr = (test_packet_t *)ker_malloc(sizeof(test_packet_t), s->pid);
+	test_packet_t *test_packet_ptr = (test_packet_t *)sys_malloc(sizeof(test_packet_t));
 	if( temp_ts_ptr == NULL )
 	{
 		test_packet_ptr->a = 0;
