@@ -31,6 +31,6 @@ if __name__ == '__main__':
     for pair in [(k,msgMapping[k]) for k in sorted(msgMapping.keys())]:
         print "%3s (0x%2x)\t%s"%(pair[1], int(pair[1]), pair[0])
 
-    print "\n### MSG IDs ###"
+    print "\n### PID IDs ###"
     for pair in [(k,pidMapping[k]) for k in sorted(pidMapping.keys())]:
         print "%3s (0x%2x)\t%s"%(pair[1], int(pair[1]), pair[0])
