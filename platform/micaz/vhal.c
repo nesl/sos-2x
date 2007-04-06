@@ -274,6 +274,7 @@ int8_t Radio_Recv_Pack(vhal_data *vd)
 {	
 	uint8_t i;
 	uint8_t num;
+        uint8_t CRC;
 	
 	if( TC_IS_RX_OVERFLOW ) {
 		TC_FLUSH_RX;
@@ -308,7 +309,18 @@ int8_t Radio_Recv_Pack(vhal_data *vd)
 	
 	TC_UNSELECT_RADIO;
 	TC_FLUSH_RX;
-	return 1;
+        CRC = (uint8_t) vd->post_payload[i-1];
+        if(CRC & BASIC_RF_CRC_OK_BM)
+	{
+		// CRC is correct!
+		return 1;
+        }
+        else
+        {
+                // CRC is wrong...
+		ker_free(vd->payload);
+		return 0;
+        }
 }
 
 //the showbyte function for debug

@@ -49,6 +49,20 @@
 //define the PID for VHAL, used by mem
 #define VHALPID		99
 
+// define the bitmasks used for FCF/CRC checking
+#define BASIC_RF_FCF_NOACK              0x8841
+#define BASIC_RF_FCF_ACK                0x8861
+#define BASIC_RF_FCF_ACK_BM             0x0020
+#define BASIC_RF_FCF_BM                 (~BASIC_RF_FCF_ACK_BM)
+#define BASIC_RF_ACK_FCF                0x0002
+#define BASIC_RF_CRC_OK_BM              0x80
+
+#define BASIC_RF_ACK_PACKET_SIZE        5
+// The time it takes for the acknowledgment packet to be received after the data packet has been
+// transmitted
+#define BASIC_RF_ACK_DURATION           (0.5 * 32 * 2 * ((4 + 1) + (1) + (2 + 1) + (2)))
+#define BASIC_RF_SYMBOL_DURATION        (32 * 0.5)
+
 //define the operatios on radio
 
 //define start up functions
