@@ -1,5 +1,5 @@
 /**
- * \file nic.c
+ * \file nic_base.c
  * \brief This application is the SOS NIC.
  */
 #include <sos.h>

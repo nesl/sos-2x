@@ -1,4 +1,4 @@
-PROJ = nic
+PROJ = nic_base
 
 ROOTDIR = ../..
 
