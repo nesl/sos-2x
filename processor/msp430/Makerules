@@ -28,7 +28,7 @@ DEFS += -DSYS_JUMP_TBL_START=$(SYS_JUMP_TBL_ADDR)
 DEFS += -DSYS_JUMP_TBL_SIZE=4
 
 ifeq ($(BUILD),_SOS_KERNEL_)
-SRCS += flash_api.c uart_hal.c uart.c uart_system.c timer.c systime.c clock_hal.c timerb_hal.c spi_hal.c
+SRCS += flash_api.c uart_hal.c uart.c uart_system.c timer.c systime.c clock_hal.c  spi_hal.c
 
 CFLAGS += -Os -Wa,-adhlmsn=$(notdir $(<:.c=.lst))
 #CFLAGS += -Os -fshort-enums -fpack-struct -Wno-cast-qual -Wall -Wa,-adhlmsn=$(notdir $(<:.c=.lst))
