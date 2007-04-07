@@ -31,13 +31,14 @@ void timerb_compare3_interrupt();
 /**
  * @brief Get the current interval setting
  */ 
-extern uint16_t _timerb_prev_tbr;
-extern uint16_t _timerb_interval;
-static inline uint8_t timer_getInterval()   {return (uint8_t)_timerb_interval;}
-
+//extern uint16_t _timerb_prev_tbr;
+extern uint8_t _timerb_interval;
+static inline uint8_t timer_getInterval()     {return (uint8_t)_timerb_interval;}
+extern uint8_t timer_hardware_get_counter();
 /**
  * @brief Get the current value stored in the hardware register
  */
+/*
 static inline uint8_t timer_hardware_get_counter() {
   uint8_t retval;
   uint16_t temp;
@@ -47,6 +48,7 @@ static inline uint8_t timer_hardware_get_counter() {
   //  retval = (uint8_t)(temp);
   return retval;
 }
+*/
 
 
 

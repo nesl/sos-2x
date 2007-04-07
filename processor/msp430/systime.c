@@ -38,6 +38,8 @@
 #include <measurement.h>
 
 // this field holds the high 16 bits of the current time
+/*
+NOTE: Moved to timer.c
 union time_u
 {
 	struct
@@ -64,6 +66,7 @@ uint32_t ker_systime32()
 {
   return 0;
 }
+*/
 
 void systime_init()
 {
