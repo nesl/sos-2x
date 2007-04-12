@@ -339,6 +339,8 @@ static void radio_msg_send(Message *msg)
 		Radio_Send_Pack(&vd, &timestamp);
 	
 		if( msg->daddr == BCAST_ADDRESS ) {
+			vmac_send_state = VMAC_SEND_STATE_IDLE;
+			retry_count = 0;
 			msg_send_senddone(msg, 1, RADIO_PID);
 			vmac_msg = NULL;
 			return;
