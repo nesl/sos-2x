@@ -49,6 +49,9 @@
 //define the PID for VHAL, used by mem
 #define VHALPID		99
 
+//define PANID
+#define VMAC_PANID  ((uint16_t)(NODE_GROUP_ID + 0x2420))
+
 //define the maximum count to avoid dead loop
 #define MAX_COUNT      32000   
 
