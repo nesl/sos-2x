@@ -42,8 +42,10 @@
 //#define LED_DEBUG
 #include <led_dbg.h>
 
+// Implemented in vmac.c
+void _MacRecvAck(uint8_t ack_seq);
 //keep the sequence number of the last received ACK
-static uint8_t received_ack_seq = 0;
+//static uint8_t received_ack_seq = 0;
 
 void Radio_Init()
 {	
@@ -233,20 +235,20 @@ int8_t Radio_Recv(uint8_t *bytes, uint8_t *num)
 	return 1;
 }
 
-int8_t Radio_Send_Pack(vhal_data vd, int16_t *timestamp)
+void Radio_Send_Pack(vhal_data *vd, int16_t *timestamp)
 {	
 	int i;
 	uint8_t num;
-	uint8_t tx_seq;
+	//uint8_t tx_seq;
 
-	tx_seq = vd.pre_payload[2];
-	received_ack_seq = 0;
+	//tx_seq = vd->pre_payload[2];
+	//received_ack_seq = 0;
 
-	num = vd.pre_payload_len + vd.payload_len + vd.post_payload_len;
+	num = vd->pre_payload_len + vd->payload_len + vd->post_payload_len;
 	if( num > MAXBUFFSIZE ) {
 		TC_FLUSH_TX;
 		TC_STROBE(CC2420_SNOP);
-		return 0;
+		return;
 	}
 
 	// Flush the TXFIFO before you transmit.
@@ -258,7 +260,7 @@ int8_t Radio_Send_Pack(vhal_data vd, int16_t *timestamp)
 
 	// FCF, Sequence Number, PANID, Destination Address, Source Address
 	for(i=0;i<9;i++)
-		TC_WRITE_BYTE(vd.pre_payload[i]);
+		TC_WRITE_BYTE(vd->pre_payload[i]);
 
         // SOS message header
         // We don't need to send the length. It is included in the IEEE 802.15.4 header
@@ -266,46 +268,49 @@ int8_t Radio_Send_Pack(vhal_data vd, int16_t *timestamp)
 
         // Destination Address, Source Address, Did, Sid, Message Type 
         for(i=9; i<12;i++)
-		TC_WRITE_BYTE(vd.pre_payload[i]);
+		TC_WRITE_BYTE(vd->pre_payload[i]);
 
 	// Actual message payload
-	for(i=0;i<vd.payload_len;i++)
-		TC_WRITE_BYTE(vd.payload[i]);
+	for(i=0;i<vd->payload_len;i++)
+		TC_WRITE_BYTE(vd->payload[i]);
 
 	TC_UNSELECT_RADIO;
 	TC_STROBE(CC2420_STXONCCA);
 	TC_STROBE(CC2420_SNOP);
 
+	/*
 #ifdef VMAC_ACK_ENABLED
 
-                // Run this only in Unicast Mode
-                if(vd.pre_payload[5]!=0xFF || vd.pre_payload[6]!=0xFF)
+	// Run this only in Unicast Mode
+	if(vd->pre_payload[5]!=0xFF || vd->pre_payload[6]!=0xFF)
+	{
+		// wait for the maximum time required in order to receive the ACK packet accord
+		TC_UWAIT(1600);
+		// the received_ack_seq variable should have been updated by now inside the Ra
+
+		local_irq_enable();
+
+		// enable the node to read the ACK packet if it was received!
+
+		local_irq_disable();
+
+		if(received_ack_seq != tx_seq)
 		{
-                        // wait for the maximum time required in order to receive the ACK packet accord
-                        TC_UWAIT(1600);
-			// the received_ack_seq variable should have been updated by now inside the Ra
-
-			local_irq_enable();
-
-			// enable the node to read the ACK packet if it was received!
-
-			local_irq_disable();
-
-			if(received_ack_seq != tx_seq)
-			{
-				// An ACK was not received
-				// Consider it as TX failure
-				//ker_led(LED_YELLOW_TOGGLE);
-				return 0;
-			}
+			// An ACK was not received
+			// Consider it as TX failure
+			//ker_led(LED_YELLOW_TOGGLE);
+			return;
 		}
-
+	}
 #endif
+*/
 		// ACK was received! Everything went fine...
 	*timestamp = getTime();
-	return 1;
+	return;
 }
 
+#if 0
+// Simon: this is not used anywhere in the code
 int8_t Radio_Send_Pack_CCA(vhal_data vd, int16_t *timestamp)
 {	
 	int i;
@@ -336,6 +341,7 @@ int8_t Radio_Send_Pack_CCA(vhal_data vd, int16_t *timestamp)
 	TC_ENABLE_INTERRUPT;
 	return 1;
 }
+#endif
 
 int8_t Radio_Recv_Pack(vhal_data *vd)
 {	
@@ -387,7 +393,8 @@ int8_t Radio_Recv_Pack(vhal_data *vd)
 		TC_READ_BYTE(&CRC);
 		if(((FCF & (BASIC_RF_FCF_BM)) && (CRC & BASIC_RF_CRC_OK_BM)))
 		{
-			received_ack_seq = vd->pre_payload[2]; // notify the Transmitter that the ACK was received!
+			_MacRecvAck(vd->pre_payload[2]);
+			//received_ack_seq = vd->pre_payload[2]; // notify the Transmitter that the ACK was received!
 		}
 		// Even if the CRC is correct do not pass the ACKs directly to the application layer
 		TC_UNSELECT_RADIO;

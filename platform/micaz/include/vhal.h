@@ -115,8 +115,10 @@ extern int8_t Radio_Send(uint8_t *, uint8_t);
 extern int8_t Radio_Send_CCA(uint8_t *, uint8_t);
 extern int8_t Radio_Recv(uint8_t *, uint8_t *);
 
-extern int8_t Radio_Send_Pack(vhal_data, int16_t *);
+extern void Radio_Send_Pack(vhal_data *, int16_t *);
+#if 0
 extern int8_t Radio_Send_Pack_CCA(vhal_data, int16_t *);
+#endif
 extern int8_t Radio_Recv_Pack(vhal_data*);
 
 //define Security functions
