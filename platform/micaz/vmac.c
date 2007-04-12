@@ -374,7 +374,7 @@ void radio_msg_alloc(Message *msg)
 		if(radio_msg_send(msg)) {
 			resend_pack = 0;
 			msg_send_senddone(msg, 1, RADIO_PID);
-			ENTER_CRITICAL_SECTION();
+			//ENTER_CRITICAL_SECTION();
 		}
 	}
 
