@@ -222,6 +222,7 @@ HAS_CRITICAL_SECTION;
 			radio_msg_send(vmac_msg);
 		}
 		LEAVE_CRITICAL_SECTION();
+		break;
 	   }
        default:
 		break;
@@ -339,6 +340,7 @@ static void radio_msg_send(Message *msg)
 	
 		if( msg->daddr == BCAST_ADDRESS ) {
 			msg_send_senddone(msg, 1, RADIO_PID);
+			vmac_msg = NULL;
 			return;
 		} else {
 			
@@ -421,7 +423,7 @@ void radio_msg_alloc(Message *msg)
 
 void _MacRecvAck(uint8_t ack_seq)
 {
-	if( getSeq() == ack_seq ) {
+	if( (vmac_send_state == VMAC_SEND_STATE_WAIT_FOR_ACK) && (getSeq() == ack_seq) ) {
 		LED_DBG(LED_GREEN_TOGGLE);
 		post_short( RADIO_PID, RADIO_PID, MSG_VMAC_TX_ACKED, 0, 0, 0 );
 	}
