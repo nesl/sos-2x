@@ -39,6 +39,7 @@
 /**
  * @brief    virtual hal for radio 
  * @author   Hubert Wu {hubertwu@cs.ucla.edu}
+ * @author   Dimitrios Lymberopoulos {dimitrios.lymberopoulos@yale.edu}
  */
 
 #ifndef _VMAC_H
@@ -69,21 +70,22 @@ typedef struct{
  **********************************************************************/
 typedef struct _VMAC_MPDU {
 	uint16_t fcf;
-	uint16_t seq;
+	uint8_t seq;
+	uint16_t panid;                          // Dimitrios: PANID!
 	uint16_t daddr;                          //!< node destination address
 	uint16_t saddr;                          //!< node source address
 	sos_pid_t  did;                          //!< module destination id
 	sos_pid_t  sid;                          //!< module source id
 	uint8_t  type;                           //!< module specific message type
-	uint8_t  group;                          //!< SOS group info
 	uint8_t *data;
 	uint16_t fcs;
-}VMAC_MPDU;
+} PACK_STRUCT VMAC_MPDU;
 
 /**********************************************************************
  * define the pre-payload and post-payload length                     *
  **********************************************************************/
-#define PRE_PAYLOAD_LEN 	12
+// 9 for IEEE 802.15.4 header + 3 for sos header (did, sid and type)
+#define PRE_PAYLOAD_LEN 	9+3
 #define POST_PAYLOAD_LEN	2
 
 /**********************************************************************

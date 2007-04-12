@@ -288,6 +288,23 @@ extern void TC_SET_REG(uint8_t R, int8_t I, int8_t J, uint16_t C);
 /**********************************************************************
  * define ram read/write funtions                                     *
  **********************************************************************/
+// Dimitrios
+// RAM ACCESS
+// d: pointer to the data to be written
+// a: address
+// n: number of bytes to be written
+#define CC2420_WRITE_RAM(d,a,n) \
+	do { \
+		unsigned int i=0;\
+		TC_SELECT_RADIO; \
+		TC_WRITE_BYTE(0x80 | (a & 0x7F)); \
+		TC_WRITE_BYTE((a >> 1) & 0xC0); \
+		for (i = 0; i < (n); i++) { \
+			TC_WRITE_BYTE(((unsigned char*)(d))[i]); \
+		} \
+		TC_UNSELECT_RADIO; \
+	} while (0)
+
 #define TC_READ_RAM_BYTES(A,C,N)	\
 	do {	int i;	\
 		TC_UNSELECT_RADIO;	\

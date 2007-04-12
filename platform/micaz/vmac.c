@@ -37,8 +37,9 @@
  */
 
 /**
- * @brief    virtual hal for radio 
+ * @brief    virtual hal for radio
  * @author   Hubert Wu {huberwu@cs.ucla.edu}
+ * @author   Dimitrios Lymberopoulos {dimitrios.lymberopoulos@yale.edu}
  */
 
 #include <random.h>
@@ -60,10 +61,16 @@
 #include <sys_module.h>
 #include <module.h>
 
+//#define ENA_VMAC_UART_DEBUG
+
+
+static Message *vmac_msg;
+static volatile uint8_t valid_msg=0;
+
 /*************************************************************************
  * define the maximum number retry times for sending a packet            *
  *************************************************************************/
-#define MAX_RETRIES		7
+#define MAX_RETRIES		2
 
 /*************************************************************************
  * define the maximum number of messages in the MAC queue                *
@@ -88,19 +95,19 @@ static int8_t vmac_handler(void *state, Message *e);
 /*************************************************************************
  * declare backoff mechanism functions                                   *
  *************************************************************************/
-static void backoff_timeout(); 
+static void backoff_timeout();
 static int16_t MacBackoff_congestionBackoff(int8_t retries);
 
 /*************************************************************************
  * define the MAC module header                                          *
  *************************************************************************/
-static mod_header_t mod_header SOS_MODULE_HEADER ={    
-mod_id : RADIO_PID,    
-state_size : 0,    
+static mod_header_t mod_header SOS_MODULE_HEADER ={
+mod_id : RADIO_PID,
+state_size : 0,
 num_timers : 0,
-num_sub_func : 0,   
-num_prov_func : 0,   
-module_handler: vmac_handler,    
+num_sub_func : 0,
+num_prov_func : 0,
+module_handler: vmac_handler,
 };
 
 /*************************************************************************
@@ -116,7 +123,7 @@ static mq_t vmac_pq;
 /*************************************************************************
  * declare the sequence number variable                                  *
  *************************************************************************/
-static uint16_t seq_count;
+static uint8_t seq_count;
 
 /*************************************************************************
  * define the retry times variable                                       *
@@ -127,9 +134,9 @@ static uint8_t retry_count;
 /*************************************************************************
  * get sequence number                                                   *
  *************************************************************************/
-static uint16_t getSeq() 
+static uint8_t getSeq()
 {
-	uint16_t ret;
+	uint8_t ret;
 	HAS_CRITICAL_SECTION;
 	ENTER_CRITICAL_SECTION();
 	ret = seq_count;
@@ -140,12 +147,18 @@ static uint16_t getSeq()
 /*************************************************************************
  * increase sequence number                                              *
  *************************************************************************/
-static uint16_t incSeq() 
+static uint8_t incSeq()
 {
-	uint16_t ret;
+	uint8_t ret;
 	HAS_CRITICAL_SECTION;
 	ENTER_CRITICAL_SECTION();
-	ret = seq_count++;
+	if(seq_count==0xFF) { // do not use 0x00 as a sequence number!
+		ENTER_CRITICAL_SECTION();
+		seq_count=1;
+		ret=1;          // 0x00 will be considered ACKed by default!
+	} else {
+		ret = seq_count++;
+	}
 	LEAVE_CRITICAL_SECTION();
 	return ret;
 }
@@ -153,7 +166,7 @@ static uint16_t incSeq()
 /*************************************************************************
  * set sequence number to 0                                              *
  *************************************************************************/
-static void resetSeq() 
+static void resetSeq()
 {
 	HAS_CRITICAL_SECTION;
 	ENTER_CRITICAL_SECTION();
@@ -164,7 +177,7 @@ static void resetSeq()
 /*************************************************************************
  * get retry times                                                       *
  *************************************************************************/
-static uint8_t getRetries() 
+static uint8_t getRetries()
 {
 	uint8_t ret;
 	HAS_CRITICAL_SECTION;
@@ -177,7 +190,7 @@ static uint8_t getRetries()
 /*************************************************************************
  * increase retry times                                                  *
  *************************************************************************/
-static uint8_t incRetries() 
+static uint8_t incRetries()
 {
 	uint8_t ret;
 	HAS_CRITICAL_SECTION;
@@ -190,7 +203,7 @@ static uint8_t incRetries()
 /*************************************************************************
  * set retry times to 0                                                  *
  *************************************************************************/
-static void resetRetries() 
+static void resetRetries()
 {
 	HAS_CRITICAL_SECTION;
 	ENTER_CRITICAL_SECTION();
@@ -236,8 +249,7 @@ void sosmsg_to_mac(Message *msg, VMAC_PPDU *ppdu)
 	ppdu->mpdu.did = msg->did;
 	ppdu->mpdu.sid = msg->sid;
 	ppdu->mpdu.type = msg->type;
-	ppdu->mpdu.group = node_group_id;
-	
+
 	ppdu->mpdu.data = msg->data;
 }
 
@@ -253,8 +265,13 @@ void mac_to_sosmsg(VMAC_PPDU *ppdu, Message *msg)
 	msg->did = ppdu->mpdu.did;
 	msg->sid = ppdu->mpdu.sid;
 	msg->type = ppdu->mpdu.type;
-	
-	msg->data = ppdu->mpdu.data;
+
+	//msg->data = ppdu->mpdu.data;
+	if(msg->len==0){
+		msg->data = NULL;
+	} else {
+		msg->data = ppdu->mpdu.data;
+	}
 	msg->flag |= SOS_MSG_RELEASE;
 }
 
@@ -279,7 +296,8 @@ void mac_to_vhal(VMAC_PPDU *ppdu, vhal_data *vd)
 void vhal_to_mac(vhal_data *vd, VMAC_PPDU *ppdu)
 {
 	ppdu->len = vd->payload_len + vd->pre_payload_len + vd->post_payload_len;
-	memcpy((uint8_t*)&ppdu->mpdu.fcf, vd->pre_payload, vd->pre_payload_len);
+	memcpy((uint8_t*)&ppdu->mpdu.fcf, vd->pre_payload, PRE_PAYLOAD_LEN);
+
 	ppdu->mpdu.data = vd->payload;
 	memcpy((uint8_t*)&ppdu->mpdu.fcs, vd->post_payload, vd->post_payload_len);
 }
@@ -300,7 +318,16 @@ static int8_t radio_msg_send(Message *msg)
 	}
 	sosmsg_to_mac(msg, &ppdu);
 
-	ppdu.mpdu.fcf = 1;		//doesn't matter, hardware supports it
+	if(msg->daddr==BCAST_ADDRESS) {
+		ppdu.mpdu.fcf = BASIC_RF_FCF_NOACK;     //Broadcast: No Ack
+	} else {
+		ppdu.mpdu.fcf = BASIC_RF_FCF_NOACK;     //Unicast Default: No Ack
+#ifdef VMAC_ACK_ENABLED
+		ppdu.mpdu.fcf = BASIC_RF_FCF_ACK;       //Unicast: Ack
+#endif
+	}
+
+	ppdu.mpdu.panid = VMAC_PANID; // PANID
 	ppdu.mpdu.seq = getSeq();	//count by software
 	ppdu.mpdu.fcs = 1;		//doesn't matter, hardware supports it
 
@@ -312,7 +339,7 @@ static int8_t radio_msg_send(Message *msg)
 /*************************************************************************
  * get message number in the queue                                       *
  *************************************************************************/
-static uint8_t getMsgNumOfQueue() 
+static uint8_t getMsgNumOfQueue()
 {
 	uint8_t ret = 0;
 	HAS_CRITICAL_SECTION;
@@ -325,7 +352,7 @@ static uint8_t getMsgNumOfQueue()
 /*************************************************************************
  * check whether the queue is empty                                      *
  *************************************************************************/
-static int8_t isQueueEmpty() 
+static int8_t isQueueEmpty()
 {
 	return ( getMsgNumOfQueue()==0 );
 }
@@ -335,52 +362,109 @@ static int8_t isQueueEmpty()
  *************************************************************************/
 void radio_msg_alloc(Message *msg)
 {
+	HAS_CRITICAL_SECTION;
 	uint16_t sleeptime = 0;
-	incSeq();
+	uint8_t resend_pack = 1;
+	uint8_t status;
+
+	ENTER_CRITICAL_SECTION();
 
 	if( Radio_Check_CCA() ) {
-		radio_msg_send(msg);
-		msg_send_senddone(msg, 1, RADIO_PID);
+		incSeq();
+		if(radio_msg_send(msg)) {
+			resend_pack = 0;
+			msg_send_senddone(msg, 1, RADIO_PID);
+			ENTER_CRITICAL_SECTION();
+		}
 	}
-	else {
+
+	if(resend_pack)
+	{
+		status = isQueueEmpty();
 		if( getMsgNumOfQueue() < MAX_MSGS_IN_QUEUE )		//queue is full?
+		{
 			mq_enqueue(&vmac_pq, msg);
+		}
 		else
+		{
 			msg_send_senddone(msg, 0, RADIO_PID);		//release the memory for the msg
-		sleeptime = MacBackoff_congestionBackoff(retry_count);
-		ker_timer_restart(RADIO_PID, WAKEUP_TIMER_TID, sleeptime);	// setup backoff timer		
+		}
+		// execute this only if the message queue was previously empty!
+		if(status && retry_count==0) {
+			sleeptime = MacBackoff_congestionBackoff(retry_count);
+			ker_timer_restart(RADIO_PID, WAKEUP_TIMER_TID, sleeptime);	// setup backoff timer
+		}
 	}
+
+	LEAVE_CRITICAL_SECTION();
 }
 
 /*************************************************************************
  * implement backoff mechanism for Colliosn Avoidance                    *
  *************************************************************************/
-void backoff_timeout() 
+void backoff_timeout()
 {
-	if( isQueueEmpty() )
-		return;
+	HAS_CRITICAL_SECTION;
+	uint8_t tx_failed = 0;
 
-	Message *msg = NULL;
-	if( Radio_Check_CCA() ) {
-		msg = mq_dequeue(&vmac_pq);	// dequeue packet from mq
-		if(msg) {
-			radio_msg_send(msg);
-			msg_send_senddone(msg, 1, RADIO_PID);
-			resetRetries();				//set retry_count 0
-		}	
-	} else {
+	ENTER_CRITICAL_SECTION();
+
+	if(valid_msg==0)
+	{
+		if( isQueueEmpty() )
+		{
+			LEAVE_CRITICAL_SECTION();
+			return;
+		}
+		else
+		{
+			vmac_msg = NULL;
+			vmac_msg = mq_dequeue(&vmac_pq);   // dequeue packet from mq
+			if(vmac_msg)
+				valid_msg = 1;
+		}
+	}
+
+
+	if(valid_msg==1)
+	{
+		if( Radio_Check_CCA() ) {
+			if(radio_msg_send(vmac_msg))
+			{
+				valid_msg=0;
+				resetRetries();    //set retry_count 0
+				msg_send_senddone(vmac_msg, 1, RADIO_PID);
+			}
+			else
+			{
+				tx_failed=1;
+			}
+		}
+		else
+		{
+			tx_failed=1;
+		}
+	}
+
+	// Message transmission did not work!
+	if(tx_failed==1) {
 		if( getRetries()  < (uint8_t)MAX_RETRIES ) {
 			incRetries();				//increase retry_count
 		} else {
-			msg = mq_dequeue(&vmac_pq);			// dequeue packet from mq
-			if(msg) {
-				msg_send_senddone(msg, 0, RADIO_PID);	//to release the memory for this msg
+			if(vmac_msg) {
+				valid_msg=0;
 				resetRetries();				//set retry_count 0
+				msg_send_senddone(vmac_msg, 0, RADIO_PID);  //to release the memory for this msg
 			}
-		}		
+		}
 	}
-	uint16_t sleeptime = MacBackoff_congestionBackoff(retry_count);
-	ker_timer_restart(RADIO_PID, WAKEUP_TIMER_TID, sleeptime);	// setup new backoff timer
+
+	if(valid_msg!=0 || !(isQueueEmpty()) ) {
+		uint16_t sleeptime = MacBackoff_congestionBackoff(retry_count);
+		ker_timer_restart(RADIO_PID, WAKEUP_TIMER_TID, sleeptime);  // setup new backoff timer
+	}
+
+	LEAVE_CRITICAL_SECTION();
 }
 
 /*************************************************************************
@@ -390,36 +474,58 @@ void _MacRecvCallBack(int16_t timestamp)
 {
 	VMAC_PPDU ppdu;
 	vhal_data vd;
-	Message *msg;
 
-	mac_to_vhal(&ppdu, &vd);
+	mac_to_vhal(&ppdu, &vd);   // note that vd.payload_len will have a bogus entry. It will be overwritten in Radio_Recv_Pack
 	Radio_Disable_Interrupt();		//disable interrupt while reading data
 	if( !Radio_Recv_Pack(&vd) ) {
 		Radio_Enable_Interrupt();	//enable interrupt
 		return;
 	}
+	Radio_Enable_Interrupt();   //enable interrupt
 	vhal_to_mac(&vd, &ppdu);
-
+/*
 	if( ppdu.mpdu.group     != node_group_id ) {	 
 		ker_free(vd.payload);	 
 		Radio_Enable_Interrupt();		//enable interrupt
 		return;	 
 	}	 
+	*/
+	// Andreas - filter node ID here, even before allocating any new memory 
+	// if you're using sos/config/base you must comment this block out!
+	if (net_to_host(ppdu.mpdu.daddr) != NODE_ADDR && net_to_host(ppdu.mpdu.daddr) != BCAST_ADDRESS)
+	{
+		ker_free(vd.payload);
+		return;
+	}
 
-	msg = msg_create();
+	Message *msg = msg_create();
 	if( msg == NULL ) {
 		ker_free(vd.payload);
-		Radio_Enable_Interrupt();		//enable interrupt
 		return;
 	}
 	mac_to_sosmsg(&ppdu, msg);
+
+	// Andreas - start debug
+#ifdef ENA_VMAC_UART_DEBUG
+	uint8_t *payload;
+	uint8_t msg_len;
+	msg_len=msg->len;
+	payload = msg->data;
+
+	//post_uart(msg->sid, msg->did, msg->type, msg_len, payload, SOS_MSG_RELEASE, msg->daddr);
+
+	// Swap daddr with saddr, because daddr is useless when debugging.
+	// This way, if sossrv says "dest addr: 15" that actually means the message SENDER was node 15
+	post_uart(msg->sid, msg->did, msg->type, msg_len, payload, SOS_MSG_RELEASE, msg->saddr);
+#endif
+
 	if(msg->type == MSG_TIMESTAMP){
 		uint32_t timestp = ker_systime32();
 		memcpy(((uint8_t*)(msg->data) + sizeof(uint32_t)),(uint8_t*)(&timestp),sizeof(uint32_t));
 	}
 	timestamp_incoming(msg, ker_systime32());
+	//if (msg->daddr == NODE_ADDR || msg->daddr == BCAST_ADDRESS)
 	handle_incoming_msg(msg, SOS_MSG_RADIO_IO);
-	Radio_Enable_Interrupt();		//enable interrupt
 }
 
 /*************************************************************************
@@ -441,7 +547,7 @@ static int16_t MacBackoff_congestionBackoff(int8_t retries)
 		masktime *= 2;			//masktime = 2^retries
 	masktime --;				//get the mask
 	if( masktime > 1023 )
-		masktime = 1023;		//max backoff 1023 
+		masktime = 1023;		//max backoff 1023
 //	return ((ker_rand() & 0xF) + TIMER_MIN_INTERVAL);
 	return ((ker_rand() & masktime) + TIMER_MIN_INTERVAL);
 }
@@ -451,19 +557,20 @@ static int16_t MacBackoff_congestionBackoff(int8_t retries)
  *************************************************************************/
 void mac_init()
 {
-	Radio_Init();		
+	Radio_Init();
+	//Radio_Set_Channel(RADIO_CHANNEL);
 	Radio_Set_Channel(13);
 
 	sched_register_kernel_module(&vmac_module, sos_get_header_address(mod_header), NULL);
-	
+
 	// Timer needs to be done after reigsteration
 	ker_permanent_timer_init(&wakeup_timer, RADIO_PID, WAKEUP_TIMER_TID, TIMER_ONE_SHOT);
-	
+
 	mq_init(&vmac_pq);	//! Initialize sending queue
 	resetSeq();		//set seq_count 0
 	resetRetries(); 	//set retries 0
 
 	//enable interrupt for receiving data
-	Radio_Enable_Interrupt();
 	Radio_SetPackRecvedCallBack(_MacRecvCallBack);
+	Radio_Enable_Interrupt();
 }

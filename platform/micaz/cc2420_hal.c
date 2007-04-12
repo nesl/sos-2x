@@ -280,7 +280,8 @@ static uint16_t st_timestamp;		//remember the time when start receiving packet
 //FIXED BY JONATHAN! MICAZ DOES NOT HAVE THIS SIGNAL (it's jumper-optioned to ADC1, but ships with jumper removed)
 //MOTESTIX has this connection if you need a MicaZ compatible device with a function interrupt signal.
 //I'll leave this code here for now in case some init routine turns on the interrupt
-SIGNAL(SIG_INTERRUPT6){
+SIGNAL(SIG_INTERRUPT6)
+{
 //showbyte(0x0f);
 	if( TC_FIFOP_IS_SET )
 		if(_FIFOP_IS_SET_CALL) {

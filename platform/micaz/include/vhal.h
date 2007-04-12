@@ -49,6 +49,9 @@
 //define the PID for VHAL, used by mem
 #define VHALPID		99
 
+//define the maximum count to avoid dead loop
+#define MAX_COUNT      32000   
+
 // define the bitmasks used for FCF/CRC checking
 #define BASIC_RF_FCF_NOACK              0x8841
 #define BASIC_RF_FCF_ACK                0x8861
@@ -68,7 +71,8 @@
 //define start up functions
 #define Radio_On()	TC_SET_VREG_EN
 #define Radio_Off()	TC_CLR_VREG_EN
-#define Radio_Reset()	( TC_CLR_RESET && TC_SET_RESET )
+//#define Radio_Reset()	( TC_CLR_RESET && TC_SET_RESET )
+#define Radio_Reset()  { TC_CLR_RESET; TC_UWAIT(20); TC_SET_RESET; }
 
 //define address functions
 #define Radio_Set_Address(C)	TC_SET_IEEEADR(C)
@@ -103,8 +107,8 @@ typedef struct _vhal_data {
 	uint8_t *payload;
 	uint8_t *post_payload;
 }vhal_data;
- 
-//define data transmission functions				
+
+//define data transmission functions
 extern int8_t Radio_Check_CCA();
 extern int8_t Radio_Check_SFD();
 extern int8_t Radio_Send(uint8_t *, uint8_t);
@@ -118,7 +122,7 @@ extern int8_t Radio_Recv_Pack(vhal_data*);
 //define Security functions
 #define Radio_Set_ENC_Mode(N)
 #define Radio_Get_ENC_Mode(N)
-#define Radio_Set_ENC_KEY0(K)	
+#define Radio_Set_ENC_KEY0(K)
 #define Radio_Get_ENC_KEY0(K)
 #define Radio_Set_ENC_KEY1(K)
 #define Radio_Get_ENC_KEY1(K)
