@@ -329,7 +329,7 @@ static void radio_msg_send(Message *msg)
 		}
 
 		//ppdu.mpdu.panid = VMAC_PANID; // PANID
-		ppdu.mpdu.panid = (uint16_t)NODE_GROUP_ID + 0x2420;
+		ppdu.mpdu.panid = host_to_net((uint16_t)NODE_GROUP_ID + 0x2420);
 		//ppdu.mpdu.panid = 0x2420;
 		ppdu.mpdu.seq = getSeq();	//count by software
 		ppdu.mpdu.fcs = 1;		//doesn't matter, hardware supports it

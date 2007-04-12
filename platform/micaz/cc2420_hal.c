@@ -313,10 +313,10 @@ void ker_radio_ack_disable()
  *****************************************************************/
 uint16_t host_to_net(uint16_t a)
 {
-	return a;
+	return (((a & 0xff00) >> 8) | ((a & 0x00ff) << 8));
 }
 
 uint16_t net_to_host(uint16_t a)
 {
-	return a;
+	return (((a & 0xff00) >> 8) | ((a & 0x00ff) << 8));
 }
