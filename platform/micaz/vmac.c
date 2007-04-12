@@ -326,14 +326,12 @@ static void radio_msg_send(Message *msg)
 		if(msg->daddr==BCAST_ADDRESS) {
 			ppdu.mpdu.fcf = BASIC_RF_FCF_NOACK;     //Broadcast: No Ack
 		} else {
-//#ifdef VMAC_ACK_ENABLED
 			ppdu.mpdu.fcf = BASIC_RF_FCF_ACK;       //Unicast: Ack
-//#else
-//			ppdu.mpdu.fcf = BASIC_RF_FCF_NOACK;     //Unicast Default: No Ack		
-//#endif
 		}
 
-		ppdu.mpdu.panid = VMAC_PANID; // PANID
+		//ppdu.mpdu.panid = VMAC_PANID; // PANID
+		ppdu.mpdu.panid = (uint16_t)NODE_GROUP_ID + 0x2420;
+		//ppdu.mpdu.panid = 0x2420;
 		ppdu.mpdu.seq = getSeq();	//count by software
 		ppdu.mpdu.fcs = 1;		//doesn't matter, hardware supports it
 
@@ -426,6 +424,7 @@ void radio_msg_alloc(Message *msg)
 void _MacRecvAck(uint8_t ack_seq)
 {
 	if( getSeq() == ack_seq ) {
+		led_red_toggle();
 		post_short( RADIO_PID, RADIO_PID, MSG_VMAC_TX_ACKED, 0, 0, 0 );
 	}
 }

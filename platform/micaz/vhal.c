@@ -78,7 +78,9 @@ void Radio_Init()
 	SRC_ADDRESS = NODE_ADDR;
 	CC2420_WRITE_RAM(&SRC_ADDRESS,CC2420_RAM_SHORTADR,2); // SRC ADDRESS
 
-	PANID = VMAC_PANID;
+	//PANID = VMAC_PANID;
+	PANID = (uint16_t)NODE_GROUP_ID + 0x2420L;
+	//PANID = 0x2420;
 	CC2420_WRITE_RAM(&PANID,CC2420_RAM_PANID,2); // PANID
 
 	LEAVE_CRITICAL_SECTION();
@@ -278,32 +280,6 @@ void Radio_Send_Pack(vhal_data *vd, int16_t *timestamp)
 	TC_STROBE(CC2420_STXONCCA);
 	TC_STROBE(CC2420_SNOP);
 
-	/*
-#ifdef VMAC_ACK_ENABLED
-
-	// Run this only in Unicast Mode
-	if(vd->pre_payload[5]!=0xFF || vd->pre_payload[6]!=0xFF)
-	{
-		// wait for the maximum time required in order to receive the ACK packet accord
-		TC_UWAIT(1600);
-		// the received_ack_seq variable should have been updated by now inside the Ra
-
-		local_irq_enable();
-
-		// enable the node to read the ACK packet if it was received!
-
-		local_irq_disable();
-
-		if(received_ack_seq != tx_seq)
-		{
-			// An ACK was not received
-			// Consider it as TX failure
-			//ker_led(LED_YELLOW_TOGGLE);
-			return;
-		}
-	}
-#endif
-*/
 		// ACK was received! Everything went fine...
 	*timestamp = getTime();
 	return;
@@ -459,7 +435,6 @@ int8_t Radio_Recv_Pack(vhal_data *vd)
 #ifndef MICAZ_PLATFORM
 	if(break_flag==1) {
 		ker_free(vd->payload);
-	led_red_toggle();
 		return 0;
 	}
 #endif
