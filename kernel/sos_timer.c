@@ -673,7 +673,6 @@ int8_t ker_timer_restart(sos_pid_t pid, uint8_t tid, int32_t interval)
 	  tt = find_timer_block(pid, tid);
 	  if (tt != NULL){
 		  timer_remove_timer(tt);
-		  //timer_remove_timeout_from_scheduler(tt);
 	  }
 	  else {
 		  tt = alloc_from_timer_pool(pid, tid);
@@ -681,8 +680,9 @@ int8_t ker_timer_restart(sos_pid_t pid, uint8_t tid, int32_t interval)
   }
    
    //! The timer is neither running nor initialized
-  if (tt == NULL)
+  if (tt == NULL) {
 	return -EINVAL;
+  }
   /* Special Case restart with existing ticks field */
   if( interval <= 0 )
       interval = tt->ticks;
@@ -728,10 +728,8 @@ int8_t ker_sys_timer_stop(uint8_t tid)
 {                                                             
 	sos_pid_t my_id = ker_get_current_pid();                  
 
-	if( (ker_timer_stop(my_id, tid) != SOS_OK) ||             
-			(ker_timer_release(my_id, tid) != SOS_OK) ) {         
-		return ker_mod_panic(my_id);                                 
-	}                                                         
+	ker_timer_stop(my_id, tid);
+	ker_timer_release(my_id, tid);
 	return SOS_OK;                                            
 }                   	
 
