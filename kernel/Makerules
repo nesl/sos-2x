@@ -51,13 +51,6 @@ ADDRESS=1
 DEFS += -D'NODE_ADDR=$(ADDRESS)'
 endif
 
-ifneq ($(PANID),)
-DEFS += -D'VMAC_PANID=$(PANID)'
-else
-PANID=0x2420
-DEFS += -D'VMAC_PANID=$(PANID)'
-endif
-
 ifneq ($(ACK_ENABLED),)
 DEFS += -D'VMAC_ACK_ENABLED=$(ACK_ENABLED)'
 endif
@@ -88,6 +81,8 @@ endif
 
 ifneq ($(SOS_GROUP),)
 DEFS += -D'NODE_GROUP_ID=$(SOS_GROUP)'
+else
+DEFS += -D'NODE_GROUP_ID=0'
 endif
 
 ifneq ($(TX_POWER),)
