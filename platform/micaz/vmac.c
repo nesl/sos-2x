@@ -56,7 +56,7 @@
 #include <string.h> // for memcpy
 #include <spi_hal.h>
 #include <vmac.h>
-//#define LED_DEBUG
+#define LED_DEBUG
 #include <led_dbg.h>
 #include <sys_module.h>
 #include <module.h>
@@ -424,7 +424,7 @@ void radio_msg_alloc(Message *msg)
 void _MacRecvAck(uint8_t ack_seq)
 {
 	if( getSeq() == ack_seq ) {
-		led_red_toggle();
+		LED_DBG(LED_GREEN_TOGGLE);
 		post_short( RADIO_PID, RADIO_PID, MSG_VMAC_TX_ACKED, 0, 0, 0 );
 	}
 }
