@@ -199,8 +199,6 @@ HAS_CRITICAL_SECTION;
 		}
 	   case MSG_VMAC_TX_NEXT_MSG:
 	   {
-	     
-
 		ENTER_CRITICAL_SECTION();
 		if( vmac_msg == NULL ) {
 			vmac_msg = mq_dequeue(&vmac_pq);
@@ -217,7 +215,7 @@ HAS_CRITICAL_SECTION;
 		ker_timer_stop(RADIO_PID, WAKEUP_TIMER_TID);
 		vmac_send_state = VMAC_SEND_STATE_IDLE;
 		retry_count = 0;
-		msg_send_senddone(vmac_msg, 0, RADIO_PID);  //to release the memory for this msg
+		msg_send_senddone(vmac_msg, 1, RADIO_PID);  //to release the memory for this msg
 		vmac_msg = NULL;
 		vmac_msg = mq_dequeue(&vmac_pq);
 		if( vmac_msg != NULL ) {
