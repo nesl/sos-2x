@@ -288,52 +288,34 @@ extern void TC_SET_REG(uint8_t R, int8_t I, int8_t J, uint16_t C);
 /**********************************************************************
  * define ram read/write funtions                                     *
  **********************************************************************/
+// the ram address is automatically incremented by the chip. thus, LSB
+// comes before MSB from the chip.
 #define TC_READ_RAM_BYTES(A,C,N)	\
 	do {	int i;	\
 		TC_UNSELECT_RADIO;	\
 		TC_SELECT_RADIO;	\
 		TC_WRITE_BYTE( (A&0x7F) | 0x80 );	\
 		TC_WRITE_BYTE( ( (A>>1) & 0xC0) | 0x20 );	\
-		for(i=N-1;i>=0;i--)	\
+		for(i=0;i<N;i++)	\
 			TC_READ_BYTE(C[i]);	\
 		TC_UNSELECT_RADIO;	\
 		TC_SELECT_RADIO;	\
 	} while(0);
+// the ram address is automatically incremented by the chip. thus, LSB
+// comes before MSB from the chip.
 #define TC_WRITE_RAM_BYTES(A,C,N)	\
 	do {	int i;	\
 		TC_UNSELECT_RADIO;	\
 		TC_SELECT_RADIO;	\
 		TC_WRITE_BYTE( (A&0x7F) | 0x80 );	\
 		TC_WRITE_BYTE( (A>>1) & 0xC0 );	\
-		for(i=N-1;i>=0;i--)	\
+		for(i=0;i<N;i++)	\
 			TC_WRITE_BYTE(((unsigned char*)(C))[i]);	\
 		TC_UNSELECT_RADIO;	\
 		TC_SELECT_RADIO;	\
 	} while(0);
-#define TC_READ_RAM_WORD(A,C)	\
-	do {	int8_t ADDR;	\
-		TC_UNSELECT_RADIO;	\
-		TC_SELECT_RADIO;	\
-		ADDR = (A&0x7F) | 0x80;	\
-		TC_WRITE_BYTE( ADDR );	\
-		ADDR = ( (A>>1) & 0xC0 ) | 0x20 ;	\
-		TC_WRITE_BYTE( ADDR );	\
-		TC_READ_WORD(C);	\
-		TC_UNSELECT_RADIO;	\
-		TC_SELECT_RADIO;	\
-	} while(0);
-#define TC_WRITE_RAM_WORD(A,C)	\
-	do {	int8_t ADDR;	\
-		TC_UNSELECT_RADIO;	\
-		TC_SELECT_RADIO;	\
-		ADDR = (A&0x7F) | 0x80;	\
-		TC_WRITE_BYTE( ADDR );	\
-		ADDR = (A>>1) & 0xC0;	\
-		TC_WRITE_BYTE( ADDR );	\
-		TC_WRITE_WORD(C);	\
-		TC_UNSELECT_RADIO;	\
-		TC_SELECT_RADIO;	\
-	} while(0); 
+#define TC_READ_RAM_WORD(A,C) TC_READ_RAM_BYTES(A,C,2)
+#define TC_WRITE_RAM_WORD(A,C) TC_WRITE_RAM_BYTES(A,C,2)	
 #define TC_READ_RAM_BYTE(A,C)	\
 	do {	TC_UNSELECT_RADIO;	\
 		TC_SELECT_RADIO;	\
@@ -353,30 +335,13 @@ extern void TC_SET_REG(uint8_t R, int8_t I, int8_t J, uint16_t C);
 		TC_SELECT_RADIO;	\
 	} while(0);
 
-#define SWITCH_BYTES_ML(C,N)	\
-	do {	int8_t temp;	\
-		int8_t i;	\
-		for(i=0;i<N/2;i++) {	\
-			temp = C[i];	\
-			C[i] = C[N-i-1];	\
-			C[N-i-1] = temp;	\
-		}	\
-	} while(0);
-#define SWITCH_WORD_ML(C)	( C = ( (C>>8) & 0x00ff ) | (C<<8) )
-
 /**********************************************************************
  * define functions for config parameters in ram                      *
  **********************************************************************/
-#define TC_SET_SHORTADR(C)	\
-	do {	SWITCH_WORD_ML(C);	\
-		TC_WRITE_RAM_WORD(CC2420_RAM_SHORTADR,C);	\
-	} while(0);
+#define TC_SET_SHORTADR(C)	TC_WRITE_RAM_WORD(CC2420_RAM_SHORTADR,C)
 #define TC_GET_SHORTADR(C)	TC_READ_RAM_WORD(CC2420_RAM_SHORTADR,C)
 
-#define TC_SET_PANID(C)			\
-	do {	SWITCH_WORD_ML(C);	\
-		TC_WRITE_RAM_WORD(CC2420_RAM_PANID,C);	\
-	} while(0);
+#define TC_SET_PANID(C)		TC_WRITE_RAM_WORD(CC2420_RAM_PANID,C)
 #define TC_GET_PANID(C)		TC_READ_RAM_WORD(CC2420_RAM_PANID,C)
 
 #define TC_SET_IEEEADR(C)	TC_WRITE_RAM_BYTES(CC2420_RAM_IEEEADR,C,8)

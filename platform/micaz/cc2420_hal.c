@@ -310,13 +310,19 @@ void ker_radio_ack_disable()
 
 /*****************************************************************
  * define endian switch function for host between net            *
+ *
+ * IEEE802.15.4 has little endian net protocol. See clause 7.2 of
+ * 802.15.4-2004:
+ * " Fields that are longer than a single octet are sent to the 
+ * PHY in the order from the octet containing the lowest numbered bits
+ * to the octet containing the highest numbered bits."
  *****************************************************************/
 uint16_t host_to_net(uint16_t a)
 {
-	return (((a & 0xff00) >> 8) | ((a & 0x00ff) << 8));
+	return a;
 }
 
 uint16_t net_to_host(uint16_t a)
 {
-	return (((a & 0xff00) >> 8) | ((a & 0x00ff) << 8));
+	return a;
 }
