@@ -15,6 +15,8 @@ INCDIR += -I$(ROOTDIR)/processor/posix/include -I$(ROOTDIR)/platform/emu/include
 
 CFLAGS += -DNO_PID_PROC -DNO_PID_PLAT -D_SOS_SERVER_APP_
 
+MACHINE = $(shell uname -m)
+
 ifeq ($(MAKECMDGOALS), arm)
 SRCS += sossrv.c sock_utils.c parsecmd.c dev_serial.c dev_network.c
 CFLAGS += -DLLITTLE_ENDIAN
@@ -29,7 +31,11 @@ endif
 
 ifeq ($(MAKECMDGOALS), ppc)
 SRCS += sossrv.c sock_utils.c parsecmd.c dev_serial_mac.c dev_network.c
+ifeq ($(MACHINE), i386)
+CFLAGS += -DLLITTLE_ENDIAN
+else
 CFLAGS += -DBBIG_ENDIAN
+endif
 LDFLAGS += -framework IOKit -framework CoreFoundation
 TRG=
 endif
