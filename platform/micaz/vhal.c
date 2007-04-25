@@ -66,6 +66,7 @@ void Radio_Init()
 //	TC_SET_LENGTH_THRESHOLD(64);
 //	Radio_Disable_ADDR_CHK();
 //	Radio_Disable_Auto_CRC();
+        Radio_Enable_Address_Check();
 
         // Maximum Power Level
         // TC_SET_REG(CC2420_TXCTRL,15,8,0xA0); //MSB

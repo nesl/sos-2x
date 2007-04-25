@@ -522,8 +522,8 @@ static int16_t MacBackoff_congestionBackoff(int8_t retries)
 void mac_init()
 {
 	Radio_Init();
-	//Radio_Set_Channel(RADIO_CHANNEL);
-	Radio_Set_Channel(13);
+	Radio_Set_Channel(RADIO_CHANNEL);
+	//Radio_Set_Channel(13);
 
 	sched_register_kernel_module(&vmac_module, sos_get_header_address(mod_header), NULL);
 

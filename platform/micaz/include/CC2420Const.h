@@ -66,7 +66,7 @@ enum {
 #endif
 
 #ifndef RADIO_CHANNEL
-#define RADIO_CHANNEL	    11  //channel select
+#define RADIO_CHANNEL	    13  //channel select
 #endif
 
 enum {

@@ -12,6 +12,11 @@ ifndef USE_SOS_I2C
 DEFS += -DNO_SOS_I2C
 endif
 
+# set the radio channel for the CC2420. Must be between 11 and 26.
+ifdef RADIO_CHANNEL
+DEFS += -DRADIO_CHANNEL=$(RADIO_CHANNEL)
+endif
+
 PROCESSOR = avr
 
 VPATH += $(ROOTDIR)/platform/$(PLATFORM)
