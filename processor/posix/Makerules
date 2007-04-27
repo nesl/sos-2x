@@ -21,6 +21,7 @@ endif
 
 CFLAGS += -g -O -Wno-char-subscripts
 
+ifeq ($(BUILD),_SOS_KERNEL_)
 LIBS += -lpthread -lm
 
 SRCS += led.c systime.c adc_proc.c flash.c crc.c timer.c exflash.c uart_hal.c uart.c uart_system.c interrupt.c
@@ -32,7 +33,14 @@ VPATH += $(ROOTDIR)/tools/elfloader/minielf
 VPATH += $(ROOTDIR)/tools/elfloader/soslib
 INCDIR += -I$(ROOTDIR)/tools/elfloader/soslib
 INCDIR += -I$(ROOTDIR)/tools/elfloader/minielf
+endif
 
+ifeq ($(BUILD),_MODULE_)
+#CFLAGS += -O -Wall -dynamic -dynamiclib
+CFLAGS += -O -Wall -fno-common 
+LDFLAGS += -bundle -undefined dynamic_lookup 
+#LDFLAGS += -Wl,-r -nodefaultlibs -nostdlib -lgcc -lc
+endif
 ##############################################################################
 # Include memory map checker for SFI Mode
 ##############################################################################
