@@ -218,6 +218,17 @@ static int8_t sos_msg_dispatch(Message* m)
 	return -EINVAL;
 #endif
 
+	if( flag_msg_raw(m->flag) == 0 ) {
+		// Not using raw message, send to the routing layer first
+
+		/*
+		if( SOS_CALL(cb, m) == SOS_OK ) {
+			msg_dispose(m);
+			return SOS_OK;
+		}
+		*/
+	}
+
 	if (flag_msg_link_auto(m->flag) && m->daddr != BCAST_ADDRESS) {
 		sos_msg_find_right_link(m);
 	}
