@@ -38,7 +38,9 @@ ifneq ($(SIM_MAX_MOTE_ID),)
 DEFS += -D'SIM_MAX_MOTE_ID=$(SIM_MAX_MOTE_ID)'
 endif
 
+ifeq ($(BUILD),_SOS_KERNEL_)
 SRCS += $(SIM_SRCS) radio.c pid.c mod_pid.c sos_uart.c sos_uart_mgr.c sim_interface.c
+endif
 
 include $(ROOTDIR)/processor/$(PROCESSOR)/Makerules
 
