@@ -8,7 +8,7 @@
 # build will result in the "invalid" target
 #################################################
 ifndef SUPPORTLIST
-SUPPORTLIST = cyclops protosb mica2 micaz xyz avrora cricket imote2 tmote
+SUPPORTLIST = cyclops protosb mica2 micaz xyz avrora cricket imote2 tmote sim
 endif
 
 UTILLIST = all install install2 setup check clean
@@ -64,7 +64,10 @@ ifeq ($(MODE), sfi)
 SFIDEPS += $(PROJ).sbx $(PROJ).sbx.lst
 MELFDEPS += $(PROJ).sbx.mlf
 else
-MELFDEPS += $(PROJ).mlf
+ifeq ($(PLATFORM), sim) 
+else
+MELFDEPS += $(PROJ).sos $(PROJ).mlf
+endif
 endif
 
 #################################################
@@ -93,7 +96,7 @@ CFLAGS += -Wno-unused-variable
 # Make rules
 ####
 
-$(PLATFORM): $(PROCESSOR) $(PROJ).sos $(PROJ).i $(SFIDEPS) $(MELFDEPS)
+$(PLATFORM): $(PROCESSOR) $(PROJ).i $(SFIDEPS) $(MELFDEPS)
 
 
 %.sfi.c : %.i
