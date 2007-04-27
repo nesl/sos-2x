@@ -51,6 +51,13 @@ void* ker_sys_get_module_state( void );
 int8_t ker_sys_fntable_subscribe( sos_pid_t pub_pid, uint8_t fid, uint8_t table_index );
 int8_t ker_sys_change_own( void* ptr );
 int8_t ker_sys_codemem_read(codemem_t h, void *buf, uint16_t nbytes, uint16_t offset);
+#ifdef SOS_SIM
+#ifdef _MODULE_
+#include <hardware_types.h>
+extern sos_pid_t ker_get_current_pid( void );
+extern uint16_t node_address;
+#endif
+#endif
 /// \endcond 
 #endif
 
