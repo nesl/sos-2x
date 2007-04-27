@@ -374,11 +374,9 @@ static int8_t handle_fetcher_done( Message *msg )
 		  uint8_t plat_type;
 #endif
 		  mod_header_ptr p;
-#ifdef MINIELF_LOADER
 								
 		  // Link and load the module here
 		  melf_load_module(cam->fetcher.cm);
-#endif//MINIELF_LOADER		  
 		  // Get the address of the module header
 		  p = ker_codemem_get_header_address( cam->fetcher.cm ); 
 
@@ -406,7 +404,6 @@ static int8_t handle_fetcher_done( Message *msg )
 			  ker_codemem_mark_executable( cam->fetcher.cm );
 			  if (cam->version & 0x80) {
 #ifdef SOS_SFI
-#ifdef MINIELF_LOADER
 				sfi_modtable_register(cam->fetcher.cm);
 				if (SOS_OK == ker_verify_module(cam->fetcher.cm)){
 				  sfi_modtable_flash(p);
@@ -414,23 +411,6 @@ static int8_t handle_fetcher_done( Message *msg )
 				}
 				else
 				  sfi_exception(KER_VERIFY_FAIL_EXCEPTION);
-#else				
-				uint16_t init_offset, code_size, handler_addr;
-				uint32_t handler_byte_addr, module_start_byte_addr;
-				uint16_t handler_sfi_addr;
-				handler_sfi_addr = sos_read_header_ptr(p, offsetof(mod_header_t, module_handler));
-				handler_addr = sfi_modtable_get_real_addr(handler_sfi_addr);				
-				handler_byte_addr = (handler_addr * 2);
-				module_start_byte_addr = (p * 2);
-				init_offset = (uint16_t)(handler_byte_addr - module_start_byte_addr);
-				code_size = cam->code_size * LOADER_SIZE_MULTIPLIER;
-				if (SOS_OK == ker_verify_module(cam->fetcher.cm, init_offset, code_size)){
-				  sfi_modtable_flash(p);				  
-				  ker_register_module(p);
-				}
-				else
-				  sfi_exception(KER_VERIFY_FAIL_EXCEPTION);
-#endif //MINIELF_LOADER
 #else
 				ker_register_module(p);
 #endif //SOS_SFI
