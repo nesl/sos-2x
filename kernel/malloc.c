@@ -123,10 +123,11 @@ static void SplitBlock(Block* block, uint16_t reqBlocks);
 //-----------------------------------------------------------------------------
 // LOCAL GLOBAL VARIABLES
 //-----------------------------------------------------------------------------
+#define NUM_HEAP_BLOCKS  ((MALLOC_HEAP_SIZE + (BLOCK_SIZE - 1))/BLOCK_SIZE)
 static Block*           mPool;
 static Block*           mSentinel;
 static uint16_t         mNumberOfBlocks;
-static Block            malloc_heap[(MALLOC_HEAP_SIZE + (BLOCK_SIZE - 1))/BLOCK_SIZE] SOS_HEAP_SECTION;
+static Block            malloc_heap[NUM_HEAP_BLOCKS] SOS_HEAP_SECTION;
 
 
 
@@ -245,7 +246,7 @@ void* sos_blk_mem_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule)
   // Traverse the free list looking for the first block that will fit the
   // request. This is a "first-fit" strategy.
   //
-  //printMem("malloc_start: ");
+  printMem("malloc_start: ");
   for (block = mSentinel->next; block != mSentinel; block = block->next)
     {
       block = MergeBlocksQuick(block, reqBlocks);
@@ -457,7 +458,7 @@ int8_t sos_blk_mem_change_own(void* ptr, sos_pid_t id, bool bCallFromModule)
 #else
   // Check for memory corruption                               
   if (blockptr->blockhdr.owner != BLOCK_GUARD_BYTE(blockptr))  {
-    DEBUG("sos_blk_mem_change_own: detect memory corruption\n");
+    DEBUG("sos_blk_mem_change_own: detect memory corruption %x\n", (int)blockptr);
     DEBUG("possible owner %d %d\n", blockptr->blockhdr.owner, BLOCK_GUARD_BYTE(blockptr));
     return -EINVAL;
   }
@@ -713,11 +714,23 @@ static void SplitBlock(Block* block, uint16_t reqBlocks)
 //
 static void InsertAfter(Block* block)
 {
+	/*
   Block* p = mSentinel->next;
   mSentinel->next = block;
   block->prev = mSentinel;
   block->next = p;
   p->prev = block;
+  */
+
+  Block *p = mSentinel->next;
+
+  while( p < block && p != mSentinel) {
+	  p = p->next;
+  }
+  p->prev->next = block;
+  block->prev = p->prev;
+  p->prev = block;
+  block->next = p;
 }
 
 //-----------------------------------------------------------------------------
@@ -803,7 +816,7 @@ static void printMem(char* s)
   int i = 0;
 
   DEBUG("%s\n", s);
-  for (block = mSentinel->next; block != mSentinel; block = block->next)
+  for (block = mSentinel->next; block != mSentinel && block < &(malloc_heap[NUM_HEAP_BLOCKS]) && block >= malloc_heap; block = block->next)
     {
       /*
 	if(block->blockhdr.owner != BLOCK_GUARD_BYTE(block)) {
@@ -822,13 +835,17 @@ static void printMem(char* s)
   DEBUG("Memory Map:\n");
   block = (Block*)malloc_heap;
   i = 0;
-  while(block != mSentinel) {
+  while(block != mSentinel && block >= malloc_heap && block < &(malloc_heap[NUM_HEAP_BLOCKS])) {
     DEBUG("block %d : addr: %x size: %d alloc: %d owner: %d check %d\n", i++, 
 	  (unsigned int) block, 
 	  (unsigned int) (block->blockhdr.blocks & ~RESERVED), 
 	  (unsigned int) (block->blockhdr.blocks & RESERVED), 
 	  (unsigned int) block->blockhdr.owner,
 	  (unsigned int) BLOCK_GUARD_BYTE(block));
+	if( (block->blockhdr.blocks & ~RESERVED) == 0 ) {
+		DEBUG("blocks is zero\n");
+		exit(1);
+	}
     block += block->blockhdr.blocks & ~RESERVED;
   }
 
