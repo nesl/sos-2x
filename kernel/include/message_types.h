@@ -159,6 +159,7 @@ enum {
   SOS_MSG_SPI_IO          = 0x1000,    //!< Message is Rx/Tx over SPI
   SOS_MSG_ALL_LINK_IO     = 0x1E00,    //!< Message is Rx/Tx over all IO links
   SOS_MSG_LINK_AUTO       = 0x2000,    //!< automatically select right link
+  SOS_MSG_RAW             = 0x4000,    //!< bypass routing layer
   // Scheduler Priority Flags
   SOS_MSG_SYSTEM_PRIORITY = 0x0080,    //!< Highest priority message
   SOS_MSG_HIGH_PRIORITY   = 0x0040,    //!< High priority message
@@ -202,6 +203,7 @@ enum{
 #define flag_msg_reliable(fflag)        ((fflag) & SOS_MSG_RELIABLE)
 #define flag_send_fail(fflag)           ((fflag) & SOS_MSG_SEND_FAIL)
 #define flag_use_ubmac(fflag)           ((fflag) & SOS_MSG_USE_UBMAC)
+#define flag_msg_raw(fflag)             ((fflag) & SOS_MSG_RAW)
 
 /**
  * @brief message filter flags
