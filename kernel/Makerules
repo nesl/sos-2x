@@ -35,7 +35,7 @@ OBJCOPY = $(TRG)objcopy
 
 OBJDUMP = $(TRG)objdump
 
-SIZE = $(TRG)size -A
+SIZE = $(TRG)size 
 
 HOST = $(shell uname -s)
 
