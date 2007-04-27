@@ -13,6 +13,9 @@ typedef struct _cam_str {
 	struct _cam_str *next;
 } cam_t;
 
+//
+// Simple hash table
+//
 static cam_t *cam_bin[CAM_NUM_BINS] = {NULL};
 
 static inline uint8_t hash_bin(sos_cam_t key)
