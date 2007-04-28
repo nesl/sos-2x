@@ -76,8 +76,9 @@ SRCS += codemem.c sos_module_fetcher.c fntable.c
 SRCS += sos_timer.c monitor.c
 SRCS += sos_list.c sos_info.c 
 SRCS += random.c sensor.c timestamp.c
-SRCS += sos_cam.c sos_logging.c
-#SRCS += version_sync.c
+SRCS += sos_logging.c
+SRCS += sos_shm.c slab.c
+#SRCS += version_sync.c sos_cam.c
 
 OBJS += $(SRCS_FIRST:.c=.o) $(OBJS_FIRST) $(SRCS:.c=.o) $(ASMSRCS:.S=.o)
 
