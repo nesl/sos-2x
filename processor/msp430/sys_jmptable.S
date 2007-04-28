@@ -24,13 +24,13 @@ br #ker_sys_fntable_subscribe    ; 18
 br #ker_sys_change_own    ; 19
 br 0    ; 20 // Ram - Do not use .. being used for SFI in AVR
 br #ker_sys_codemem_read 	; 21
-br 0    ; 22
-br 0 
-br 0    ; 24
-br 0 
-br 0    ; 26
-br 0 
-br 0    ; 28
-br 0 
+br #ker_sys_shm_open    ; 22
+br #ker_sys_shm_update 
+br #ker_sys_shm_close    ; 24
+br #ker_sys_shm_get 
+br #ker_sys_shm_wait    ; 26
+br #ker_sys_shm_stopwait 
+br #ker_get_current_pid    ; 28
+br #ker_get_caller_pid 
 br 0    ; 30
 br 0 
