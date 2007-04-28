@@ -52,6 +52,7 @@
 #include <monitor.h>
 #include <fntable.h>
 #include <sos_info.h>
+#include <sos_shm.h>
 //#include <version_sync.h>
 
 #ifdef SOS_SFI
@@ -111,6 +112,8 @@ int sos_main(uint8_t cond){
     hardware_init();
 
 	codemem_init();
+
+	shm_init();
 
 	//! starting memory module
 	mem_start();

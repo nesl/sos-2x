@@ -47,38 +47,24 @@
 #include <monitor.h>
 #include <string.h>
 #include <sos_sched.h>
+#include <slab.h>
 
 // Comment out the lines below to enable debug messages from this component
 #undef DEBUG
 #define DEBUG(...)
 
-#define MSG_QUEUE_NUM_ITEMS  4    // NOTE: 
-#define MSG_POOL_EMPTY      0x0F  // bit vector that specifies the pool to be 
-                                  // empty.  This value corresponds to 
-                                  // MSG_QUEUE_NUM_ITEMS.  For 8, 
-                                  // the value is 0xFF.  For 7, it will be 0x7F
-//----------------------------------------------------------------------------
-//  Typedefs
-//----------------------------------------------------------------------------
-typedef struct msg_pool_item {
-	struct msg_pool_item *next;
-	Message pool[MSG_QUEUE_NUM_ITEMS];
-	uint8_t alloc;   //!< allocation vector
-} msg_pool_item;
-
+#define MSG_QUEUE_NUM_ITEMS 4
 //----------------------------------------------------------------------------
 //  Global data declarations
 //----------------------------------------------------------------------------
-static msg_pool_item msg_pool;
+static slab_t msg_slab;
 
 //----------------------------------------------------------------------------
 //  Funcation declarations
 //----------------------------------------------------------------------------
 int8_t msg_queue_init()
 {
-	msg_pool.next = NULL;
-	
-	msg_pool.alloc = 0;
+	ker_slab_init( MSG_QUEUE_PID, &msg_slab, sizeof(Message), MSG_QUEUE_NUM_ITEMS );
     return 0;
 }
 
@@ -270,126 +256,23 @@ Message *mq_get(mq_t *q, Message *m)
 Message *msg_create()
 {
 	HAS_CRITICAL_SECTION;
-	msg_pool_item *prev = NULL;
-	msg_pool_item *itr;
 	Message *tmp = NULL;
 	//
 	// Get from msg_pool
 	//
 	ENTER_CRITICAL_SECTION();
-	itr = &msg_pool;
+	tmp = ker_slab_alloc( &msg_slab, MSG_QUEUE_PID );
+	if( tmp == NULL ) {
+		LEAVE_CRITICAL_SECTION();
+		return NULL;
+	}
 	
-	while( itr != NULL ) {
-		if( itr->alloc != MSG_POOL_EMPTY) {
-			break;
-		}
-		prev = itr;
-		itr = itr->next;
-	}
-
-	if( itr == NULL ) {
-		DEBUG("MQ: itr == NULL, allocate new\n");
-		prev->next = ker_malloc(sizeof(msg_pool_item), MSG_QUEUE_PID);
-		if( prev->next == NULL ) {
-			LEAVE_CRITICAL_SECTION();
-			return NULL;
-		}
-		itr = prev->next;
-		itr->next = NULL;
-		itr->alloc = 0x01;
-		tmp = &(itr->pool[0]);
-	} else {
-		//
-		// Find empty block
-		//
-		uint8_t i = 0;
-		uint8_t mask = 0x01;
-
-		for( i = 0; i < MSG_QUEUE_NUM_ITEMS; i++, mask<<=1 ) {
-			if( (itr->alloc & mask) == 0 ) {
-				DEBUG("MQ: allocate %x of item %d\n", (unsigned int)itr, i);
-				itr->alloc |= mask;
-				tmp = &(itr->pool[i]);
-				break;
-			}
-		}
-	}
 	LEAVE_CRITICAL_SECTION();
-  //tmp = (Message*)ker_malloc(sizeof(Message), MSG_QUEUE_PID);
-  //if(tmp != NULL) {
-	tmp->data = tmp->payload;
+  	tmp->data = tmp->payload;
 	tmp->flag = 0;
-  //}
-  return tmp;
+  
+	return tmp;
 }
-
-#ifdef FAULT_TOLERANT_SOS
-// Move a given message from the kernel to the module domain
-Message *msg_move_to_module_domain(Message *msg_ker_domain)
-{
-  Message *msg_mod_domain;
-  if  (mem_check_module_domain((uint8_t*)msg_ker_domain) == false){
-	DEBUG("Message header in kernel domain ... moving to module domain\n");
-	// Allocate space for the new message header
-	msg_mod_domain = (Message*)module_domain_alloc(sizeof(Message), MSG_QUEUE_PID);
-	if (NULL == msg_mod_domain){
-	  DEBUG("Out of memory in module domain ... failed to move message\n");
-	  return NULL;
-	}
-	// Copy the message header over
-	memcpy(msg_mod_domain, msg_ker_domain, sizeof(Message));
-	// Check if the original message was a short message
-	// Fix the data pointer, free the old message and return new message
-	if (msg_ker_domain->data == msg_ker_domain->payload){
-	  DEBUG("Internal payload ... message moved\n");
-	  msg_mod_domain->data = msg_mod_domain->payload;
-	  DEBUG("Freeing the header located in kernel domain\n");
-	  ker_free(msg_ker_domain);
-	  return msg_mod_domain;
-	}
-  }
-  else {
-	DEBUG("Message header in module domain\n");
-	if (msg_ker_domain->data == msg_ker_domain->payload){
-	  DEBUG("Internal payload ... message moved\n");
-	  return msg_ker_domain;
-	}
-	msg_mod_domain = msg_ker_domain;
-  }
-  // Check if the data lies in the module domain
-  // Copy message payload over to the module domain if it is in the kernel domain
-  if (mem_check_module_domain(msg_ker_domain->data) == false){
-	DEBUG("Message payload in kernel domain ... moving to module domain\n");
-	if (msg_ker_domain->len > 0){
-	  uint8_t* newdata = (uint8_t*)ker_malloc(msg_ker_domain->len, msg_ker_domain->did);
-	  if (NULL == newdata){
-		DEBUG("Out of memory in module domain ...failed to move message\n");
-		if (msg_mod_domain != msg_ker_domain){
-		  DEBUG("Free the header that was moved into the module domain\n");
-		  ker_free(msg_mod_domain);
-		  return NULL;
-		}
-	  }
-	  memcpy(newdata, msg_ker_domain->data, msg_ker_domain->len);
-	  if (flag_msg_release(msg_ker_domain->flag)){
-		DEBUG("Free the message payload located in kernel domain\n");
-		ker_free(msg_ker_domain->data);
-	  }
-	  msg_mod_domain->data = newdata;
-	  msg_mod_domain->flag |= SOS_MSG_RELEASE;
-	}
-	else{
-	  msg_mod_domain->data = NULL;
-	  ker_free(msg_ker_domain->data); // Just to be sure. This should be NULL anyway
-	}
-  }
-  if (msg_mod_domain != msg_ker_domain){
-	DEBUG("Free the header located in kernel domain\n");
-	ker_free(msg_ker_domain);
-  }
-  return msg_mod_domain;
-}
-#endif //FAULT_TOLERANT_SOS
 
 /**
  * @brief dispose message
@@ -398,38 +281,14 @@ Message *msg_move_to_module_domain(Message *msg_ker_domain)
 void msg_dispose(Message *m)
 {
 	HAS_CRITICAL_SECTION;
-	msg_pool_item *prev = NULL;
-	msg_pool_item *itr;
-
-
+	
 	if(flag_msg_release(m->flag)) { 
 		ker_free(m->data); 
 	}
 
 	ENTER_CRITICAL_SECTION();
-	itr = &msg_pool;
-	while( itr != NULL ) {
-		if( m >= itr->pool && m < (itr->pool + MSG_QUEUE_NUM_ITEMS) ) {
-			uint8_t mask = 1 << (m - itr->pool);
-			itr->alloc &= ~mask;	
-			DEBUG("MQ: free %x of item %d\n", (unsigned int)itr, m - itr->pool);
-			if( (itr->alloc == 0) && (itr != (&msg_pool))) {
-				DEBUG("MQ: free one pool\n");
-				prev->next = itr->next;
-				ker_free(itr);
-			}
-			LEAVE_CRITICAL_SECTION();
-			return;
-		}
-		prev = itr;
-		itr = itr->next;
-	}
-	if( itr == NULL ) {
-		// 
-		// Cannot find the item in the pool, call ker_free().  
-		// this should never happen.
-		ker_free(m);
-	}
+	ker_slab_free( &msg_slab, m );
+	
 	LEAVE_CRITICAL_SECTION();
 }
 

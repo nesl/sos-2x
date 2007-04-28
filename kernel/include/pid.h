@@ -40,6 +40,7 @@ enum {
 	/* 17 */	KER_DFT_LOADER_PID, //!< pid for default loader (it loads everything)
 	/* 18 */    KER_SPAWNER_PID,    //!< pid for server that spawns module
 	/* 19 */    KER_CAM_PID,        //!< pid for cam 
+	/* 20 */    KER_SHM_PID,        //!< pid for shared memory
 	/* 255 */	NULL_PID           = 255, //!< pid to indicate module does not exist
 };
 // PLEASE add the string to kernel/pid.c

@@ -18,6 +18,7 @@
 #include <sos_info.h>
 #include <sos_list.h>
 #include <sos_logging.h>
+#include <slab.h>
 
 #ifndef SOS_DEBUG_TIMER
 #undef DEBUG
@@ -50,7 +51,7 @@ static int32_t  outstanding_ticks = 0;
 
 static uint8_t num_realtime_clock = 0;
 static timer_realtime_t realtime[MAX_REALTIME_CLOCK];
-//static bool hw_interval_set = false;
+static slab_t timer_slab;
 
 //------------------------------------------------------------------------
 // STATIC FUNCTION PROTOTYPES
@@ -84,6 +85,8 @@ void timer_init(void)
   for(i = 0; i < MAX_REALTIME_CLOCK; i++) {
 	realtime[i].f = NULL;  
   }
+  
+  ker_slab_init( TIMER_PID, &timer_slab, sizeof(sos_timer_t), 4 );
 }
 
 
@@ -103,10 +106,10 @@ int8_t timer_preallocate(sos_pid_t pid, uint8_t num_timers)
   
   //! First try to safely allocate memory blocks for all the pre-allocated timers
   for (i = 0; i < num_timers; i++){
-	tt[i] = (sos_timer_t*)malloc_longterm(sizeof(sos_timer_t), TIMER_PID);
+	tt[i] = (sos_timer_t*)ker_slab_alloc(&timer_slab, TIMER_PID);
 	if (tt[i] == NULL){
 	  for (j = 0; j < i; j++){
-		ker_free(tt[j]);
+		ker_slab_free(&timer_slab, tt[j]);
 	  }
 	  return -ENOMEM;
 	}   
@@ -133,7 +136,7 @@ int8_t timer_remove_all(sos_pid_t pid){
 	if(h->pid == pid) {
 	  link = link->l_prev;
 	  timer_remove_timer(h);
-	  ker_free(h);
+	  ker_slab_free( &timer_slab, h );
 	  //	break; Ram - Why are we breaking from this loop ?
 	}
   }
@@ -143,7 +146,7 @@ int8_t timer_remove_all(sos_pid_t pid){
 	if (h->pid == pid){
 	  link = link->l_prev;
 	  list_remove((list_link_t*)h);
-	  ker_free(h);
+	  ker_slab_free(&timer_slab,h);
 	}
   }
 
@@ -152,7 +155,7 @@ int8_t timer_remove_all(sos_pid_t pid){
 	if (h->pid == pid){
 	  link = link->l_prev;
 	  list_remove((list_link_t*)h);
-	  ker_free(h);
+	  ker_slab_free(&timer_slab,h);
 	}
   }
 
@@ -161,88 +164,13 @@ int8_t timer_remove_all(sos_pid_t pid){
 	if (h->pid == pid){
 	  link = link->l_prev;
 	  list_remove((list_link_t*)h);
-	  ker_free(h);
+	  ker_slab_free(&timer_slab,h);
 	}
   }
 
   return SOS_OK;
 }
 
-
-
-#ifdef FAULT_TOLERANT_SOS
-int8_t timer_micro_reboot(sos_module_t *handle){
-  sos_pid_t pid;
-  list_link_t *link;
-  mod_header_ptr hdr;
-  uint8_t num_timers_left;
-  
-  pid = handle->pid;
-  hdr = handle->header;
-  num_timers_left = sos_read_header_byte(hdr, offsetof(mod_header_t, num_timers));
-  DEBUG("Timer: Pre-alloc timers requested %d \n", num_timers_left);
-  
-  if (num_timers_left > 0){
-	for (link = prealloc_timer_pool.l_next;
-		 link != (&prealloc_timer_pool);
-		 link = link->l_next){
-	  sos_timer_t *h = (sos_timer_t*)link;
-	  if (h->pid == pid)
-		num_timers_left--; // Assert - This value should NEVER become negative
-	}
-  }
-  DEBUG("Timer: Timers left to pre-allocate %d \n", num_timers_left);
-  
-  
-  //! Stop all timers of pid
-  //! Move timer blocks to the pre-allocated pool
-  //! or free them
-  for (link = deltaq.l_next;
-	   link != (&deltaq);
-	   link = link->l_next){
-	sos_timer_t *h = (sos_timer_t*)link;
-	if (h->pid == pid){
-	  link = link->l_prev;
-	  timer_remove_timer(h);
-	  if (num_timers_left > 0){
-		num_timers_left--;
-		timer_pre_alloc_block_init(h, pid);
-		DEBUG("Timer: Allocated active timer \n");
-	  }
-	  else
-		ker_free(h);
-	}
-  }
-  
-  //! Remove all initialized timers
-  //! Move timer blocks to the pre-allocated pool
-  //! or free them
-  for (link = timer_pool.l_next;
-	   link != (&timer_pool);
-	   link = link->l_next){
-	sos_timer_t *h = (sos_timer_t*)link;
-	if (h->pid == pid){
-	  link = link->l_prev;
-	  list_remove((list_link_t*)h);
-	  if (num_timers_left > 0){
-		num_timers_left--;
-		timer_pre_alloc_block_init(h, pid);
-		DEBUG("Timer: Allocated an initialzed but non-running timer\n");
-	  }
-	  else
-		ker_free(h);
-	}
-  }
-  
-  //! If necessary, allocate memory for the pre-allocated timers
-  if (num_timers_left > 0){ 
-	DEBUG("Timer: Alloc more memory for timers\n");     
-	if (timer_preallocate(pid, num_timers_left) != SOS_OK)
-	  return -ENOMEM;
-  }
-  return SOS_OK;
-}
-#endif
 
 //------------------------------------------------------------------------
 // STATIC FUNCTIONS
@@ -561,7 +489,7 @@ int8_t ker_timer_init(sos_pid_t pid, uint8_t tid, uint8_t type)
   if (tt == NULL){
 	tt = alloc_from_preallocated_timer_pool(pid);
 	if (tt == NULL)
-	  tt = (sos_timer_t*)malloc_longterm(sizeof(sos_timer_t), TIMER_PID);
+	  tt = (sos_timer_t*)ker_slab_alloc(&timer_slab, TIMER_PID);
 	//! Init will fail if the system does not have sufficient resources
 	if (tt == NULL)
 	  return -ENOMEM;
@@ -657,7 +585,7 @@ int8_t ker_timer_release(sos_pid_t pid, uint8_t tid)
 	return -EINVAL;
 
   //! Deep free of the timer
-  ker_free(tt); 
+  ker_slab_free(&timer_slab,tt); 
   
   return SOS_OK;   
 }

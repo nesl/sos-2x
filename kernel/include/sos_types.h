@@ -108,6 +108,7 @@ enum
 #define	ESRCH		 3  /* No such process */
 #define	EIO			 5   /* I/O error */
 #define	ENXIO	     6   /* No such device or address */
+#define	EBADF	     9   /* Bad file number */
 #define	EAGAIN		11	/* Try again */
 #define	ENOMEM		12	/* Out of memory */
 #define	EFAULT		14	/* Bad address */
@@ -122,7 +123,6 @@ enum
 #define	EINTR	 4   /* Interrupted system call */
 #define	E2BIG	 7   /* Arg list too long */
 #define	ENOEXEC  8   /* Exec format error */
-#define	EBADF	 9   /* Bad file number */
 #define	ECHILD		10	/*  No child processes */
 #define	EACCES		13	/* Permission denied */
 #define	ENOTBLK		15	/*  Block device required */

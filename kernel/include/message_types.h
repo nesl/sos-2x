@@ -257,6 +257,7 @@ enum {
 	MSG_ERROR             = (KER_MSG_START + 15), //!< Error message contains <Mod Id, SOS Error No.>
 	MSG_TIMESTAMP         = (KER_MSG_START + 16), //!< timestamped packet (used only by post_net)
 	MSG_DISCOVERY         = (KER_MSG_START + 17), //!< discovery anouncement for new device detection on a link
+	MSG_SHM               = (KER_MSG_START + 18), //!< message from shm
 	MSG_COMM_TEST         = (KER_MSG_START + 21), //!< test packet for developing comm layers 0x15 = 00010101 aiding scope debugging
 	MSG_KER_UNKNOWN       = (KER_MSG_START + 31), //!< undefined or unknown message type
 	//! MAXIMUM is 31 for now

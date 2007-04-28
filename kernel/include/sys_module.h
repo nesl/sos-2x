@@ -25,6 +25,7 @@
 #include <kertable_conf.h>  // for get_kertable_entry()
 #include <sos_error_types.h>
 #include <codemem.h>
+#include <sos_shm.h>
 
 #ifndef SYS_JUMP_TBL_START
 /// \cond NOTYPEDEF
@@ -51,6 +52,15 @@ void* ker_sys_get_module_state( void );
 int8_t ker_sys_fntable_subscribe( sos_pid_t pub_pid, uint8_t fid, uint8_t table_index );
 int8_t ker_sys_change_own( void* ptr );
 int8_t ker_sys_codemem_read(codemem_t h, void *buf, uint16_t nbytes, uint16_t offset);
+int8_t ker_sys_shm_open( sos_shm_t name, void *shm );
+int8_t ker_sys_shm_update( sos_shm_t name, void *shm );
+int8_t ker_sys_shm_close( sos_shm_t name );
+void* ker_sys_shm_get( sos_shm_t name );
+int8_t ker_sys_shm_wait( sos_shm_t name );
+int8_t ker_sys_shm_stopwait( sos_shm_t name );
+sos_pid_t ker_get_current_pid( void );
+sos_pid_t ker_get_caller_pid( void );
+
 #ifdef SOS_SIM
 #ifdef _MODULE_
 #include <hardware_types.h>
@@ -753,6 +763,85 @@ static inline int8_t sys_codemem_read(codemem_t h, void *buf, uint16_t nbytes, u
 #endif
 }
 
+typedef int8_t (* sys_shm_open_func_t )( sos_shm_t name, void *shm );
+
+static inline int8_t sys_shm_open(  sos_shm_t name, void *shm )
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_shm_open_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*22))( name, shm );
+#else
+  return ker_sys_shm_open( name, shm );
+#endif
+}
+
+static inline int8_t sys_shm_update(  sos_shm_t name, void *shm )
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_shm_open_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*23))( name, shm );
+#else
+  return ker_sys_shm_update( name, shm );
+#endif
+}
+
+typedef int8_t (* sys_shm_close_func_t )( sos_shm_t name );
+
+static inline int8_t sys_shm_close( sos_shm_t name )
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_shm_close_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*24))( name );
+#else
+  return ker_sys_shm_close( name );
+#endif
+}
+
+typedef void* (* sys_shm_get_func_t )( sos_shm_t name );
+
+static inline void* sys_shm_get( sos_shm_t name )
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_shm_get_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*25))( name );
+#else
+  return ker_sys_shm_get( name );
+#endif
+}
+
+static inline int8_t sys_shm_wait( sos_shm_t name )
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_shm_close_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*26))( name );
+#else
+  return ker_sys_shm_wait( name );
+#endif
+}
+
+static inline int8_t sys_shm_stopwait( sos_shm_t name )
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_shm_close_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*27))( name );
+#else
+  return ker_sys_shm_stopwait( name );
+#endif
+}
+
+typedef sos_pid_t (*sys_pid_func_t)();
+
+static inline sos_pid_t sys_pid()
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_pid_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*28))( );
+#else
+  return ker_get_current_pid( );
+#endif
+}
+
+static inline sos_pid_t sys_caller_pid()
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_pid_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*29))( );
+#else
+  return ker_get_caller_pid( );
+#endif
+}
 
 
 #endif

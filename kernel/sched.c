@@ -49,7 +49,7 @@
 #include <hardware_types.h>
 #include <sensor.h>
 #include <sos_info.h>
-#include <malloc.h>
+#include <slab.h>
 #include <message.h>
 #include <sos_timer.h>
 #include <measurement.h>
@@ -117,6 +117,9 @@ static mq_t schedpq NOINIT_VAR;
 
 //! module data structure
 static sos_module_t sched_module;
+
+//! slab 
+static slab_t sched_slab;
 
 /*
  * NOTE: all three variables below are used by the assembly routine 
@@ -194,6 +197,13 @@ void sched_init(uint8_t cond)
 	short_msg.daddr = node_address;
 	short_msg.saddr = node_address;
 	short_msg.len = 3;
+
+
+	//
+	// Initialize slab
+	//
+	ker_slab_init( KER_SCHED_PID, &sched_slab, sizeof(sos_module_t), 4 );
+	
 }
 
 void sched_add_interrupt(uint8_t id, sched_int_t f)
@@ -270,6 +280,11 @@ sos_pid_t ker_set_current_pid( sos_pid_t pid )
 sos_pid_t ker_get_current_pid( void )
 {
 	return curr_pid;
+}
+
+sos_pid_t ker_get_caller_pid( void )
+{
+	return *(pid_sp - 1);
 }
 
 void ker_killall(sos_code_id_t code_id)
@@ -394,13 +409,12 @@ sos_pid_t ker_spawn_module(mod_header_ptr h, void *init, uint8_t init_size, uint
 	sos_module_t *handle;
 	if(h == 0) return NULL_PID;
 	// Allocate a memory block to hold the module list entry
-	//handle = (sos_module_t*)ker_malloc(sizeof(sos_module_t), KER_SCHED_PID);
-	handle = (sos_module_t*)malloc_longterm(sizeof(sos_module_t), KER_SCHED_PID);
+	handle = (sos_module_t*)ker_slab_alloc( &sched_slab, KER_SCHED_PID);
 	if (handle == NULL) {
 		return NULL_PID;
 	}
 	if( do_register_module(h, handle, init, init_size, flag) != SOS_OK) {
-		ker_free(handle);
+		ker_slab_free( &sched_slab, handle);
 		return NULL_PID;	
 	}
 	return handle->pid;
@@ -419,14 +433,13 @@ int8_t ker_register_module(mod_header_ptr h)
 	sos_module_t *handle;
 	int8_t ret;
 	if(h == 0) return -EINVAL;
-	//handle = (sos_module_t*)ker_malloc(sizeof(sos_module_t), KER_SCHED_PID);
-	handle = (sos_module_t*)malloc_longterm(sizeof(sos_module_t), KER_SCHED_PID);
+	handle = (sos_module_t*)ker_slab_alloc( &sched_slab, KER_SCHED_PID);
 	if (handle == NULL) {
 		return -ENOMEM;
 	}
 	ret = do_register_module(h, handle, NULL, 0, 0);
 	if(ret != SOS_OK) {
-		ker_free(handle);
+		ker_slab_free( &sched_slab, handle);
 	}
 	return ret;
 }
@@ -480,7 +493,6 @@ static int8_t do_register_module(mod_header_ptr h,
   st_size = sos_read_header_word(h, offsetof(mod_header_t, state_size));
 	//DEBUG("registering module pid %d with size %d\n", pid, st_size);
   if (st_size){
-		//handle->handler_state = (uint8_t*)ker_malloc(st_size, pid);
 		handle->handler_state = (uint8_t*)malloc_longterm(st_size, pid);
 	// If there is no memory to store the state of the module
 		if (handle->handler_state == NULL){
@@ -588,7 +600,7 @@ int8_t ker_deregister_module(sos_pid_t pid)
   // NOTE: we can only free up memory at the last step
   // because fntable is using the state
   if((SOS_KER_STATIC_MODULE & (handle->flag)) == 0) {
-		ker_free(handle);
+		ker_slab_free( &sched_slab, handle );
   }
   mem_remove_all(pid);
 

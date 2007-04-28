@@ -58,7 +58,7 @@
 #include <malloc.h>
 #include <monitor.h>
 #include <fntable.h>
-#include <sos_cam.h>
+#include <sos_shm.h>
 #include <timestamp.h>
 #include <sos_info.h>
 #include <measurement.h>

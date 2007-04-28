@@ -9,6 +9,7 @@
 #include <malloc.h>
 #include <random.h>
 #include <led_dbg.h>
+#include <sos_shm.h>
 #ifdef SOS_HAS_EXFLASH
 #include <exflash.h>
 #endif
@@ -97,7 +98,7 @@ static fetcher_state_t *fst = NULL;
  */
 static bool no_mem_retry = false;
 
-int8_t fetcher_request(sos_pid_t req_id, sos_cam_t key, uint16_t size, uint16_t src)
+int8_t fetcher_request(sos_pid_t req_id, sos_shm_t key, uint16_t size, uint16_t src)
 {
     uint8_t bitmap_size;   //! size of the bitmap in bytes
     uint16_t num_fragments;
@@ -105,7 +106,7 @@ int8_t fetcher_request(sos_pid_t req_id, sos_cam_t key, uint16_t size, uint16_t 
     fetcher_state_t *f;
 	fetcher_cam_t *cam;
 	
-	cam = (fetcher_cam_t *) ker_cam_lookup(key);
+	cam = (fetcher_cam_t *) ker_shm_get( KER_FETCHER_PID, key);
 	if( cam == NULL ) return -EINVAL;
 
     //if(fst != NULL) return -EBUSY;
@@ -157,7 +158,7 @@ int8_t fetcher_request(sos_pid_t req_id, sos_cam_t key, uint16_t size, uint16_t 
     return SOS_OK;
 }
 
-int8_t fetcher_cancel(sos_pid_t req_id, sos_cam_t key)
+int8_t fetcher_cancel(sos_pid_t req_id, sos_shm_t key)
 {
     fetcher_state_t *tmp;
     fetcher_state_t *prev;
@@ -191,7 +192,7 @@ int8_t fetcher_cancel(sos_pid_t req_id, sos_cam_t key)
 void fetcher_restart(fetcher_state_t *s, uint16_t src)
 {
 	fetcher_cam_t *cam;
-	cam = ker_cam_lookup( s->map.key );
+	cam = ker_shm_get( KER_FETCHER_PID,  s->map.key );
     s->src_addr = src;
     s->retx = 0;
 	s->next = NULL;
@@ -213,7 +214,7 @@ void fetcher_restart(fetcher_state_t *s, uint16_t src)
 void fetcher_commit(fetcher_state_t *s, bool commit)
 {
 	fetcher_cam_t *cam;
-	cam = (fetcher_cam_t *) ker_cam_lookup(s->map.key);
+	cam = (fetcher_cam_t *) ker_shm_get( KER_FETCHER_PID, s->map.key);
 	if( cam == NULL ) return;
 	if( commit == true ) {
 		ker_codemem_flush( cam->cm, KER_FETCHER_PID );
@@ -392,7 +393,7 @@ static inline void send_fragment()
 		return;
 	}
 
-	cam = (fetcher_cam_t *) ker_cam_lookup(send_state.map->key);
+	cam = (fetcher_cam_t *) ker_shm_get( KER_FETCHER_PID, send_state.map->key);
 
 	if ( cam == NULL ) {
 		// file got deleted. give up!
@@ -470,11 +471,11 @@ send_fragment_postproc:
 	}
 }
 
-static inline int8_t set_num_funcs_in_send_state(sos_cam_t key)
+static inline int8_t set_num_funcs_in_send_state(sos_shm_t key)
 {
 	fetcher_cam_t *cam;
 	mod_header_t hdr;
-	cam = (fetcher_cam_t *) ker_cam_lookup(key);
+	cam = (fetcher_cam_t *) ker_shm_get( KER_FETCHER_PID, key);
 
 	if( cam == NULL ) {
 		// We don't have the module, give up
@@ -568,7 +569,7 @@ static int8_t handle_data(Message *msg)
 		return SOS_OK;
 	}
 
-	cam = (fetcher_cam_t *) ker_cam_lookup(f->key);
+	cam = (fetcher_cam_t *) ker_shm_get( KER_FETCHER_PID, f->key);
 	if( cam == NULL ) {
 		// XXX cannot find CAM...
 		// TODO: need to inform upper layer...
@@ -626,7 +627,7 @@ static void start_new_fetch(void)
 	fst = fst->next;
 	if (fst) {
 		fetcher_cam_t *cam;
-		cam = ker_cam_lookup( fst->map.key );
+		cam = ker_shm_get( KER_FETCHER_PID,  fst->map.key );
 		cam->status = FETCHING_STARTED;
 		ker_timer_start(KER_FETCHER_PID,
 				FETCHER_REQUEST_TID,
@@ -647,7 +648,7 @@ static void send_fetcher_done()
 				1024);
 		return;
 	}
-	cam = ker_cam_lookup( fst->map.key );
+	cam = ker_shm_get( KER_FETCHER_PID,  fst->map.key );
 	cam->status = FETCHING_DONE;
 	no_mem_retry = false;
 	start_new_fetch();

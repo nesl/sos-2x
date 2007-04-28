@@ -10,7 +10,7 @@
 #include <sos_timer.h>
 #include <fntable.h>
 #endif
-#include <sos_cam.h>
+#include <sos_shm.h>
 
 typedef struct {
 	codemem_t cm;
@@ -54,7 +54,7 @@ enum {
 };
 
 typedef struct {
-	sos_cam_t key;
+	sos_shm_t key;
 	uint8_t bitmap_size;  //!< the size of the bitmap
 	uint8_t bitmap[];  //!< the bitmap that stores fetched fragments,
 	                   //! 0 means the fragment is fetched and 1 means the
@@ -65,7 +65,7 @@ fetcher_bitmap_t;
 //! the packet that carries the fragment
 typedef struct {
 	uint16_t     frag_id;   //! fragment number
-	sos_cam_t    key;
+	sos_shm_t    key;
 	uint8_t      fragment[FETCHER_FRAGMENT_SIZE];
 } PACK_STRUCT
 fetcher_fragment_t;
@@ -100,9 +100,9 @@ int8_t fetcher_init(void);
  * @param src  the node id to be fetched from
  *
  */
-int8_t fetcher_request(sos_pid_t req_id, sos_cam_t key, uint16_t size, uint16_t src);
+int8_t fetcher_request(sos_pid_t req_id, sos_shm_t key, uint16_t size, uint16_t src);
 
-int8_t fetcher_cancel(sos_pid_t req_id, sos_cam_t key);
+int8_t fetcher_cancel(sos_pid_t req_id, sos_shm_t key);
 
 void fetcher_restart(fetcher_state_t *s, uint16_t src);
 

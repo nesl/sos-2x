@@ -63,7 +63,7 @@
 #include <message_types.h>
 #include <codemem.h>
 #include <systime.h>
-#include <sos_cam.h>
+#include <sos_shm.h>
 #include <pid.h>
 #include <stddef.h>
 #include <kertable_conf.h>
