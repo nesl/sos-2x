@@ -4,6 +4,7 @@
 #include <sos.h>
 #include <sos_sched.h>
 #include <sos_module_fetcher.h>
+#include <sos_shm.h>
 
 // for low level memory i/o
 #include <hardware_proc.h>
@@ -250,7 +251,7 @@ static int8_t handle_version_data( Message *msg )
 	return SOS_OK;
 }
 
-static int8_t request_new_module(sos_cam_t key, loader_cam_t *cam, uint8_t size, uint16_t saddr, uint8_t type)
+static int8_t request_new_module(sos_shm_t key, loader_cam_t *cam, uint8_t size, uint16_t saddr, uint8_t type)
 {
   cam->code_size = size; 
 	cam->fetcher.fetchtype = type;
@@ -276,7 +277,7 @@ static void process_version_data( msg_version_data_t *v, uint16_t saddr )
 {
 	uint8_t i;
 	for( i = 0; i < NUM_LOADER_PARAMS_ENTRIES + NUM_LOADER_MODULE_ENTRIES; i++ ) {
-		sos_cam_t key = ker_cam_key( KER_DFT_LOADER_PID, i);
+		sos_shm_t key = sys_shm_name( KER_DFT_LOADER_PID, i);
 		loader_cam_t *cam;
 		uint8_t type;
 		uint8_t size;
@@ -292,7 +293,7 @@ static void process_version_data( msg_version_data_t *v, uint16_t saddr )
 			type = FETCHTYPE_MODULE;
 		}
 
-		cam = ker_cam_lookup( key );
+		cam = ker_shm_get( KER_DFT_LOADER_PID,  key );
 
 		if( cam == NULL && size == 0 ) {
 			// We cannot find entry and the size is zero
@@ -307,7 +308,7 @@ static void process_version_data( msg_version_data_t *v, uint16_t saddr )
 			if( cam == NULL) {
 				return;
 			}
-			if( ker_cam_add( key, cam ) != SOS_OK ) {
+			if( ker_shm_open( KER_DFT_LOADER_PID, key, cam ) != SOS_OK ) {
 				ker_free( cam );
 				return;
 			}
@@ -329,14 +330,14 @@ static void process_version_data( msg_version_data_t *v, uint16_t saddr )
 			}
 			if( size == 0 ) {
 				//! an rmmod case
-				ker_cam_remove( key );
+				ker_shm_close( KER_DFT_LOADER_PID,  key );
 				ker_free( cam );
 				continue;
 			} 
 			//! an insmod case with cam
 		} 
 		if( request_new_module( key, cam, size, saddr, type) != SOS_OK ) {
-			ker_cam_remove( key );
+			ker_shm_close( KER_DFT_LOADER_PID, key );
 			ker_free( cam );
 		} else {
 			// another insmod case
@@ -358,7 +359,7 @@ static int8_t handle_fetcher_done( Message *msg )
 		st.blocked = 0;
 		restartInterval( 0 );
 
-		cam = ker_cam_lookup( f->map.key );
+		cam = ker_shm_get( KER_DFT_LOADER_PID,  f->map.key );
 		if( cam->fetcher.fetchtype == FETCHTYPE_DATA) {
 			uint8_t buf[2];
 			ker_codemem_read( cam->fetcher.cm, KER_DFT_LOADER_PID, buf, 2, 0);
@@ -436,11 +437,11 @@ static int8_t handle_loader_ls_on_node( Message *msg )
 	if( reply == NULL ) return -ENOMEM;
 
 	for( i = 0; i < NUM_LOADER_PARAMS_ENTRIES; i ++ ) {
-		sos_cam_t key = ker_cam_key( KER_DFT_LOADER_PID, i );
+		sos_shm_t key = sys_shm_name( KER_DFT_LOADER_PID, i );
 		loader_cam_t *cam;
 		uint8_t buf[2];
 
-		cam = ker_cam_lookup( key );
+		cam = ker_shm_get( KER_DFT_LOADER_PID,  key );
 		if( cam != NULL && cam->fetcher.status == FETCHING_DONE 
 				&& (ker_codemem_read( cam->fetcher.cm, KER_DFT_LOADER_PID, 
 						buf, 2, 0) == SOS_OK)) {
@@ -459,11 +460,11 @@ static int8_t handle_loader_ls_on_node( Message *msg )
 		}
 	}
 	for( i = 0; i < NUM_LOADER_MODULE_ENTRIES; i ++ ) {
-		sos_cam_t key = ker_cam_key( KER_DFT_LOADER_PID, 
+		sos_shm_t key = sys_shm_name( KER_DFT_LOADER_PID, 
 				NUM_LOADER_PARAMS_ENTRIES + i );
 		loader_cam_t *cam;
 
-		cam = ker_cam_lookup( key );
+		cam = ker_shm_get( KER_DFT_LOADER_PID,  key );
 
 		if( cam != NULL && cam->fetcher.status == FETCHING_DONE ) {
 			mod_header_ptr p;
@@ -520,7 +521,7 @@ static int8_t handle_init()
 #endif
 static void start_experiment(uint16_t size)
 {
-	sos_cam_t key;
+	sos_shm_t key;
 	loader_cam_t *cam;
 	codemem_t cm;
 	uint8_t buf[2];
@@ -536,10 +537,10 @@ static void start_experiment(uint16_t size)
 	st.version_data->pam_size[0] = (size + (LOADER_SIZE_MULTIPLIER - 1)) / LOADER_SIZE_MULTIPLIER;
 	st.version_data->version ++;
 
-	key = ker_cam_key( KER_DFT_LOADER_PID, 0 );
+	key = sys_shm_name( KER_DFT_LOADER_PID, 0 );
 	cam->fetcher.fetchtype = FETCHTYPE_DATA;
 	cam->fetcher.cm = cm;
-	ker_cam_add(key, cam);	
+	ker_shm_open( KER_DFT_LOADER_PID, key, cam);	
 	restartInterval(0);
 }
 #endif

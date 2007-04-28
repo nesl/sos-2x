@@ -6,7 +6,7 @@
 #include <sos_module_fetcher.h>
 #include <led_dbg.h>
 #include "loader.h"
-#include <sos_cam.h>
+#include <sos_shm.h>
 #include <ctype.h>
 #ifdef MINIELF_LOADER
 #include <melfloader.h>
@@ -241,7 +241,7 @@ static void process_lddata()
   fetcher_cam_t *cam;
   int i;
   uint8_t idx = 0;
-  sos_cam_t key;
+  sos_shm_t key;
 
   cam = ker_malloc(sizeof(fetcher_cam_t), KER_DFT_LOADER_PID);
   if( cam == NULL ) {
@@ -258,11 +258,11 @@ static void process_lddata()
 	}
   }
   cm = flashImage();
-  key = ker_cam_key( KER_DFT_LOADER_PID, (idx));
+  key = sys_shm_name( KER_DFT_LOADER_PID, (idx));
 
   cam->cm = cm;
   cam->fetchtype = FETCHTYPE_DATA;
-  ker_cam_add(key, cam);
+  ker_shm_open( KER_DFT_LOADER_PID, key, cam);
   return;
 }
 
@@ -273,7 +273,7 @@ static int process_insmod()
   sos_code_id_t code_id;
   uint8_t idx = 0;
   fetcher_cam_t *cam;
-  sos_cam_t key;
+  sos_shm_t key;
   int i;
 
   cam = ker_malloc(sizeof(fetcher_cam_t), KER_DFT_LOADER_PID);
@@ -324,11 +324,11 @@ static int process_insmod()
   /*
    * store to CAM so that fetcher can find it
    */	
-  key = ker_cam_key( KER_DFT_LOADER_PID, (idx + NUM_LOADER_PARAMS_ENTRIES));
+  key = sys_shm_name( KER_DFT_LOADER_PID, (idx + NUM_LOADER_PARAMS_ENTRIES));
 	
   cam->cm = cm;
   cam->fetchtype = FETCHTYPE_DATA;
-  ker_cam_add(key, cam);
+  ker_shm_open( KER_DFT_LOADER_PID, key, cam);
 
   return 0;
 }
