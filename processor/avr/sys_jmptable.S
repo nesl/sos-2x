@@ -28,13 +28,13 @@ jmp ker_sys_fnptr_from_ker_call ; 20
 jmp 0                      ; 20
 #endif	
 jmp ker_sys_codemem_read   ; 21
-jmp 0                      ; 22
-jmp 0                      ; 23
-jmp 0                      ; 24
-jmp 0                      ; 25
-jmp 0                      ; 26
-jmp 0                      ; 27
-jmp 0                      ; 28
-jmp 0                      ; 29
+jmp ker_sys_shm_open       ; 22
+jmp ker_sys_shm_update     ; 23
+jmp ker_sys_shm_close      ; 24
+jmp ker_sys_shm_get        ; 25
+jmp ker_sys_shm_wait       ; 26
+jmp ker_sys_shm_stopwait   ; 27
+jmp ker_get_current_pid    ; 28
+jmp ker_get_caller_pid     ; 29
 jmp 0                      ; 30
 jmp 0                      ; 31
