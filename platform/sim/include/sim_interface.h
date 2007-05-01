@@ -12,6 +12,7 @@
 extern void sim_module_header_init();
 extern mod_header_ptr module_headers[];
 extern mod_header_ptr get_header_from_sim(sos_code_id_t cid);
+extern void delete_module_image( sos_code_id_t cid );
 // extern void set_version_to_sim(sos_pid_t pid, uint8_t version);
 
 #endif
