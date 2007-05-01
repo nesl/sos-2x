@@ -385,8 +385,9 @@ static int8_t handle_fetcher_done( Message *msg )
 		  mcu_type = sos_read_header_byte(p, 
 					offsetof( mod_header_t, processor_type ));
 #ifdef SOS_SIM
-		  if( (mcu_type == MCU_TYPE) )
-			// In simulation, we don't check for platform
+		  //if( (mcu_type == MCU_TYPE) )
+		  if( p != 0 ) 
+			// In simulation, we don't check for anything
 #else
 			plat_type = sos_read_header_byte(p, 
 						offsetof( mod_header_t, platform_type ));
@@ -416,6 +417,8 @@ static int8_t handle_fetcher_done( Message *msg )
 				ker_register_module(p);
 #endif //SOS_SFI
 			  }
+			} else {
+				DEBUG("invalid module for this node\n");
 			}
 		}
 		process_version_data( st.version_data, st.recent_neighbor);
