@@ -8,6 +8,7 @@
 #include <hardware.h>
 #include <sos_info.h>
 #include "sim_interface.h"
+#include <dlfcn.h>
 
 #ifndef SOS_DEBUG_SIM_INTERFACE
 #undef DEBUG
@@ -18,6 +19,11 @@ mod_header_ptr module_headers[MAX_NETWORK_MODULES];
 mod_header_ptr get_header_from_sim(sos_code_id_t cid)
 {
     int i;
+	char name_buf[128];
+	void *dlh;
+	void *mod_sym;
+	int cnt;
+				
     DEBUG("get_header_from_sim(cid: %d)\n", cid);
     for(i = 0; i < MAX_NETWORK_MODULES; i++){
         mod_header_ptr h;
@@ -35,26 +41,20 @@ mod_header_ptr get_header_from_sim(sos_code_id_t cid)
         }
     }
     DEBUG("get_header_from_sim no header found\n");
-    return (mod_header_ptr)NULL;
+    DEBUG("try look for %d.sos\n", cid);
+	cnt = sprintf(name_buf, "%d.sos", cid);
+	name_buf[cnt] = '\0';
+	dlh = dlopen(name_buf, RTLD_NOW | RTLD_LOCAL );
+	if( dlh == NULL ) {
+		DEBUG("cannot find %d.sos\n", cid);
+		return (mod_header_ptr)NULL;
+	}
+	mod_sym = dlsym( dlh, "mod_header" );
+	if( mod_sym == NULL ) {
+		DEBUG("dlerror: %s\n", dlerror());
+		return (mod_header_ptr)NULL;
+	}
+	DEBUG("found %d.sos\n", cid);	
+    return (mod_header_ptr)mod_sym;
 }
 
-#if 0
-void set_version_to_sim(sos_pid_t pid, uint8_t version)
-{
-    int i;
-    for(i = 0; i < MAX_NETWORK_MODULES; i++){
-        mod_header_ptr h;
-        sos_pid_t mod_id;
-        
-        h = module_headers[i];
-        if(h == 0) continue;
-        mod_id = sos_read_header_byte(h, offsetof(mod_header_t, mod_id));
-        
-        if(pid == mod_id){
-            mod_header_t *header_ptr = (mod_header_t *) h;
-            header_ptr->version = version;	
-            return;
-        }
-    }
-}
-#endif
