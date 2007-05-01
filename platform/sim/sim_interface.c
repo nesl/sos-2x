@@ -16,6 +16,8 @@
 #endif
 
 mod_header_ptr module_headers[MAX_NETWORK_MODULES];
+static void * dlfd[65536] = {NULL};
+
 mod_header_ptr get_header_from_sim(sos_code_id_t cid)
 {
     int i;
@@ -40,21 +42,35 @@ mod_header_ptr get_header_from_sim(sos_code_id_t cid)
             return h;
         }
     }
-    DEBUG("get_header_from_sim no header found\n");
-    DEBUG("try look for %d.sos\n", cid);
-	cnt = sprintf(name_buf, "%d.sos", cid);
-	name_buf[cnt] = '\0';
-	dlh = dlopen(name_buf, RTLD_NOW | RTLD_LOCAL );
-	if( dlh == NULL ) {
-		DEBUG("cannot find %d.sos\n", cid);
-		return (mod_header_ptr)NULL;
+	if( dlfd[cid] != NULL ) {
+		dlh = dlfd[cid];
+	} else {
+		DEBUG("try look for %d.sos\n", cid);
+		cnt = sprintf(name_buf, "%d.sos", cid);
+		name_buf[cnt] = '\0';
+		dlh = dlopen(name_buf, RTLD_NOW | RTLD_LOCAL );
+		if( dlh == NULL ) {
+			DEBUG("cannot find %d.sos\n", cid);
+			return (mod_header_ptr)NULL;
+		}
+		if( dlsym( dlh, "mod_header" ) != NULL ) {
+			dlfd[cid] = dlh;
+		} else {
+			DEBUG("dlerror: %s\n", dlerror());
+			return (mod_header_ptr)NULL;
+		}
+		DEBUG("found %d.sos\n", cid);	
 	}
 	mod_sym = dlsym( dlh, "mod_header" );
-	if( mod_sym == NULL ) {
-		DEBUG("dlerror: %s\n", dlerror());
-		return (mod_header_ptr)NULL;
+	return (mod_header_ptr)mod_sym;
+}
+
+void delete_module_image( sos_code_id_t cid )
+{
+	if( dlfd[cid] != NULL ) {
+		DEBUG("sim closing cid %d\n", cid);
+		dlclose(dlfd[cid]);
+		dlfd[cid] = NULL;
 	}
-	DEBUG("found %d.sos\n", cid);	
-    return (mod_header_ptr)mod_sym;
 }
 
