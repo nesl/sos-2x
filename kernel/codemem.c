@@ -104,6 +104,13 @@ static void codemem_do_killall( codemem_t h )
   cid = sos_read_header_word(p, offsetof(mod_header_t, code_id));
   cid = entohs(cid);
   ker_killall(cid);
+
+#ifdef SOS_SIM
+  //
+  // Close the file in simulation
+  //
+  delete_module_image( cid );
+#endif
 }
 
 
