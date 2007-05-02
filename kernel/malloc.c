@@ -35,6 +35,19 @@
 #include <sos_timer.h>
 #include <stdlib.h>
 #include <sos_logging.h>
+#include <message_queue.h>
+#include <hardware.h>
+
+#if defined (SOS_UART_CHANNEL)
+#include <sos_uart.h>
+#include <sos_uart_mgr.h>
+#endif
+
+#if defined (SOS_I2C_CHANNEL)                                
+#include <sos_i2c.h>                                         
+#include <sos_i2c_mgr.h>                                     
+#endif    
+
 // SFI Mode Includes
 #ifdef SOS_SFI
 #include <memmap.h>          // Memmory Map AOI
@@ -54,15 +67,26 @@
 #define DEBUG(...)
 #undef DEBUG_PID
 #define DEBUG_PID(...)
-#define printMem(...) 
+#define printMem(...)
 #else
 static void printMem(char*);
 #endif
 
+#ifdef SOS_DEBUG_GC
+#define DEBUG_GC(arg...)  printf(arg)
+#else
+#define DEBUG_GC(...)
+#endif
+
+
 //-----------------------------------------------------------------------------
 // CONSTANTS
 //-----------------------------------------------------------------------------
+#define MEM_GC_PERIOD       (10 * 1024L)
+#define MEM_MOD_GC_STACK_SIZE    16
 #define RESERVED            0x8000          // must set the msb of BlockSizeType
+#define GC_MARK             0x4000
+#define MEM_MASK            (RESERVED | GC_MARK)
 #ifndef SOS_SFI
 #define BLOCKOVERHEAD (sizeof(BlockHeaderType) + 1) // The extra byte is for the guard byte
 #else
@@ -73,9 +97,9 @@ static void printMem(char*);
 // MACROS
 //-----------------------------------------------------------------------------
 #define TO_BLOCK_PTR(p)     (Block*)((BlockHeaderType*)p - 1)
-#define BLOCKS_TO_BYTES(n)  (((n & ~RESERVED) << SHIFT_VALUE) - sizeof(BlockHeaderType))
+#define BLOCKS_TO_BYTES(n)  (((n & ~MEM_MASK) << SHIFT_VALUE) - sizeof(BlockHeaderType))
 #ifndef SOS_SFI
-#define BLOCK_GUARD_BYTE(p) (*((uint8_t*)((uint8_t*)((Block*)p + (p->blockhdr.blocks & ~RESERVED)))-1))
+#define BLOCK_GUARD_BYTE(p) (*((uint8_t*)((uint8_t*)((Block*)p + (p->blockhdr.blocks & ~MEM_MASK)))-1))
 #endif
 
 //-----------------------------------------------------------------------------
@@ -90,8 +114,7 @@ typedef struct _BlockHeaderType
 {
   uint16_t blocks;
   uint8_t  owner;
-} //PACK_STRUCT
-  BlockHeaderType;
+} BlockHeaderType;
 
 
 typedef struct _Block
@@ -105,14 +128,12 @@ typedef struct _Block
       struct _Block *prev;
       struct _Block *next;
     };
-  } /*PACK_STRUCT */;
-} //PACK_STRUCT
-  Block;
+  };
+} Block;
 
 //-----------------------------------------------------------------------------
 // LOCAL FUNCTIONS
 //-----------------------------------------------------------------------------
-//static int8_t mem_handler(void *state, Message *msg);
 static void InsertAfter(Block*);
 static void Unlink(Block*);
 static Block* MergeBlocks(Block* block);
@@ -131,7 +152,8 @@ static Block            malloc_heap[NUM_HEAP_BLOCKS] SOS_HEAP_SECTION;
 
 
 
-#if 0
+#ifdef SOS_USE_GC
+static int8_t mem_handler(void *state, Message *msg);
 static sos_module_t malloc_module;
 static mod_header_t mod_header SOS_MODULE_HEADER ={
   mod_id : KER_MEM_PID,
@@ -143,6 +165,10 @@ static mod_header_t mod_header SOS_MODULE_HEADER ={
 };
 #endif
 
+#ifdef AVRORA_PLATFORM
+//static uint8_t avrora_buf[100];
+
+#endif
 
 //-----------------------------------------------------------------------------
 // Return a pointer to an area of memory that is at least the right size.
@@ -370,7 +396,7 @@ void sos_blk_mem_free(void* pntr, bool bCallFromModule)
   //
   ENTER_CRITICAL_SECTION();
   owner = baseArea->blockhdr.owner;
-  baseArea->blockhdr.blocks &= ~RESERVED;
+  baseArea->blockhdr.blocks &= ~MEM_MASK;
   baseArea->blockhdr.owner = NULL_PID;
   freed_blocks = baseArea->blockhdr.blocks;
   
@@ -473,7 +499,9 @@ int8_t sos_blk_mem_change_own(void* ptr, sos_pid_t id, bool bCallFromModule)
 
 void mem_start() 
 {
-  // sched_register_kernel_module(&malloc_module, sos_get_header_address(mod_header), NULL);
+#ifdef SOS_USE_GC
+  sched_register_kernel_module(&malloc_module, sos_get_header_address(mod_header), NULL);
+#endif
 }
 
 int8_t mem_remove_all(sos_pid_t id)
@@ -484,11 +512,10 @@ int8_t mem_remove_all(sos_pid_t id)
   ENTER_CRITICAL_SECTION();
   for (block = (Block*)malloc_heap; 
        block != mSentinel; 
-       block += block->blockhdr.blocks & ~RESERVED) 
+       block += block->blockhdr.blocks & ~MEM_MASK) 
     {
-      if ((block->blockhdr.blocks & RESERVED) && 
-	  (block->blockhdr.owner == id)){
-	ker_free(block->userPart);
+      if ( (block->blockhdr.owner == id) && (block->blockhdr.blocks & RESERVED) ){
+		ker_free(block->userPart);
       }		
     }
   //printMem("remove_all_end: ");
@@ -755,19 +782,24 @@ static inline void mem_defrag()
   printMem("after defrag\n");
   LEAVE_CRITICAL_SECTION();
 }
+#endif
 
+#ifdef SOS_USE_GC
 static int8_t mem_handler(void *state, Message *msg)
 {
   switch(msg->type){
   case MSG_TIMER_TIMEOUT:
     {
-      mem_defrag();
+      //mem_defrag();
+	  led_yellow_toggle();
+	  malloc_gc_kernel();
+	  led_yellow_toggle();
       break;
     }
   case MSG_INIT:
     {
       ker_timer_init(KER_MEM_PID, 0, TIMER_REPEAT);
-      ker_timer_start(KER_MEM_PID, 0, 10 * 1024L);
+      ker_timer_start(KER_MEM_PID, 0, MEM_GC_PERIOD);
       break;
     }
   case MSG_DEBUG:
@@ -779,7 +811,7 @@ static int8_t mem_handler(void *state, Message *msg)
   }
   return SOS_OK;
 }
-#endif /* #if 0 */
+#endif /* #ifdef SOS_USE_GC */
 
 #if 0
 static void verify_memory( void )
@@ -788,7 +820,7 @@ static void verify_memory( void )
   block = (Block*)malloc_heap;
   Block* next_block;
   while(block != mSentinel) {
-    next_block = block + (block->blockhdr.blocks & ~RESERVED);
+    next_block = block + (block->blockhdr.blocks & ~MEM_MASK);
     if( block->blockhdr.blocks & RESERVED ) {
       if( block->blockhdr.owner != BLOCK_GUARD_BYTE(block) ) {
 	ker_led(LED_RED_TOGGLE);
@@ -796,7 +828,7 @@ static void verify_memory( void )
       }
     }
     if( next_block != mSentinel) {
-      if( (next_block->blockhdr.blocks & ~RESERVED) > ((MALLOC_HEAP_SIZE + (BLOCK_SIZE - 1))/BLOCK_SIZE) ) {
+      if( (next_block->blockhdr.blocks & ~MEM_MASK) > ((MALLOC_HEAP_SIZE + (BLOCK_SIZE - 1))/BLOCK_SIZE) ) {
 	ker_led(LED_GREEN_TOGGLE);
 	ker_led(LED_RED_TOGGLE);
 	return;
@@ -808,6 +840,284 @@ static void verify_memory( void )
 }
 #endif
 
+int8_t ker_gc_mark( sos_pid_t pid, void *pntr )
+{
+	Block* baseArea;   // convert to a block address
+	Block* itr;
+	
+	baseArea = TO_BLOCK_PTR(pntr);   // convert to a block address
+	
+	if ( (baseArea < malloc_heap) || (baseArea >= (malloc_heap + mNumberOfBlocks)) ) {
+		// Not a valid block
+		return -EINVAL;
+	}
+	
+	//
+	// Traverse the memory list to make sure that this is a valid memory block
+	//
+	itr = (Block*)malloc_heap;
+	while(itr != mSentinel && itr >= malloc_heap && itr < &(malloc_heap[NUM_HEAP_BLOCKS])) {
+		if( itr == baseArea ) {
+			if( itr->blockhdr.owner == pid ) {
+				DEBUG_GC("Mark memory: %d\n", (int) itr->userPart);
+				itr->blockhdr.blocks |= GC_MARK;
+				return SOS_OK;
+			}
+			return -EINVAL;
+		}
+		itr += itr->blockhdr.blocks & ~MEM_MASK;
+	}
+	return -EINVAL;
+}
+
+//
+// GC a module
+//
+void malloc_gc(sos_pid_t pid)
+{
+#ifdef SOS_DEBUG_GC
+	int i;
+#endif
+	Block* block = (Block*)malloc_heap;
+	//
+	// Traverse the memory
+	// Look for matching pid
+	// If the memory is reserved and is not marked, free it
+	//
+	for (block = (Block*)malloc_heap; 
+       block != mSentinel; 
+       block += block->blockhdr.blocks & ~MEM_MASK) 
+    {
+		if ( (block->blockhdr.owner == pid) &&
+		((block->blockhdr.blocks & RESERVED) != 0) ) { 
+			if( ((block->blockhdr.blocks & GC_MARK) == 0) ){
+				DEBUG_GC("Found memory leak: %d\n", (int) block->userPart);
+				led_red_toggle();
+				ker_free(block->userPart);
+			} else {
+				block->blockhdr.blocks &= ~GC_MARK;
+			}		
+		}
+	}
+	
+#ifdef SOS_DEBUG_GC
+	for (block = (Block*)malloc_heap, i= 0; 
+       block != mSentinel; 
+       block += block->blockhdr.blocks & ~MEM_MASK) 
+    {
+		DEBUG_GC("block %d : addr: %x size: %d alloc: %d owner: %d check %d\n", i++, 
+	  (unsigned int) block, 
+	  (unsigned int) (block->blockhdr.blocks & ~MEM_MASK), 
+	  (unsigned int) (block->blockhdr.blocks & RESERVED)? 1 : 0, 
+	  (unsigned int) block->blockhdr.owner,
+	  (unsigned int) BLOCK_GUARD_BYTE(block));
+    }
+#endif
+
+}
+
+//
+// GC entire kernel
+//
+void malloc_gc_kernel( void )
+{
+#ifdef SOS_USE_GC
+	HAS_CRITICAL_SECTION;
+	ENTER_CRITICAL_SECTION();
+	shm_gc();
+	LEAVE_CRITICAL_SECTION();
+
+	ENTER_CRITICAL_SECTION();
+	timer_gc();
+	LEAVE_CRITICAL_SECTION();
+
+	ENTER_CRITICAL_SECTION();
+	sched_gc();
+	LEAVE_CRITICAL_SECTION();
+#ifdef SOS_RADIO_CHANNEL
+	ENTER_CRITICAL_SECTION();
+	radio_gc();
+	LEAVE_CRITICAL_SECTION();
+#endif
+
+#ifdef SOS_UART_CHANNEL
+	ENTER_CRITICAL_SECTION();
+	uart_gc();
+	LEAVE_CRITICAL_SECTION();
+#endif
+
+	ENTER_CRITICAL_SECTION();
+	mq_gc();
+	LEAVE_CRITICAL_SECTION();
+#endif
+}
+
+void malloc_gc_module( sos_pid_t pid )
+{
+#ifdef SOS_USE_GC
+	sos_module_t *mcb;
+	Block* block;
+	uint8_t mod_memmap_cnt = 0;
+	Block** mod_memmap;
+	uint8_t mod_stack_sp = 0;
+	Block** mod_gc_stack;
+	
+	Block*  mod_memmap_buf[MEM_MOD_GC_STACK_SIZE];
+	Block*  mod_gc_stack_buf[MEM_MOD_GC_STACK_SIZE];
+	HAS_CRITICAL_SECTION;
+	//
+	// Get module control block
+	//
+	mcb = ker_get_module( pid );
+	
+	if( mcb == NULL || mcb->handler_state == NULL) {
+		return;
+	}
+	
+	if( (mcb->flag & SOS_KER_STATIC_MODULE) != 0 ) {
+		// Don't check for static module (kernel module)
+		return;
+		//Block* baseArea; 
+		//baseArea = TO_BLOCK_PTR(mcb->handler_state);
+		//baseArea->blockhdr.blocks |= GC_MARK;
+	}
+	
+	ENTER_CRITICAL_SECTION();
+	//
+	// get number of blocks we need to check against
+	//
+	DEBUG_GC("in malloc_gc_module\n");
+	DEBUG_GC("get number of blocks\n");
+	for (block = (Block*)malloc_heap; 
+       block != mSentinel; 
+       block += block->blockhdr.blocks & ~MEM_MASK) 
+    {
+		if ( (block->blockhdr.owner == pid) &&
+		((block->blockhdr.blocks & RESERVED) != 0) ) { 
+			mod_memmap_cnt++;
+		}
+	}
+	
+	DEBUG_GC("allocate memory: mod_memmap_cnt = %d\n", mod_memmap_cnt);
+	//
+	// Allocate memory
+	//
+	if( mod_memmap_cnt < MEM_MOD_GC_STACK_SIZE ) {
+		mod_memmap = mod_memmap_buf;
+		mod_gc_stack = mod_gc_stack_buf;
+	} else {
+		mod_memmap = ker_malloc( sizeof(Block*) * mod_memmap_cnt, KER_MEM_PID );
+		if( mod_memmap == NULL ) {
+			LEAVE_CRITICAL_SECTION();
+			DEBUG_GC("no memory\n");
+			return;
+		}
+		
+		mod_gc_stack = ker_malloc( sizeof(Block*) * mod_memmap_cnt, KER_MEM_PID );
+		if( mod_gc_stack == NULL ) {
+			ker_free( mod_memmap );
+			LEAVE_CRITICAL_SECTION();
+			DEBUG_GC("no memory\n");
+			return;
+		}
+	}
+	
+	//
+	// Get all blocks in place
+	//
+	DEBUG_GC("get all blocks in place\n");
+	for (block = (Block*)malloc_heap, mod_memmap_cnt = 0; 
+       block != mSentinel; 
+       block += block->blockhdr.blocks & ~MEM_MASK) 
+    {
+		if ( (block->blockhdr.owner == pid) &&
+		((block->blockhdr.blocks & RESERVED) != 0) ) {
+			mod_memmap[mod_memmap_cnt] = block;
+			mod_memmap_cnt++;
+		}
+	}
+	
+	//
+	// Use module state as the root
+	//
+	mod_gc_stack[0] = TO_BLOCK_PTR(mcb->handler_state);
+	//
+	// Mark this item checked
+	//
+	(mod_gc_stack[0])->blockhdr.blocks |= GC_MARK;
+	mod_stack_sp = 1;
+	
+	//
+	// Run until all items in the stack is checked
+	//
+	DEBUG_GC("Mark memory\n");
+	while( mod_stack_sp != 0 ) {
+		uint16_t mem_size; // memory size to check 
+		uint16_t i;
+		uint8_t *userPart;
+		
+		mod_stack_sp--;
+		block = mod_gc_stack[ mod_stack_sp ];
+		
+		mem_size = BLOCKS_TO_BYTES( block->blockhdr.blocks );
+		userPart = block->userPart;
+		
+		for( i = 0; i < mem_size; i++ ) {
+			void *pntr;
+			uint8_t j;
+			//
+			// treated as double pointers
+			//
+			pntr = *((uint8_t**)(userPart + i));
+			
+			//
+			// Check against the memmap
+			//
+			for( j = 0; j < mod_memmap_cnt; j++ ) {
+				if( pntr == (mod_memmap[j])->userPart ) {
+					if( (((mod_memmap[j])->blockhdr.blocks) & GC_MARK) == 0 ) {
+						// found a match, added to sp
+						DEBUG_GC("Found a match addr: %d index: %d, value: %d\n", (int)userPart, (int) i, (int)pntr);
+						(mod_memmap[j])->blockhdr.blocks |= GC_MARK;
+						mod_gc_stack[ mod_stack_sp ] = mod_memmap[j];
+						mod_stack_sp++;
+					}
+				}
+			}
+		}
+	}
+	
+	DEBUG_GC("do module GC\n");
+	//
+	// Now do GC
+	//
+	{
+		uint8_t k;
+		
+		for( k = 0; k < mod_memmap_cnt; k++ ) {
+			if( ((mod_memmap[k])->blockhdr.blocks & GC_MARK) == 0 ) {
+				// found leak...
+				led_red_toggle();
+				DEBUG_GC("Found memory leak: %d\n", (int) (mod_memmap[k])->userPart);
+				ker_free( (mod_memmap[k])->userPart );
+			} else {
+				(mod_memmap[k])->blockhdr.blocks &= ~GC_MARK;
+			}
+		} 
+	}
+	
+	DEBUG_GC("memory cleanup\n");
+	//
+	// Clean up
+	//
+	if( mod_memmap_cnt < MEM_MOD_GC_STACK_SIZE ) {
+		ker_free( mod_memmap );
+		ker_free( mod_gc_stack );
+	}
+	LEAVE_CRITICAL_SECTION();
+#endif	
+}
+
 #ifdef SOS_DEBUG_MALLOC
 #ifndef SOS_SFI
 static void printMem(char* s)
@@ -816,7 +1126,8 @@ static void printMem(char* s)
   int i = 0;
 
   DEBUG("%s\n", s);
-  for (block = mSentinel->next; block != mSentinel && block < &(malloc_heap[NUM_HEAP_BLOCKS]) && block >= malloc_heap; block = block->next)
+  for (block = mSentinel->next; block != mSentinel && block < &(malloc_heap[NUM_HEAP_BLOCKS]) && block >= malloc_heap; 
+  block = block->next)
     {
       /*
 	if(block->blockhdr.owner != BLOCK_GUARD_BYTE(block)) {
@@ -838,15 +1149,15 @@ static void printMem(char* s)
   while(block != mSentinel && block >= malloc_heap && block < &(malloc_heap[NUM_HEAP_BLOCKS])) {
     DEBUG("block %d : addr: %x size: %d alloc: %d owner: %d check %d\n", i++, 
 	  (unsigned int) block, 
-	  (unsigned int) (block->blockhdr.blocks & ~RESERVED), 
-	  (unsigned int) (block->blockhdr.blocks & RESERVED), 
+	  (unsigned int) (block->blockhdr.blocks & ~MEM_MASK), 
+	  (unsigned int) (block->blockhdr.blocks & RESERVED)? 1 : 0, 
 	  (unsigned int) block->blockhdr.owner,
 	  (unsigned int) BLOCK_GUARD_BYTE(block));
-	if( (block->blockhdr.blocks & ~RESERVED) == 0 ) {
+	if( (block->blockhdr.blocks & ~MEM_MASK) == 0 ) {
 		DEBUG("blocks is zero\n");
 		exit(1);
 	}
-    block += block->blockhdr.blocks & ~RESERVED;
+    block += block->blockhdr.blocks & ~MEM_MASK;
   }
 
 }
@@ -864,47 +1175,13 @@ static void printMem(char* s)
   block = (Block*)malloc_heap;
   i = 0;
   while(block != mSentinel) {
-    DEBUG("block %d : Addr: %x size: %d alloc: %d owner: %d\n", i++, (uint32_t)block, block->blockhdr.blocks & ~RESERVED, block->blockhdr.blocks & RESERVED, block->blockhdr.owner);
-    block += block->blockhdr.blocks & ~RESERVED;
+    DEBUG("block %d : Addr: %x size: %d alloc: %d owner: %d\n", i++, (uint32_t)block, block->blockhdr.blocks & ~MEM_MASK, (block->blockhdr.blocks & RESERVED)? 1: 0, block->blockhdr.owner);
+    block += block->blockhdr.blocks & ~MEM_MASK;
   }
 }
 #endif // SOS_SFI
 #endif
 
-/**
- * Use by SYS API to notify module's panic
- */
-int8_t ker_mod_panic(sos_pid_t pid)
-{	
-  return ker_panic();
-}
-
-/**
- * Used by the kernel to notify kernel component panic
- */
-int8_t ker_panic(void)
-{
-  uint16_t val;
-  LED_DBG(LED_RED_ON);
-  LED_DBG(LED_GREEN_ON);
-  LED_DBG(LED_YELLOW_ON);
-  val = 0xffff;
-  while (1){
-#ifndef DISABLE_WDT
-    watchdog_reset();
-#endif
-    if (val == 0){
-      LED_DBG(LED_RED_TOGGLE);
-      LED_DBG(LED_GREEN_TOGGLE);
-      LED_DBG(LED_YELLOW_TOGGLE);
-#ifdef SOS_SIM
-      DEBUG("Malloc_Exception");
-#endif
-    }
-    val--;
-  }
-  return -EINVAL;	
-}
 
 void* ker_sys_malloc(uint16_t size)
 {    

@@ -283,9 +283,40 @@ int8_t shm_remove_all( sos_pid_t pid )
 	return SOS_OK;
 }
 
-int8_t shm_init()
+void shm_gc( void )
 {
-	ker_slab_init( KER_SHM_PID, &shm_slab, sizeof( shm_cb ), 4 );
+	uint8_t i;
+	
+	//
+	// Mark all slab memory
+	//
+	for( i = 0; i < SHM_NUM_BINS; i++ ) {
+		shm_cb *itr = shm_bin[i];
+		
+		while( itr != NULL ) {
+			slab_gc_mark( &shm_slab, itr );
+			itr = itr->next;
+		}
+	}
+	
+	//
+	// GC slab memory
+	//
+	slab_gc( &shm_slab, KER_SHM_PID );
+	//
+	// GC the shm
+	//
+	malloc_gc( KER_SHM_PID );
+}
+
+int8_t shm_init( void )
+{
+	uint8_t i;
+	
+	for( i = 0; i < SHM_NUM_BINS; i++ ) {
+		shm_bin[i] = NULL;
+	}
+	ker_slab_init( KER_SHM_PID, &shm_slab, sizeof( shm_cb ), 4, SLAB_LONGTERM );
 	return SOS_OK;
 }
 

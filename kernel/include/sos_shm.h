@@ -112,7 +112,8 @@ static inline uint8_t shm_get_event( Message *msg )
 // For kernel usage
 //
 extern int8_t shm_remove_all( sos_pid_t pid );
-extern int8_t shm_init();
+extern void shm_gc( void );
+extern int8_t shm_init( void );
 
 #endif
 

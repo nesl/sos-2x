@@ -86,7 +86,7 @@ void timer_init(void)
 	realtime[i].f = NULL;  
   }
   
-  ker_slab_init( TIMER_PID, &timer_slab, sizeof(sos_timer_t), 4 );
+  ker_slab_init( TIMER_PID, &timer_slab, sizeof(sos_timer_t), 4, SLAB_LONGTERM );
 }
 
 
@@ -127,7 +127,8 @@ int8_t timer_preallocate(sos_pid_t pid, uint8_t num_timers)
 /**
  * @brief remove timers for a particular pid
  */
-int8_t timer_remove_all(sos_pid_t pid){
+int8_t timer_remove_all(sos_pid_t pid)
+{
   list_link_t *link;
   
   for(link = deltaq.l_next;
@@ -509,13 +510,44 @@ int8_t ker_permanent_timer_init(sos_timer_t* tt, sos_pid_t pid, uint8_t tid, uin
    //! Fill up the data structures and insert into the timer pool
    tt->pid = pid;
    tt->tid = tid;
-   tt->type = type;
+   tt->type = type | PERMANENT_TIMER_MASK;
    list_insert_tail(&timer_pool, (list_link_t*)tt);
 
    return SOS_OK; 
 }
 
-
+void timer_gc( void )
+{
+	list_link_t *link;
+	
+	for(link = deltaq.l_next; link != (&deltaq); link = link->l_next) {
+		if( (((sos_timer_t*)link)->type & PERMANENT_TIMER_MASK) == 0 ) {
+			slab_gc_mark( &timer_slab, link );
+		} 
+	}
+	
+	for (link = timer_pool.l_next; link != (&timer_pool); link = link->l_next) {
+		if( (((sos_timer_t*)link)->type & PERMANENT_TIMER_MASK) == 0 ) {
+			slab_gc_mark( &timer_slab, link );
+		}
+	}
+	
+	for (link = prealloc_timer_pool.l_next; link != (&prealloc_timer_pool); link = link->l_next) {
+		if( (((sos_timer_t*)link)->type & PERMANENT_TIMER_MASK) == 0 ) {
+			slab_gc_mark( &timer_slab, link );
+		}
+	}
+	
+	for (link = periodic_pool.l_next; link != (&periodic_pool); link = link->l_next) {
+		if( (((sos_timer_t*)link)->type & PERMANENT_TIMER_MASK) == 0 ) {
+			slab_gc_mark( &timer_slab, link );
+		}
+	}
+	
+	slab_gc( &timer_slab, TIMER_PID );
+	
+	malloc_gc( TIMER_PID );
+}
 
 
 int8_t ker_timer_start(sos_pid_t pid, uint8_t tid, int32_t interval)

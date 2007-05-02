@@ -149,33 +149,16 @@ static inline void* malloc_longterm(uint16_t size, sos_pid_t id)
   return sos_blk_mem_longterm_alloc(size, id, true);
 }
 
+extern int8_t ker_gc_mark( sos_pid_t pid, void *pntr );
+
+extern void malloc_gc(sos_pid_t pid);
+
+extern void malloc_gc_kernel( void );
+
+extern void malloc_gc_module( sos_pid_t pid );
 #ifndef FAULT_TOLERANT_SOS
 #define ker_valid_access NULL
 #endif //FAULT_TOLERANT_SOS
-
-/**
- * force kernel enters panic mode
- * 
- * @note used by SOS kernel ONLY
- * @note ker_panic is weak symbol: appplication can redefine it.
- * ker_panic focrce kernel enters panic mode
- * In panic mode, kernel disables all modules and does folowing task.
- * 1. Toggling all LEDs (if available) sequentially and repeat
- * 2. Sending out memory dump periodically
- * 
- */
-int8_t ker_panic(void);
-
-/**
- * Notify a particular module is in panic.
- * 
- * @note used by SYS API to notify possible module failure. 
- * @note ker_mod_panic is a weak symbol: application can redefine it.
- * 
- * In module panic mode: it will call ker_panic() until we define 
- * further semantic
- */
-int8_t ker_mod_panic(sos_pid_t pid);
 
 #endif
 

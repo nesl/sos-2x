@@ -90,6 +90,8 @@ int sos_main(uint8_t cond){
     //! initialize memory manager
     mem_init();
 
+	shm_init();
+
 	//! initialize message pool
 	msg_queue_init();
 
@@ -113,7 +115,6 @@ int sos_main(uint8_t cond){
 
 	codemem_init();
 
-	shm_init();
 
 	//! starting memory module
 	mem_start();

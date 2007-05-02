@@ -48,6 +48,17 @@
 #include <string.h>
 #include <sos_sched.h>
 #include <slab.h>
+#include <hardware.h>
+
+#if defined (SOS_UART_CHANNEL)
+#include <sos_uart.h>
+#include <sos_uart_mgr.h>
+#endif
+
+#if defined (SOS_I2C_CHANNEL)                                
+#include <sos_i2c.h>                                         
+#include <sos_i2c_mgr.h>                                     
+#endif    
 
 // Comment out the lines below to enable debug messages from this component
 #undef DEBUG
@@ -64,7 +75,8 @@ static slab_t msg_slab;
 //----------------------------------------------------------------------------
 int8_t msg_queue_init()
 {
-	ker_slab_init( MSG_QUEUE_PID, &msg_slab, sizeof(Message), MSG_QUEUE_NUM_ITEMS );
+	ker_slab_init( MSG_QUEUE_PID, &msg_slab, sizeof(Message), 
+			MSG_QUEUE_NUM_ITEMS, 0 );
     return 0;
 }
 
@@ -245,6 +257,77 @@ Message *mq_get(mq_t *q, Message *m)
   }
   LEAVE_CRITICAL_SECTION();
   return ret;
+}
+
+//
+// mark memory in the message
+//
+void mq_gc_mark_payload( mq_t *q, sos_pid_t pid )
+{
+	Message *m;
+	
+	for( m = q->hq_head; m != NULL; m = m->next ) {
+		if( flag_msg_release( m->flag ) ) {
+			ker_gc_mark( pid, m->data );
+		}
+	}
+	
+	for( m = q->sq_head; m != NULL; m = m->next ) {
+		if( flag_msg_release( m->flag ) ) {
+			ker_gc_mark( pid, m->data );
+		}
+	}
+	
+	for( m = q->lq_head; m != NULL; m = m->next ) {
+		if( flag_msg_release( m->flag ) ) {
+			ker_gc_mark( pid, m->data );
+		}
+	}
+}
+
+//
+// mark the message header to slab
+//
+void mq_gc_mark_hdr( mq_t *q, sos_pid_t pid )
+{
+	Message *m;
+	
+	for( m = q->hq_head; m != NULL; m = m->next ) {
+		slab_gc_mark( &msg_slab, m );
+	}
+	
+	for( m = q->sq_head; m != NULL; m = m->next ) {
+		slab_gc_mark( &msg_slab, m );
+	}
+	
+	for( m = q->lq_head; m != NULL; m = m->next ) {
+		slab_gc_mark( &msg_slab, m );
+	}
+}
+
+void mq_gc_mark_one_hdr( Message *msg )
+{
+	slab_gc_mark( &msg_slab, msg );
+}
+
+//
+// GC on all message queues
+//
+void mq_gc( void )
+{
+	// TODO: call all message queues
+#ifdef SOS_USE_GC
+	sched_msg_gc();
+#ifdef SOS_RADIO_CHANNEL
+	radio_msg_gc();
+#endif
+
+#ifdef SOS_UART_CHANNEL
+	uart_msg_gc();
+#endif
+	slab_gc( &msg_slab, MSG_QUEUE_PID );
+	malloc_gc( MSG_QUEUE_PID );
+#endif
 }
 
 /**

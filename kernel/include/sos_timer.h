@@ -34,6 +34,7 @@ enum
 
 
 
+#define PERMANENT_TIMER_MASK             0x04
 #define SLOW_TIMER_MASK                  0x02
 #define ONE_SHOT_TIMER_MASK              0x01
 
@@ -194,7 +195,7 @@ extern int8_t timer_remove_all(sos_pid_t pid);
  */
 extern int8_t timer_preallocate(sos_pid_t pid, uint8_t num_timers);
 
-
+extern void timer_gc( void );
 /**
  * @brief Micro-reboot the timer service for the given module
  */

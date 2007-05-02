@@ -57,6 +57,9 @@
 #include <fntable.h>
 #include <sos_module_fetcher.h>
 #include <sos_logging.h>
+#ifdef SOS_USE_EXCEPTION_HANDLING
+#include <setjmp.h>
+#endif
 #ifdef FAULT_TOLERANT_SOS
 #define LED_DEBUG
 #include <led_dbg.h>
@@ -65,6 +68,9 @@
 #include <cross_domain_cf.h>
 #include <sfi_jumptable.h>
 #endif
+
+#define LED_DEBUG
+#include <led_dbg.h>
 
 
 #ifndef SOS_DEBUG_SCHED
@@ -86,7 +92,7 @@ enum
 //----------------------------------------------------------------------------
 //  STATIC FUNCTION DECLARATIONS
 //----------------------------------------------------------------------------
-#ifndef QUALNET_PLATFORM
+
 static inline bool sched_message_filtered(sos_module_t *h, Message *m);
 static int8_t sched_handler(void *state, Message *msg);
 static int8_t sched_register_module(sos_module_t *h, mod_header_ptr p,
@@ -95,10 +101,7 @@ static int8_t do_register_module(mod_header_ptr h,
 		sos_module_t *handle, void *init, uint8_t init_size,
 		uint8_t flag);
 static sos_pid_t sched_get_pid_from_pool();
-#ifdef FAULT_TOLERANT_SOS
-static int8_t ker_micro_reboot_module(sos_module_t* handle);
-#endif //FAULT_TOLERANT_SOS
-#endif //QUALNET_PLATFORM
+
 
 //----------------------------------------------------------------------------
 //  GLOBAL DATA DECLARATIONS
@@ -155,7 +158,10 @@ uint8_t sched_stalled = false;
 #define SCHED_NUM_THREAD_PIDS  (SOS_MAX_PID - APP_MOD_MAX_PID)
 #define SCHED_PID_SLOTS        ((SCHED_NUM_THREAD_PIDS + 7) / 8)
 static uint8_t pid_pool[SCHED_PID_SLOTS];
-
+#ifdef SOS_USE_EXCEPTION_HANDLING
+static jmp_buf sched_jbuf;
+static volatile sos_pid_t fault_pid;
+#endif
 //----------------------------------------------------------------------------
 //  FUNCTION IMPLEMENTATIONS
 //----------------------------------------------------------------------------
@@ -202,7 +208,7 @@ void sched_init(uint8_t cond)
 	//
 	// Initialize slab
 	//
-	ker_slab_init( KER_SCHED_PID, &sched_slab, sizeof(sos_module_t), 4 );
+	ker_slab_init( KER_SCHED_PID, &sched_slab, sizeof(sos_module_t), 4, SLAB_LONGTERM );
 	
 }
 
@@ -607,7 +613,17 @@ int8_t ker_deregister_module(sos_pid_t pid)
   return 0;
 }
 
+#ifdef SOS_USE_EXCEPTION_HANDLING
+static uint8_t do_setjmp( void )
+{
+	uint8_t r = setjmp(sched_jbuf);
 
+	if( r != 0 ) {
+		ker_deregister_module( (sos_pid_t) fault_pid );
+	}
+	return r;
+}
+#endif
 
 /**
  * @brief dispatch short message
@@ -617,7 +633,7 @@ void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
 		uint8_t type, uint8_t byte,
 		uint16_t word, uint16_t flag)
 {
-	sos_module_t *handle;
+		sos_module_t *handle;
 	msg_handler_t handler;
 	void *handler_state;
 
@@ -644,13 +660,21 @@ void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
 	 * Update current pid
 	 */
 	curr_pid = dst;
+
+#ifdef SOS_USE_EXCEPTION_HANDLING
+	if( do_setjmp() != 0 )
+	{
+		return;
+	}
+#endif
 	ker_log( SOS_LOG_HANDLE_MSG, curr_pid, type );
 #ifdef SOS_SFI
-		ker_cross_domain_call_mod_handler(handler_state, &short_msg, handler);
+	ker_cross_domain_call_mod_handler(handler_state, &short_msg, handler);
 #else
-		handler(handler_state, &short_msg);
+	handler(handler_state, &short_msg);
 #endif
-		ker_log( SOS_LOG_HANDLE_MSG_END, curr_pid, type );
+	ker_log( SOS_LOG_HANDLE_MSG_END, curr_pid, type );
+
 }
 
 
@@ -662,18 +686,18 @@ void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
 
 static void do_dispatch()
 {
-  Message *e;                                // Current message being dispatched
-  sos_module_t *handle;                      // Pointer to the control block of the destination module
-  Message *inner_msg = NULL;                 // Message sent as a payload in MSG_PKT_SENDDONE
-  sos_pid_t senddone_dst_pid = NULL_PID;     // Destination module ID for the MSG_PKT_SENDDONE
-  uint8_t senddone_flag = SOS_MSG_SEND_FAIL; // Status information for the MSG_PKT_SENDDONE
+	Message *e;                                // Current message being dispatched
+	sos_module_t *handle;                      // Pointer to the control block of the destination module
+	Message *inner_msg = NULL;                 // Message sent as a payload in MSG_PKT_SENDDONE
+	sos_pid_t senddone_dst_pid = NULL_PID;     // Destination module ID for the MSG_PKT_SENDDONE
+	uint8_t senddone_flag = SOS_MSG_SEND_FAIL; // Status information for the MSG_PKT_SENDDONE
 
-  SOS_MEASUREMENT_DEQUEUE_START();
-  e = mq_dequeue(&schedpq);
-  SOS_MEASUREMENT_DEQUEUE_END();
-  handle = ker_get_module(e->did);
-  // Destination module might muck around with the
-  // type field. So we check type before dispatch
+	SOS_MEASUREMENT_DEQUEUE_START();
+	e = mq_dequeue(&schedpq);
+	SOS_MEASUREMENT_DEQUEUE_END();
+	handle = ker_get_module(e->did);
+	// Destination module might muck around with the
+	// type field. So we check type before dispatch
 	if(e->type == MSG_PKT_SENDDONE) {
 		inner_msg = (Message*)(e->data);
 	}
@@ -685,6 +709,9 @@ static void do_dispatch()
 	// Ram - Modules might access kernel domain here
 	monitor_deliver_incoming_msg_to_monitor(e);
 
+#ifdef SOS_USE_EXCEPTION_HANDLING
+	fault_pid = 0;
+#endif
 	if(handle != NULL) {
 		if(sched_message_filtered(handle, e) == false) {
 			int8_t ret;
@@ -692,13 +719,13 @@ static void do_dispatch()
 			void *handler_state;
 
 			DEBUG("###################################################################\n");
-			DEBUG("MESSAGE FROM %d TO %d OF TYPE %d\n", e->sid, e->did, e->type);
-			DEBUG("###################################################################\n");
+				DEBUG("MESSAGE FROM %d TO %d OF TYPE %d\n", e->sid, e->did, e->type);
+				DEBUG("###################################################################\n");
 
 
-			// Get the function pointer to the message handler
-			handler = (msg_handler_t)sos_read_header_ptr(handle->header,
-					offsetof(mod_header_t,
+				// Get the function pointer to the message handler
+				handler = (msg_handler_t)sos_read_header_ptr(handle->header,
+						offsetof(mod_header_t,
 						module_handler));
 			// Get the pointer to the module state
 			handler_state = handle->handler_state;
@@ -708,58 +735,26 @@ static void do_dispatch()
 				ker_change_own(e->data, e->did);
 			}
 
-#ifdef FAULT_TOLERANT_SOS		
-			// Check for memory corruption in dynamic modules
-			if (((handle->flag) & SOS_KER_STATIC_MODULE) == 0){
-				int8_t mem_verify_status;
-				// Check the integrity of all memory owned by the module
-				mem_verify_status = mod_mem_verify_checksum(handle);
-				// Check the integrity of the message payload being delivered to the module
-				if (!flag_msg_release(e->flag)){
-					if (mem_check_module_domain(e->data) == true){
-						DEBUG("Checking CRC of the incoming message payload\n");
-						if (mem_block_verify_checksum(e->data) != SOS_OK){
-							// We cannot deliver corrupt message
-							DEBUG("Message payload is corrupted\n");
-							// We simply skip handling of this message for the time being
-							ret = -EINVAL;
-							goto skip_handler;
-						}
-					}
-				}
-				DEBUG("Message payload is verified corrent\n");
-				// Micro-reboot the module if the memory integrity check failed
-				if (mem_verify_status != SOS_OK){
-					// XXX - Not checking if micro-reboot was a success or a failure
-					LED_DBG(LED_RED_ON);
-					ker_micro_reboot_module(handle);
-					LED_DBG(LED_GREEN_ON);
-					ret = -EINVAL;
-					goto skip_handler;
+
+			DEBUG("RUNNING HANDLER OF MODULE %d \n", handle->pid);
+			curr_pid = handle->pid;
+#ifdef SOS_USE_EXCEPTION_HANDLING
+			if( do_setjmp() == 0 ) 
+#endif
+			{
+				ker_log( SOS_LOG_HANDLE_MSG, curr_pid, e->type );
+#ifdef SOS_SFI
+				ret = ker_cross_domain_call_mod_handler(handler_state, e, handler);
+#else
+				ret = handler(handler_state, e);
+#endif
+				ker_log( SOS_LOG_HANDLE_MSG_END, curr_pid, e->type );
+				DEBUG("FINISHED HANDLER OF MODULE %d \n", handle->pid);
+			
+				if (ret == SOS_OK) {
+					senddone_flag = 0;
 				}
 			}
-			DEBUG("Memory integrity for the destination module is verified\n");
-			// Everything is fine !! Ready to rock n roll
-#endif
-
-	  DEBUG("RUNNING HANDLER OF MODULE %d \n", handle->pid);
-		curr_pid = handle->pid;
-		ker_log( SOS_LOG_HANDLE_MSG, curr_pid, e->type );
-#ifdef SOS_SFI
-		ret = ker_cross_domain_call_mod_handler(handler_state, e, handler);
-#else
-	  ret = handler(handler_state, e);
-#endif
-		ker_log( SOS_LOG_HANDLE_MSG_END, curr_pid, e->type );
-	  DEBUG("FINISHED HANDLER OF MODULE %d \n", handle->pid);
-
-#ifdef FAULT_TOLERANT_SOS
-	  //! Set new checksum value for dynamic modules
-	  if (((handle->flag) & SOS_KER_STATIC_MODULE) == 0)
-		mod_mem_set_checksum(handle);
-skip_handler:
-#endif
-		if (ret == SOS_OK) senddone_flag = 0;
 		}
 	} else {
 #if 0
@@ -841,7 +836,32 @@ void sched_msg_remove(Message *m)
   }
 }
 
+void sched_gc( void )
+{
+	register uint8_t i = 0;
+	//
+	// Mark message payload
+	//
+	mq_gc_mark_payload( &schedpq, KER_SCHED_PID );
+	
+	//
+	// Mark slab for module control blocks
+	//
+	for( i = 0; i < SCHED_NUMBER_BINS; i++ ) {
+		sos_module_t *itr = mod_bin[i];
+		while( itr != NULL ) {
+			slab_gc_mark( &sched_slab, itr );
+			itr = itr->next;
+		}
+	}
+	slab_gc( &sched_slab, KER_SCHED_PID );
+	malloc_gc( KER_SCHED_PID );
+}
 
+void sched_msg_gc( void )
+{
+	mq_gc_mark_hdr( &schedpq, KER_SCHED_PID );
+}
 /**
  * @brief Message filtering rules interface
  * @param rules_in  new rule
@@ -950,4 +970,51 @@ void sched(void)
 		watchdog_reset();
 	}
 }
+
+
+/**
+ * Use by SYS API to notify module's panic
+ */
+int8_t ker_mod_panic(sos_pid_t pid)
+{   
+#ifdef SOS_USE_EXCEPTION_HANDLING
+	fault_pid = pid;
+  longjmp( sched_jbuf, 1 );
+#else
+  return ker_panic();
+#endif
+} 
+  
+/**
+ * Used by the kernel to notify kernel component panic
+ */
+int8_t ker_panic(void)
+{
+  uint16_t val;
+  LED_DBG(LED_RED_ON);
+  LED_DBG(LED_GREEN_ON);
+  LED_DBG(LED_YELLOW_ON);
+  val = 0xffff;
+#ifdef SOS_SIM
+    exit(1);
+    return -EINVAL;
+#else
+  while (1){
+#ifndef DISABLE_WDT
+    watchdog_reset();
+#endif
+    if (val == 0){
+      LED_DBG(LED_RED_TOGGLE);
+      LED_DBG(LED_GREEN_TOGGLE);
+      LED_DBG(LED_YELLOW_TOGGLE);
+#ifdef SOS_SIM
+      DEBUG("Malloc_Exception");
+#endif
+    }
+    val--;
+  }
+  return -EINVAL;
+#endif
+}
+
 

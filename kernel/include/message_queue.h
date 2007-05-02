@@ -113,6 +113,14 @@ extern void msg_dispose(Message *m);
  * NOTE the implementation will need to improve
  */
 extern void msg_send_senddone(Message *msg_sent, bool succ, sos_pid_t msg_owner);
+
+extern void mq_gc_mark_payload( mq_t *q, sos_pid_t pid );
+
+extern void mq_gc_mark_hdr( mq_t *q, sos_pid_t pid );
+
+extern void mq_gc_mark_one_hdr( Message *msg );
+
+extern void mq_gc( void );
 #ifdef FAULT_TOLERANT_SOS
 /**
  * @brief Move a message (header and payload) to the module domain

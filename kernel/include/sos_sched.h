@@ -151,6 +151,9 @@ extern void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
 		uint8_t type, uint8_t byte,
 		uint16_t word, uint16_t flag);
 
+extern void sched_gc( void );
+
+extern void sched_msg_gc( void );
 
 /**
  * @brief register a static kernel model
@@ -172,6 +175,31 @@ extern sos_pid_t*   pid_sp;                        //!< pid stack pointer
 #define SCHED_STALL() {sched_stalled = true;}
 
 #define SCHED_RESUME() {sched_stalled = false;}
+
+/**
+ * force kernel enters panic mode
+ * 
+ * @note used by SOS kernel ONLY
+ * @note ker_panic is weak symbol: appplication can redefine it.
+ * ker_panic focrce kernel enters panic mode
+ * In panic mode, kernel disables all modules and does folowing task.
+ * 1. Toggling all LEDs (if available) sequentially and repeat
+ * 2. Sending out memory dump periodically
+ * 
+ */
+int8_t ker_panic(void);
+
+/**
+ * Notify a particular module is in panic.
+ * 
+ * @note used by SYS API to notify possible module failure. 
+ * @note ker_mod_panic is a weak symbol: application can redefine it.
+ * 
+ * In module panic mode: it will call ker_panic() until we define 
+ * further semantic
+ */
+int8_t ker_mod_panic(sos_pid_t pid);
+
 
 #endif
 
