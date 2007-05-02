@@ -29,6 +29,7 @@ int8_t uart_startTransceiverRx(
 
 uint8_t *uart_getRecievedData(void);
 
+void uart_rx_msg_gc( void );
 #endif /* _MODULE_ */
 
 #endif // _UART_H_

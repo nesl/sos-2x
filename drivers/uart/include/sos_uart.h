@@ -36,6 +36,8 @@ extern void sos_uart_init(void);
 #ifndef DISABLE_UART
 #ifndef NO_SOS_UART
 extern void uart_msg_alloc(Message *e);
+extern void uart_gc( void );
+extern void uart_msg_gc( void );
 #else
 #define uart_msg_alloc(e) 
 #endif

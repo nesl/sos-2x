@@ -121,6 +121,23 @@ void uart_msg_alloc(Message *m)
 	LEAVE_CRITICAL_SECTION();
 }
 
+void uart_gc( void )
+{
+	mq_gc_mark_payload( &uartpq, KER_UART_PID );
+	if( s.msg_ptr != NULL && flag_msg_release(s.msg_ptr->flag)) {
+		ker_gc_mark( KER_UART_PID, s.msg_ptr );
+	}
+	malloc_gc( KER_UART_PID );
+}
+
+void uart_msg_gc( void )
+{
+	uart_rx_msg_gc();
+	if( s.msg_ptr != NULL ) {
+		mq_gc_mark_one_hdr( s.msg_ptr );
+	}
+	mq_gc_mark_hdr( &uartpq, KER_UART_PID );
+}
 
 int8_t sos_uart_msg_handler(void *state, Message *msg) 
 {

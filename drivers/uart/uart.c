@@ -90,6 +90,13 @@ void uart_init(void) {
 	}
 }
 
+void uart_rx_msg_gc( void )
+{
+	if( state[RX].msgHdr != NULL ) {
+		mq_gc_mark_one_hdr( state[RX].msgHdr );
+	}
+}
+
 static inline void uart_send_byte(uint8_t byte) {
 	static uint8_t saved_state;
 
