@@ -35,7 +35,6 @@ static void add_to_buffer(AODV_state_t *s, AODV_pkt_t *pkt);
 static uint8_t get_from_buffer(AODV_state_t *s, uint8_t dest_addr, AODV_pkt_t ** data_pkt);
 static void remove_expired_buffer_entries(AODV_state_t *s);
 
-//static cmn_packet_t *aodv_get_buffer(uint16_t length);
 static int8_t aodv_module_handler(void *state, Message *msg);
 
 static int8_t aodv_module_handler(void *state, Message *msg);
@@ -103,94 +102,6 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 			
 			return SOS_OK;
 		}
-#if 0
-		case MSG_SEND_PACKET:
-		{
-			cmn_packet_t *cmn_pkt = (cmn_packet_t *)msg->data;
-			AODV_pkt_t *data_pkt;
-			uint16_t next_hop;
-			
-			DEBUG("[AODV] node %d SEND_DATA: dest=%d length=%d\n",
-				sys_id(), cmn_pkt->hdr.dst.id, cmn_pkt->hdr.payload_len);
-
-				
-				// I MUST ASK FOR THAT!!!
-				
-/*			if(s->num_of_neighbors == 0)
-			{
-				DEBUG("[AODV] node %d ERROR: No neighbors. Discarding packet\n", sys_id());
-				return SOS_OK;
-			} */
-				
-			data_pkt = (AODV_pkt_t *)sys_malloc(sizeof(AODV_hdr_t) +cmn_pkt->hdr.payload_len);
-
-			data_pkt->hdr.source_addr = sys_id();
-			data_pkt->hdr.dest_addr = cmn_pkt->hdr.dst.id;
-			data_pkt->hdr.dst_pid = msg->sid;
-			data_pkt->hdr.length = cmn_pkt->hdr.payload_len;
-
-			memcpy(data_pkt->data, cmn_pkt->payload, cmn_pkt->hdr.payload_len);
-			DEBUG("[AODV] Tx packet %x to %d: %i %i %i %i %i!\n",
-				(int)data_pkt,
-				data_pkt->hdr.dest_addr,
-				data_pkt->data[0], 
-				data_pkt->data[1],
-				data_pkt->data[2],
-				data_pkt->data[3],
-				data_pkt->data[4]); 
-
-			//if destination is a neighbor, then send directly
-/*			if(check_neighbors(s, cmn_pkt->hdr.dst.id) == FOUND)
-			{	
-				DEBUG("[AODV] node %d: sending packet directly to node %d", sys_id(), cmn_pkt->hdr.dst.id);
-				
-				s->seq_no++;
-				data_pkt->hdr.seq_no = s->seq_no;
-							
-				post_net(AODV_PID, AODV_PID, MSG_AODV_RECV_DATA,
-					sizeof(AODV_hdr_t) + cmn_pkt->hdr.payload_len, data_pkt, 
-					SOS_MSG_DYM_MANAGED, cmn_pkt->hdr.dst.id);
-					
-				return SOS_TAKEN;		
-			}
-			else*/
-			{
-				//if the route is known, then forward to next hop
-				if((next_hop = get_next_hop(s, cmn_pkt->hdr.dst.id)) != INVALID_NODE_ID)
-				{
-					DEBUG("[AODV] node %d: forwarding packet to node %d", sys_id(), next_hop);
-					s->seq_no++;
-					data_pkt->hdr.seq_no = s->seq_no;
-					sys_led(LED_RED_TOGGLE);	
-					use_route(s, data_pkt->hdr.dest_addr);			
-					sys_post_net(AODV_PID, MSG_AODV_RECV_DATA,
-						sizeof(AODV_hdr_t) + cmn_pkt->hdr.payload_len, data_pkt, 
-						SOS_MSG_RELEASE | SOS_MSG_LINK_AUTO | SOS_MSG_RAW, next_hop);			
-						
-					return SOS_OK;		
-				}
-				else
-				{
-					//route is unknown
-					DEBUG("[AODV] node %d: buffering packet to node %d\n", sys_id(), cmn_pkt->hdr.dst.id);
-					add_to_buffer(s, data_pkt);
-					
-					//if rreq for the node hasn't been sent, then send it
-					
-					if(check_pending_rreq(s, cmn_pkt->hdr.dst.id) == NOT_FOUND)
-					{
-						if(add_pending_rreq(s, cmn_pkt->hdr.dst.id) == SUCCESS) {
-							sys_post_value(AODV_PID, MSG_AODV_SEND_RREQ,
-								cmn_pkt->hdr.dst.id, 0);
-						}
-					}
-					return SOS_OK;
-				}
-			}
-				
-			return SOS_OK;
-		}		
-#endif		
 		case MSG_AODV_SEND_RREQ:
 		{
 			uint32_t *p  = (uint32_t *)msg->data;
@@ -236,11 +147,6 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 
 			//sys_led(LED_YELLOW_TOGGLE);
 				
-			//char buf_proto[4];
-			//buf_proto[0] = 'v';
-			//buf_proto[1] = 'L';
-			//buf_proto[2] = 'L';
-			//buf_proto[3] = '2';
 			update_seq_no(s, hdr->source_addr, hdr->source_seq_no);
 			
 			if(hdr->dest_addr == sys_id())
@@ -576,8 +482,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 		{
 			remove_inactive_routes(s); //check for inactive routes
 			remove_inactive_cache_entries(s); //check for inactive cache entries
-			// AODV2 remove_expired_buffer_entries(s); //check for expired packets in buffer
-			//char buf_proto[4] = {'v', 'v', 'v', '0'};
+			
 			remove_expired_buffer_entries(s);
 						
 			return SOS_OK;
@@ -605,6 +510,12 @@ static int8_t routing_msg_alloc(func_cb_ptr p, Message *msg)
 		  sys_id(), cmn_pkt->hdr.dst.id, cmn_pkt->hdr.payload_len);
 	
 	// I MUST ASK FOR THAT!!!
+	/*			if(s->num_of_neighbors == 0)
+			{
+				DEBUG("[AODV] node %d ERROR: No neighbors. Discarding packet\n", sys_id());
+				return SOS_OK;
+			} */
+	
 	data_pkt = (AODV_pkt_t *)sys_malloc(sizeof(AODV_hdr_t) +msg->len);
 	
 	data_pkt->hdr.source_addr = sys_id();
@@ -625,6 +536,20 @@ static int8_t routing_msg_alloc(func_cb_ptr p, Message *msg)
 		  data_pkt->data[4]); 
 	
 	//if the route is known, then forward to next hop
+	/*			if(check_neighbors(s, cmn_pkt->hdr.dst.id) == FOUND)
+			{	
+				DEBUG("[AODV] node %d: sending packet directly to node %d", sys_id(), cmn_pkt->hdr.dst.id);
+				
+				s->seq_no++;
+				data_pkt->hdr.seq_no = s->seq_no;
+							
+				post_net(AODV_PID, AODV_PID, MSG_AODV_RECV_DATA,
+					sizeof(AODV_hdr_t) + cmn_pkt->hdr.payload_len, data_pkt, 
+					SOS_MSG_DYM_MANAGED, cmn_pkt->hdr.dst.id);
+					
+				return SOS_TAKEN;		
+			}
+			else {*/
 	if((next_hop = get_next_hop(s, data_pkt->hdr.dest_addr)) != INVALID_NODE_ID)
 	{
 		DEBUG("[AODV] node %d: forwarding packet to node %d", sys_id(), next_hop);
@@ -1046,12 +971,6 @@ static uint8_t check_dest_addr(AODV_state_t *s, AODV_rerr_pkt_t *hdr)
 
 	uint8_t return_value = NOT_FOUND;
 	/* Loop until we've reached the end of the list */
-	
-	//char buf_proto[4];
-	//buf_proto[0] = 'L';
-	//buf_proto[1] = 'L';
-	//buf_proto[2] = 'v';
-	//buf_proto[3] = '1';	
 	
 	while( AODV_route_ptr != NULL )
 	{
