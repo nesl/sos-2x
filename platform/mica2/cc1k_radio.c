@@ -556,6 +556,29 @@ void radio_msg_alloc(Message *m)
   return;
 }
 
+void radio_gc( void )
+{
+	mq_gc_mark_payload( &pq, RADIO_PID );
+	if( txmsgptr != NULL ) {
+		ker_gc_mark( RADIO_PID, txmsgptr );
+	}
+	if( rxmsg != NULL ) {
+		ker_gc_mark( RADIO_PID, rxmsg );
+	}
+	malloc_gc( RADIO_PID );
+}
+
+void radio_msg_gc( void )
+{
+	if( txmsgptr != NULL ) {
+		mq_gc_mark_one_hdr( txmsgptr );
+	}
+	if( rxmsg != NULL ) {
+		mq_gc_mark_one_hdr( rxmsg );
+	}
+	mq_gc_mark_hdr( &pq, RADIO_PID );
+}
+
 
 //-----------------------------------------------------------------------------
 // RADIO SPI INTERRUPT

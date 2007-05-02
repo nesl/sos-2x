@@ -231,6 +231,20 @@ HAS_CRITICAL_SECTION;
 }
 
 /*************************************************************************
+ * GC support                                                            *
+ *************************************************************************/
+void radio_gc( void )
+{
+	mq_gc_mark_payload( &vmac_pq, RADIO_PID );	
+	malloc_gc( RADIO_PID );
+}
+
+void radio_msg_gc( void )
+{
+	mq_gc_mark_hdr( &vmac_pq, RADIO_PID );
+}
+
+/*************************************************************************
  * define the callback function for receiving data                       *
  *************************************************************************/
 void (*_mac_recv_callback)(Message *m) = 0;

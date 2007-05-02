@@ -103,6 +103,8 @@ extern int8_t radio_init();
 extern void radio_msg_alloc(Message *e);
 extern void ker_radio_ack_enable();
 extern void ker_radio_ack_disable();
+extern void radio_msg_gc( void );
+extern void radio_gc( void );
 
 #endif//_MODULE_
 

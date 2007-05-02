@@ -126,4 +126,7 @@ extern void mac_set_recv_callback(void (*func)(Message *m));
  *************************************************************************/
 extern int8_t radio_set_timestamp(bool on);
 
+extern void radio_gc( void );
+extern void radio_msg_gc( void );
+
 #endif //_VMAC_H

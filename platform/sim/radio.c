@@ -102,9 +102,7 @@ static int getj(int16_t id);
 static void print_nodes();
 static int get_sin_port(int16_t id);
 
-static bool      msg_succ[NUM_SENDDONES_MSG];
-static Message * senddone_buf[NUM_SENDDONES_MSG];
-static int num_senddones = 0;
+static mq_t      senddoneq;
 static bool senddone_callback_requested = false;
 
 /**
@@ -115,12 +113,23 @@ static bool senddone_callback_requested = false;
 
 static void handle_senddone( void )
 {
-	int i;
-	for( i = 0; i < num_senddones; i++ ) {
-		msg_send_senddone(senddone_buf[i], msg_succ[i], RADIO_PID);
+	uint8_t succ;
+	Message *m;
+	
+	while( 1 ) {
+		m = mq_dequeue( &senddoneq );
+		if( m == NULL ) {
+			break;
+		}
+		if( m->flag & SOS_MSG_SEND_FAIL ) {
+			succ = 0;
+		} else {
+			succ = 1;
+		}
+		m->flag &= ~SOS_MSG_SEND_FAIL;
+		msg_send_senddone( m, succ, RADIO_PID );
 	}
 
-	num_senddones = 0;
 	senddone_callback_requested = false;
 }
 
@@ -197,21 +206,28 @@ void radio_msg_alloc(Message *m)
 			timestamp_outgoing(txmsgptr, ker_systime32());
 		}
 
-		if( num_senddones == NUM_SENDDONES_MSG ) {
-			fprintf(stderr, "no enough buffer for holding SENDDONE\n");
-			fprintf(stderr, "increase NUM_SENDDONES_MSG in platform/sim/radio.c\n");
-			exit( 1 );
+		if( succ == false ) {
+			txmsgptr->flag |= SOS_MSG_SEND_FAIL;
 		}
+		mq_enqueue( &senddoneq, txmsgptr );
 
-		senddone_buf[num_senddones] = txmsgptr;
-		msg_succ[num_senddones] = succ;
-		num_senddones++;
 		if( senddone_callback_requested == false ) {
 			interrupt_add_callbacks(handle_senddone);
 			senddone_callback_requested = true;
 		}
 	}
 	LEAVE_CRITICAL_SECTION();
+}
+
+void radio_gc( void )
+{
+	mq_gc_mark_payload( &senddoneq, RADIO_PID );	
+	malloc_gc( RADIO_PID );
+}
+
+void radio_msg_gc( void )
+{
+	mq_gc_mark_hdr( &senddoneq, RADIO_PID );
 }
 
 static void print_nodes()
@@ -517,6 +533,8 @@ void radio_init()
 	}
 
 	interrupt_add_read_fd(topo_self.sock, recv_thread);
+	
+	mq_init(&senddoneq);
 }
 
 void radio_final()
