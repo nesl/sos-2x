@@ -75,7 +75,6 @@ Message;
 
 typedef int8_t (*msg_handler_t)(void *state, Message *m);
 
-
 #define SOS_MSG_HEADER_SIZE (offsetof(struct Message, data))
 #define SOS_MSG_DID_OFFSET  (offsetof(struct Message, did))
 #define SOS_MSG_TYPE_OFFSET (offsetof(struct Message, type))

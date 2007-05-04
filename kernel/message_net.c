@@ -63,12 +63,33 @@
 #include <sos_i2c_mgr.h>
 #endif
 
+typedef int8_t (*routing_func_t)(func_cb_ptr cb, Message *m);
 //-------------------------------------------------------------------------------
 // STATIC FUNCTION DECLARATIONS
 //-------------------------------------------------------------------------------
 static int8_t sos_msg_dispatch(Message* m);
 static inline void msg_change_endian(Message* e);
 static void sos_msg_find_right_link(Message *m);
+static int8_t routing_handler(void *state, Message *msg);
+static sos_module_t routing_module;
+static func_cb_ptr routing_func_ptr[1];
+static mod_header_t mod_header SOS_MODULE_HEADER =
+{
+  mod_id : KER_ROUTING_PID,
+  state_size : 0,
+  num_prov_func : 0,
+  num_sub_func : 1,
+  module_handler: routing_handler,
+  funct : {
+    // routing function
+    {error_8, "czv1", RUNTIME_PID, RUNTIME_FID},
+  },
+};
+
+static int8_t routing_handler(void *state, Message *msg)
+{
+	return -EINVAL;
+} 
 
 //-------------------------------------------------------------------------------
 // FUNCTION IMPLEMENTATIONS
@@ -218,15 +239,15 @@ static int8_t sos_msg_dispatch(Message* m)
 	return -EINVAL;
 #endif
 
-	if( flag_msg_raw(m->flag) == 0 ) {
+	if( m->daddr != BCAST_ADDRESS && flag_msg_raw(m->flag) == 0 ) {
+		int8_t ret;
 		// Not using raw message, send to the routing layer first
-
-		/*
-		if( SOS_CALL(cb, m) == SOS_OK ) {
+		ret = SOS_CALL(routing_func_ptr[0], routing_func_t, m);
+		if( ret == SOS_OK ) {
+			msg_send_senddone( m, true, KER_ROUTING_PID );
 			msg_dispose(m);
 			return SOS_OK;
 		}
-		*/
 	}
 
 	if (flag_msg_link_auto(m->flag) && m->daddr != BCAST_ADDRESS) {
@@ -352,6 +373,22 @@ int8_t ker_sys_post_link(sos_pid_t dst_mod_id, uint8_t type,
 		return ker_mod_panic(my_id);
 	}
 	return SOS_OK;
+}
+
+int8_t ker_sys_routing_register( uint8_t fid )
+{
+	sos_pid_t sub_id = ker_get_current_pid();
+	
+	if(ker_fntable_subscribe(KER_ROUTING_PID, sub_id, fid, 0) != SOS_OK) {
+		return -EINVAL;
+	}
+	return SOS_OK;
+}
+
+void routing_init( void )
+{
+	sched_register_kernel_module( &routing_module, sos_get_header_address(mod_header), routing_func_ptr);
+
 }
 
 

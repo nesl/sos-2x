@@ -273,5 +273,6 @@ extern int8_t post_longer(sos_pid_t did,
  */
 extern uint8_t *ker_msg_take_data(sos_pid_t pid, Message *msg);
 
+extern void routing_init( void );
 #endif
 

@@ -60,6 +60,7 @@ int8_t ker_sys_shm_wait( sos_shm_t name );
 int8_t ker_sys_shm_stopwait( sos_shm_t name );
 sos_pid_t ker_get_current_pid( void );
 sos_pid_t ker_get_caller_pid( void );
+int8_t ker_sys_routing_register( uint8_t fid );
 
 #ifdef SOS_SIM
 #ifdef _MODULE_
@@ -840,6 +841,17 @@ static inline sos_pid_t sys_caller_pid()
   return ((sys_pid_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*29))( );
 #else
   return ker_get_caller_pid( );
+#endif
+}
+
+typedef int8_t (*sys_routing_register_func_t)( uint8_t fid );
+
+static inline int8_t sys_routing_register( uint8_t fid )
+{
+#ifdef SYS_JUMP_TBL_START
+	return ((sys_routing_register_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*29))( fid );
+#else
+	return ker_sys_routing_register( fid );
 #endif
 }
 
