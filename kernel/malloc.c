@@ -791,9 +791,9 @@ static int8_t mem_handler(void *state, Message *msg)
   case MSG_TIMER_TIMEOUT:
     {
       //mem_defrag();
-	  led_yellow_toggle();
+	  //led_yellow_toggle();
 	  malloc_gc_kernel();
-	  led_yellow_toggle();
+	  //led_yellow_toggle();
       break;
     }
   case MSG_INIT:
