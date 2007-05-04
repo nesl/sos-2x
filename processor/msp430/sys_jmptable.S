@@ -32,5 +32,5 @@ br #ker_sys_shm_wait    ; 26
 br #ker_sys_shm_stopwait 
 br #ker_get_current_pid    ; 28
 br #ker_get_caller_pid 
-br 0    ; 30
+br #ker_sys_routing_register    ; 30
 br 0 

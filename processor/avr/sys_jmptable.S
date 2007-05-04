@@ -36,5 +36,5 @@ jmp ker_sys_shm_wait       ; 26
 jmp ker_sys_shm_stopwait   ; 27
 jmp ker_get_current_pid    ; 28
 jmp ker_get_caller_pid     ; 29
-jmp 0                      ; 30
+jmp ker_sys_routing_register     ; 30
 jmp 0                      ; 31
