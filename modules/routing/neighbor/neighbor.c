@@ -8,7 +8,7 @@
 
 #include "neighbor.h"
 
-#define NEIGHBOR_TIMER_INTERVAL	   2048L
+#define NEIGHBOR_TIMER_INTERVAL	   (8 * 1024L)
 #define MSG_BEACON_PKT             MOD_MSG_START
 
 //
