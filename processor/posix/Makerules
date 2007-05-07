@@ -14,7 +14,11 @@ INCDIR += -I$(ROOTDIR)/drivers/uart/include
 INCDIR += -I$(ROOTDIR)/processor/$(PROCESSOR)/include
 
 ifeq ($(HOST), Darwin)
+ifeq ($(shell uname -m), i386)
+DEFS += -DLLITTLE_ENDIAN
+else
 DEFS += -DBBIG_ENDIAN
+endif
 else
 DEFS += -DLLITTLE_ENDIAN
 endif
