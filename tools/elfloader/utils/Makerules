@@ -30,7 +30,11 @@ endif
 ####################################
 HOST = $(shell uname -s)
 ifeq ($(HOST), Darwin)
+ifeq ($(shell uname -m), i386)
+DEFS += -DLLITTLE_ENDIAN
+else
 CFLAGS += -DBBIG_ENDIAN
+endif
 else
 CFLAGS += -DLLITTLE_ENDIAN
 endif
