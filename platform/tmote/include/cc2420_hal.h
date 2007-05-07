@@ -246,31 +246,9 @@ extern void TC_STROBE(uint8_t);
  *  R: the register, I: start position, J, end position, C: value of  *
  *  the bits                                                          *  
  **********************************************************************/
-#define TC_GET_REG(R,I,J,C)	\
-	do {	int8_t i=I;	\
-		int8_t j=J;	\
-		TC_UNSELECT_RADIO;	\
-		TC_SELECT_RADIO;	\
-		TC_WRITE_BYTE((0x40|R));	\
-		TC_READ_WORD(&C);	\
-		C = GETBITS(C,i,j);	\
-		TC_UNSELECT_RADIO;	\
-		TC_SELECT_RADIO;	\
-	} while(0);
-#define TC_SET_REG(R,I,J,C)	\
-	do {	int16_t wd;	\
-		int8_t i=I;	\
-		int8_t j=J;	\
-		TC_UNSELECT_RADIO;	\
-		TC_SELECT_RADIO;	\
-		TC_WRITE_BYTE((0x40|R));	\
-		TC_READ_WORD(&wd);	\
-		SETBITS(wd,C,i,j);	\
-		TC_WRITE_BYTE(R);	\
-		TC_WRITE_WORD(wd);	\
-		TC_UNSELECT_RADIO;	\
-		TC_SELECT_RADIO;	\
-	} while(0);
+extern void TC_GET_REG(uint8_t , int8_t , int8_t , uint16_t* );
+extern void TC_SET_REG(uint8_t , int8_t , int8_t , uint16_t );
+
 
 /**********************************************************************
  * define get and set parameter register funtions                     *
@@ -280,14 +258,14 @@ extern void TC_STROBE(uint8_t);
 #define TC_ENABLE_AUTO_CRC		TC_SET_REG(CC2420_MDMCTRL0,5,5,1)
 #define TC_DISABLE_AUTO_CRC		TC_SET_REG(CC2420_MDMCTRL0,5,5,0)
 #define TC_SET_CCA_HYST(N)		TC_SET_REG(CC2420_MDMCTRL0,10,8,N)
-#define TC_GET_CCA_HYST(N)		TC_GET_REG(CC2420_MDMCTRL0,10,8,N)
+#define TC_GET_CCA_HYST(N)		TC_GET_REG(CC2420_MDMCTRL0,10,8,&N)
 #define TC_SET_CCA_MODE(N)		TC_SET_REG(CC2420_MDMCTRL0,7,6,N)
-#define TC_GET_CCA_MODE(N)		TC_GET_REG(CC2420_MDMCTRL0,7,6,N)
+#define TC_GET_CCA_MODE(N)		TC_GET_REG(CC2420_MDMCTRL0,7,6,&N)
 
 #define TC_SET_PREAMBLE_LENGTH(N)	TC_SET_REG(CC2420_MDMCTRL0,3,0,N)
-#define TC_GET_PREAMBLE_LENGTH(N)	TC_GET_REG(CC2420_MDMCTRL0,3,0,N)
+#define TC_GET_PREAMBLE_LENGTH(N)	TC_GET_REG(CC2420_MDMCTRL0,3,0,&N)
 #define TC_SET_SYNC_WORD(N)		TC_SET_REG(CC2420_SYNCWORD,15,0,N)
-#define TC_GET_SYNC_WORD(N)		TC_GET_REG(CC2420_SYNCWORD,15,0,N)
+#define TC_GET_SYNC_WORD(N)		TC_GET_REG(CC2420_SYNCWORD,15,0,&N)
 
 #define TC_SET_LENGTH_THRESHOLD(C)	TC_SET_REG(CC2420_IOCFG0,6,0,C)
 
@@ -316,20 +294,20 @@ extern void TC_STROBE(uint8_t);
 	} while(0);
 
 #define TC_SET_RF_POWER(N)		TC_SET_REG(CC2420_TXCTRL,4,0,N)
-#define TC_GET_RF_POWER(N)		TC_GET_REG(CC2420_TXCTRL,4,0,N)
+#define TC_GET_RF_POWER(N)		TC_GET_REG(CC2420_TXCTRL,4,0,&N)
 
 #define TC_SET_CCA_THRESHOLD(N)		TC_SET_REG(CC2420_RSSI,15,8,N)
-#define TC_GET_CCA_THRESHOLD(N)		TC_GET_REG(CC2420_RSSI,15,8,N)
+#define TC_GET_CCA_THRESHOLD(N)		TC_GET_REG(CC2420_RSSI,15,8,&N)
 
 #define TC_SET_RSSI_VAL(N)		TC_SET_REG(CC2420_RSSI,7,0,N)
-#define TC_GET_RSSI_VAL(N)		TC_GET_REG(CC2420_RSSI,7,0,N)
+#define TC_GET_RSSI_VAL(N)		TC_GET_REG(CC2420_RSSI,7,0,&N)
 
 //define SEC related operations
 #define TC_SELECT_SEC_SAKEY(N)	TC_SET_REG(CC2420_SECCTRL0,7,7,N)
 #define TC_SELECT_SEC_TXKEY(N)	TC_SET_REG(CC2420_SECCTRL0,6,6,N)
-#define TC_SELECT_SEC_RXKEY(N)	TC_GET_REG(CC2420_SECCTRL0,5,5,N)
+#define TC_SELECT_SEC_RXKEY(N)	TC_GET_REG(CC2420_SECCTRL0,5,5,&N)
 #define TC_SET_SEC_MODE(N)	TC_SET_REG(CC2420_SECCTRL0,1,0,N)
-#define TC_GET_SEC_MODE(N)	TC_GET_REG(CC2420_SECCTRL0,1,0,N)
+#define TC_GET_SEC_MODE(N)	TC_GET_REG(CC2420_SECCTRL0,1,0,&N)
 
 #define TC_RX_DEC		TC_STROBE(CC2420_SRXDEC)
 #define TC_TX_ENC		TC_STROBE(CC2420_STXENC) 
@@ -338,95 +316,56 @@ extern void TC_STROBE(uint8_t);
 /**********************************************************************
  * define ram read/write funtions                                     *
  **********************************************************************/
-#define TC_READ_RAM_BYTES(A,C,N)	\
+#define TC_READ_RAM_BYTES(A,CC,N)	\
 	do {	int i;	\
 		TC_UNSELECT_RADIO;	\
 		TC_SELECT_RADIO;	\
 		TC_WRITE_BYTE( (A&0x7F) | 0x80 );	\
 		TC_WRITE_BYTE( ( (A>>1) & 0xC0) | 0x20 );	\
-		for(i=N-1;i>=0;i--)	\
-			TC_READ_BYTE(C[i]);	\
+		for(i=0;i<N;i++)	\
+			TC_READ_BYTE(CC[i]);	\
 		TC_UNSELECT_RADIO;	\
 		TC_SELECT_RADIO;	\
 	} while(0);
-#define TC_WRITE_RAM_BYTES(A,C,N)	\
+#define TC_WRITE_RAM_BYTES(A,CC,N)	\
 	do {	int i;	\
 		TC_UNSELECT_RADIO;	\
 		TC_SELECT_RADIO;	\
 		TC_WRITE_BYTE( (A&0x7F) | 0x80 );	\
 		TC_WRITE_BYTE( (A>>1) & 0xC0 );	\
-		for(i=N-1;i>=0;i--)	\
-			TC_WRITE_BYTE(C[i]);	\
+		for(i=0;i<N;i++)	\
+			TC_WRITE_BYTE(((unsigned char*)(CC))[i]);	\
 		TC_UNSELECT_RADIO;	\
 		TC_SELECT_RADIO;	\
 	} while(0);
-#define TC_READ_RAM_WORD(A,C)	\
-	do {	int8_t ADDR;	\
-		TC_UNSELECT_RADIO;	\
-		TC_SELECT_RADIO;	\
-		ADDR = (A&0x7F) | 0x80;	\
-		TC_WRITE_BYTE( ADDR );	\
-		ADDR = ( (A>>1) & 0xC0 ) | 0x20 ;	\
-		TC_WRITE_BYTE( ADDR );	\
-		TC_READ_WORD(C);	\
-		TC_UNSELECT_RADIO;	\
-		TC_SELECT_RADIO;	\
-	} while(0);
-#define TC_WRITE_RAM_WORD(A,C)	\
-	do {	int8_t ADDR;	\
-		TC_UNSELECT_RADIO;	\
-		TC_SELECT_RADIO;	\
-		ADDR = (A&0x7F) | 0x80;	\
-		TC_WRITE_BYTE( ADDR );	\
-		ADDR = (A>>1) & 0xC0;	\
-		TC_WRITE_BYTE( ADDR );	\
-		TC_WRITE_WORD(C);	\
-		TC_UNSELECT_RADIO;	\
-		TC_SELECT_RADIO;	\
-	} while(0); 
-#define TC_READ_RAM_BYTE(A,C)	\
+#define TC_READ_RAM_WORD(A,CC) TC_READ_RAM_BYTES(A,CC,2)
+#define TC_WRITE_RAM_WORD(A,CC) TC_WRITE_RAM_BYTES(A,CC,2)
+#define TC_READ_RAM_BYTE(A,CC)	\
 	do {	TC_UNSELECT_RADIO;	\
 		TC_SELECT_RADIO;	\
 		TC_WRITE_BYTE( (A&0x7F) | 0x80 );	\
 		TC_WRITE_BYTE( ( (A>>1) & 0xC0) | 0x20 );	\
-		TC_READ_BYTE(C);	\
+		TC_READ_BYTE(CC);	\
 		TC_UNSELECT_RADIO;	\
 		TC_SELECT_RADIO;	\
 	} while(0);
-#define TC_WRITE_RAM_BYTE(A,C)	\
+#define TC_WRITE_RAM_BYTE(A,CC)	\
 	do {	TC_UNSELECT_RADIO;	\
 		TC_SELECT_RADIO;	\
 		TC_WRITE_BYTE( (A&0x7F) | 0x80 );	\
 		TC_WRITE_BYTE( (A>>1) & 0xC0 );	\
-		TC_WRITE_BYTE(C);	\
+		TC_WRITE_BYTE(CC);	\
 		TC_UNSELECT_RADIO;	\
 		TC_SELECT_RADIO;	\
 	} while(0);
-
-#define SWITCH_BYTES_ML(C,N)	\
-	do {	int8_t temp;	\
-		int8_t i;	\
-		for(i=0;i<N/2;i++) {	\
-			temp = C[i];	\
-			C[i] = C[N-i-1];	\
-			C[N-i-1] = temp;	\
-		}	\
-	} while(0);
-#define SWITCH_WORD_ML(C)	( C = ( (C>>8) & 0x00ff ) | (C<<8) )
 
 /**********************************************************************
  * define functions for config parameters in ram                      *
  **********************************************************************/
-#define TC_SET_SHORTADR(C)	\
-	do {	SWITCH_WORD_ML(C);	\
-		TC_WRITE_RAM_WORD(CC2420_RAM_SHORTADR,C);	\
-	} while(0);
+#define TC_SET_SHORTADR(C)  TC_WRITE_RAM_WORD(CC2420_RAM_SHORTADR,C)
 #define TC_GET_SHORTADR(C)	TC_READ_RAM_WORD(CC2420_RAM_SHORTADR,C)
 
-#define TC_SET_PANID(C)			\
-	do {	SWITCH_WORD_ML(C);	\
-		TC_WRITE_RAM_WORD(CC2420_RAM_PANID,C);	\
-	} while(0);
+#define TC_SET_PANID(C)     TC_WRITE_RAM_WORD(CC2420_RAM_PANID,C)
 #define TC_GET_PANID(C)		TC_READ_RAM_WORD(CC2420_RAM_PANID,C)
 
 #define TC_SET_IEEEADR(C)	TC_WRITE_RAM_BYTES(CC2420_RAM_IEEEADR,C,8)
@@ -473,14 +412,18 @@ extern void TC_SetSFDCallBack(void (*f1)(int16_t), void (*f2)(int16_t));
  * define the interruption function                                   *
  **********************************************************************/
 #define TC_ENABLE_INTERRUPT	\
+do { \
 	TC_ENABLE_FIFOP_INTERRUPT;	\
-	TC_ENABLE_FIFO_INTERRUPT;	\
-	TC_ENABLE_CCA_INTERRUPT;
+	TC_ENABLE_FIFO_INTERRUPT;   \
+	TC_ENABLE_CCA_INTERRUPT;    \
+} while( 0 )
 
 #define TC_DISABLE_INTERRUPT	\
+do { \
 	TC_DISABLE_FIFOP_INTERRUPT;	\
 	TC_DISABLE_FIFO_INTERRUPT;	\
-	TC_DISABLE_CCA_INTERRUPT;
+	TC_DISABLE_CCA_INTERRUPT;   \
+} while( 0 )
 
 extern interrupt(PORT1_VECTOR) Port1_Interrupt(void);
 
@@ -508,6 +451,7 @@ extern interrupt(PORT1_VECTOR) Port1_Interrupt(void);
 /**********************************************************************
  * define the cc2420_hardware_init function                           *
  **********************************************************************/
+#ifndef _MODULE_
 extern void cc2420_hardware_init();
 
 /**********************************************************************
@@ -518,10 +462,17 @@ extern void TC_UWAIT(uint16_t u);
 extern void TC_MWAIT(uint16_t u);
 
 /*****************************************************************
+ * define these two functions for hardware.c                     *
+ *****************************************************************/
+extern void ker_radio_ack_enable();
+extern void ker_radio_ack_disable();
+
+/*****************************************************************
  * define endian switch function for host between net            *
  *****************************************************************/
 extern uint16_t host_to_net(uint16_t);
 extern uint16_t net_to_host(uint16_t);
+#endif
 
 #endif //_CC2420_HAL_H
 

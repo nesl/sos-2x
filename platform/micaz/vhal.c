@@ -66,7 +66,7 @@ void Radio_Init()
 //	TC_SET_LENGTH_THRESHOLD(64);
 //	Radio_Disable_ADDR_CHK();
 //	Radio_Disable_Auto_CRC();
-        Radio_Enable_Address_Check();
+	Radio_Enable_Address_Check();
 
         // Maximum Power Level
         // TC_SET_REG(CC2420_TXCTRL,15,8,0xA0); //MSB
@@ -180,70 +180,10 @@ int8_t Radio_Check_Preamble()
 	return 0;
 }
 
-int8_t Radio_Send(uint8_t *bytes, uint8_t num)
-{	
-	int i;
-	if( num<=0 || num>MAXBUFFSIZE ) {
-		TC_FLUSH_TX;
-		return 0;
-	}
-	TC_SELECT_RADIO;
-	TC_WRITE_BYTE(CC2420_TXFIFO);
-	TC_WRITE_BYTE(num);
-	for(i=0;i<num;i++)
-		TC_WRITE_BYTE(bytes[i]);
-	TC_UNSELECT_RADIO;
-	TC_STROBE(CC2420_STXON);
-	if( TC_IS_TX_UNDERFLOW || !TC_IS_TX_ACTIVE  ) {
-		TC_FLUSH_TX;
-		return 0;
-	}
-	return 1;
-}
-				 
-int8_t Radio_Recv(uint8_t *bytes, uint8_t *num)
-{	
-	uint8_t i;
-	if( TC_IS_RX_OVERFLOW ) {
-		TC_FLUSH_RX;
-		return 0;
-	}
-
-	TC_SELECT_RADIO;
-	TC_WRITE_BYTE( ( 0x40 | CC2420_RXFIFO ) );
-	TC_READ_BYTE(num);
-	if( *num<=0 || *num>MAXBUFFSIZE ) {
-		TC_UNSELECT_RADIO;
-		TC_FLUSH_RX;
-		return 0;
-	}
-
-	bytes = (uint8_t*)ker_malloc((*num), VHALPID);
-	if( bytes == NULL ) {
-		TC_UNSELECT_RADIO;
-		TC_FLUSH_RX;
-		return 0;
-	}
-
-	for(i=0;i<*num;i++){
-		if(!TC_FIFO_IS_SET)
-			break;
-		TC_READ_BYTE(&(bytes[i]));
-	}
-
-	TC_UNSELECT_RADIO;
-	TC_FLUSH_RX;
-	return 1;
-}
-
 void Radio_Send_Pack(vhal_data *vd, int16_t *timestamp)
 {	
 	int i;
 	uint8_t num;
-	//uint8_t tx_seq;
-
-	//tx_seq = vd->pre_payload[2];
-	//received_ack_seq = 0;
 
 	num = vd->pre_payload_len + vd->payload_len + vd->post_payload_len;
 	if( num > MAXBUFFSIZE ) {
@@ -259,16 +199,15 @@ void Radio_Send_Pack(vhal_data *vd, int16_t *timestamp)
 	TC_WRITE_BYTE(CC2420_TXFIFO);
 	TC_WRITE_BYTE(num);
 
-	// FCF, Sequence Number, PANID, Destination Address, Source Address
-	for(i=0;i<9;i++)
+	// FCF, Sequence Number
+	for(i=0;i<3;i++)
 		TC_WRITE_BYTE(vd->pre_payload[i]);
 
-        // SOS message header
-        // We don't need to send the length. It is included in the IEEE 802.15.4 header
-        //TC_WRITE_BYTE(vd.payload_len); // message length
+	// Skip the forth byte to work around msp430 gcc
 
-        // Destination Address, Source Address, Did, Sid, Message Type 
-        for(i=9; i<12;i++)
+	// PANID, Destination Address, Source Address
+	// Did, Sid, Message Type 
+	for(i=4; i<13;i++)
 		TC_WRITE_BYTE(vd->pre_payload[i]);
 
 	// Actual message payload
@@ -283,40 +222,6 @@ void Radio_Send_Pack(vhal_data *vd, int16_t *timestamp)
 	*timestamp = getTime();
 	return;
 }
-
-#if 0
-// Simon: this is not used anywhere in the code
-int8_t Radio_Send_Pack_CCA(vhal_data vd, int16_t *timestamp)
-{	
-	int i;
-	uint8_t num;
-	num = vd.pre_payload_len + vd.payload_len + vd.post_payload_len;
-	if( num > MAXBUFFSIZE ) {
-		TC_FLUSH_TX;
-		return 0;
-	}
-	TC_DISABLE_INTERRUPT;
-	TC_SELECT_RADIO;
-	TC_WRITE_BYTE(CC2420_TXFIFO);
-	TC_WRITE_BYTE(num);
-	for(i=0;i<vd.pre_payload_len;i++)
-		TC_WRITE_BYTE(vd.pre_payload[i]);
-	for(i=0;i<vd.payload_len;i++)
-		TC_WRITE_BYTE(vd.payload[i]);
-	for(i=0;i<vd.post_payload_len;i++)
-		TC_WRITE_BYTE(vd.post_payload[i]);
-	TC_UNSELECT_RADIO;
-	TC_STROBE(CC2420_STXONCCA);
-	if( TC_IS_TX_UNDERFLOW || !TC_IS_TX_ACTIVE  ) {
-		TC_FLUSH_TX;
-		TC_ENABLE_INTERRUPT;
-		return 0;
-	}
-	*timestamp = getTime();
-	TC_ENABLE_INTERRUPT;
-	return 1;
-}
-#endif
 
 int8_t Radio_Recv_Pack(vhal_data *vd)
 {	
@@ -397,7 +302,9 @@ int8_t Radio_Recv_Pack(vhal_data *vd)
 		}
 	}
 
-	for(i=3;i<vd->pre_payload_len;i++){
+	//for(i=3;i<vd->pre_payload_len;i++){
+	// Simon: skip the forth byte when filling the buffer to avoid mspgcc problem
+	for(i=4;i<(vd->pre_payload_len+1);i++){
 #ifndef MICAZ_PLATFORM
 		if(!TC_FIFO_IS_SET)
 		{
@@ -453,29 +360,3 @@ int8_t Radio_Recv_Pack(vhal_data *vd)
 	}
 }
 
-//the showbyte function for debug
-void showbyte(int8_t bb)
-{
-	int i;
-	ker_led(LED_RED_OFF);
-	TC_MWAIT(100);
-	ker_led(LED_RED_ON);
-	ker_led(LED_YELLOW_OFF);
-	ker_led(LED_GREEN_OFF);
-	for(i=7;i>=0;i--) {
-		if(GETBIT(bb,i)) {
-				ker_led(LED_YELLOW_OFF);
-				TC_MWAIT(300);
-				ker_led(LED_YELLOW_ON);
-				TC_MWAIT(300);
-				ker_led(LED_YELLOW_OFF);
-		}
-		else {
-				ker_led(LED_GREEN_OFF);
-				TC_MWAIT(300);
-				ker_led(LED_GREEN_ON);
-				TC_MWAIT(300);
-				ker_led(LED_GREEN_OFF);
-		}
-	}
-}

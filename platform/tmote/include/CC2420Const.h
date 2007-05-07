@@ -65,9 +65,10 @@ enum {
 #define CC2420_DEF_RFPOWER          0x1F
 #endif
 
-#ifndef CC2420_DEF_CHANNEL
-#define CC2420_DEF_CHANNEL	    11  //channel select
+#ifndef RADIO_CHANNEL
+#define RADIO_CHANNEL       13  //channel select
 #endif
+
 
 enum {
   CC2420_MIN_CHANNEL =              11,

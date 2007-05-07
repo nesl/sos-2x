@@ -31,6 +31,7 @@
  * @file vhal.c
  * @brief virtual radio Hardware Abstraction Layer
  * @author hubert wu {hubertwu@cs.ucla.edu}
+ * @author Dimitrios Lymberopoulos {dimitrios.lymberopoulos@yale.edu}
  */
 //--------------------------------------------------------
 // INCLUDES
@@ -41,10 +42,19 @@
 //#define LED_DEBUG
 #include <led_dbg.h>
 
-
+// Implemented in vmac.c
+void _MacRecvAck(uint8_t ack_seq);
+//keep the sequence number of the last received ACK
+//static uint8_t received_ack_seq = 0;
 
 void Radio_Init()
 {	
+	HAS_CRITICAL_SECTION;
+	
+	uint16_t SRC_ADDRESS;
+	uint16_t PANID;
+	ENTER_CRITICAL_SECTION();
+
 	TC_INIT_PINS();
 	Radio_On();
 	TC_UWAIT(50);
@@ -54,8 +64,25 @@ void Radio_Init()
 	TC_SET_CCA_MODE(1);
 //	TC_SET_CCA_HYST(0);
 //	TC_SET_LENGTH_THRESHOLD(64);
-	Radio_Disable_ADDR_CHK();
+//	Radio_Disable_ADDR_CHK();
 //	Radio_Disable_Auto_CRC();
+	Radio_Enable_Address_Check();
+
+        // Maximum Power Level
+        // TC_SET_REG(CC2420_TXCTRL,15,8,0xA0); //MSB
+        // TC_SET_REG(CC2420_TXCTRL,7,0,0xFF); //LSB
+
+	// Enable Automatic Packet Acknowledgment
+	TC_SET_REG(CC2420_MDMCTRL0,4,4,1);
+
+	//Set parameters
+	SRC_ADDRESS = NODE_ADDR;
+	TC_SET_SHORTADR(&SRC_ADDRESS);
+
+	PANID = VMAC_PANID;
+	TC_SET_PANID(&PANID);
+
+	LEAVE_CRITICAL_SECTION();
 }
 
 void Radio_Wakeup()
@@ -85,8 +112,9 @@ int8_t Radio_Check_CCA()	//normal it will return 1. because once TC_CCA_IS_SET c
 	
 	while(count<MAXCOUNTCCA) {
 		TC_STROBE(CC2420_SNOP);
-		if(TC_CCA_IS_SET)
+		if(TC_CCA_IS_SET) {
 			return 1;
+		}
 		count++;
 	}
 	return 0;
@@ -152,144 +180,115 @@ int8_t Radio_Check_Preamble()
 	return 0;
 }
 
-int8_t Radio_Send(uint8_t *bytes, uint8_t num)
-{	
-	int i;
-	if( num<=0 || num>MAXBUFFSIZE ) {
-		TC_FLUSH_TX;
-		return 0;
-	}
-	TC_DISABLE_INTERRUPT;
-	TC_SELECT_RADIO;
-	TC_WRITE_BYTE(CC2420_TXFIFO);
-	TC_WRITE_BYTE(num);
-	for(i=0;i<num;i++)
-		TC_WRITE_BYTE(bytes[i]);
-	TC_UNSELECT_RADIO;
-	TC_STROBE(CC2420_STXON);
-	if( TC_IS_TX_UNDERFLOW || !TC_IS_TX_ACTIVE  ) {
-		TC_FLUSH_TX;
-		TC_ENABLE_INTERRUPT;
-		return 0;
-	}
-	TC_ENABLE_INTERRUPT;
-	return 1;
-}
-				 
-int8_t Radio_Recv(uint8_t *bytes, uint8_t *num)
-{	
-	uint8_t i;
-	if( TC_IS_RX_OVERFLOW ) {
-		TC_FLUSH_RX;
-		return 0;
-	}
-
-	TC_SELECT_RADIO;
-	TC_WRITE_BYTE( ( 0x40 | CC2420_RXFIFO ) );
-	TC_READ_BYTE(num);
-	if( *num<=0 || *num>MAXBUFFSIZE ) {
-		TC_UNSELECT_RADIO;
-		TC_FLUSH_RX;
-		return 0;
-	}
-
-	bytes = (uint8_t*)ker_malloc((*num), VHALPID);
-	if( bytes == NULL ) {
-		TC_UNSELECT_RADIO;
-		TC_FLUSH_RX;
-		return 0;
-	}
-
-	for(i=0;i<*num;i++){
-		if(!TC_FIFO_IS_SET)
-			break;
-		TC_READ_BYTE(&(bytes[i]));
-	}
-
-	TC_UNSELECT_RADIO;
-	TC_FLUSH_RX;
-	return 1;
-}
-
-int8_t Radio_Send_Pack(vhal_data vd, int16_t *timestamp)
+void Radio_Send_Pack(vhal_data *vd, int16_t *timestamp)
 {	
 	int i;
 	uint8_t num;
-	num = vd.pre_payload_len + vd.payload_len + vd.post_payload_len;
-	if( num > MAXBUFFSIZE ) {
-		TC_FLUSH_TX;
-		return 0;
-	}
-	TC_DISABLE_INTERRUPT;
-	TC_SELECT_RADIO;
-	TC_WRITE_BYTE(CC2420_TXFIFO);
-	TC_WRITE_BYTE(num);
-	for(i=0;i<vd.pre_payload_len;i++)
-		TC_WRITE_BYTE(vd.pre_payload[i]);
-	for(i=0;i<vd.payload_len;i++)
-		TC_WRITE_BYTE(vd.payload[i]);
-	for(i=0;i<vd.post_payload_len;i++)
-		TC_WRITE_BYTE(vd.post_payload[i]);
-	TC_UNSELECT_RADIO;
-	TC_STROBE(CC2420_STXON);
-	if( TC_IS_TX_UNDERFLOW || !TC_IS_TX_ACTIVE  ) {
-		TC_FLUSH_TX;
-		TC_ENABLE_INTERRUPT;
-		return 0;
-	}
-	*timestamp = getTime();
-	TC_ENABLE_INTERRUPT;
-	return 1;
-}
 
-int8_t Radio_Send_Pack_CCA(vhal_data vd, int16_t *timestamp)
-{	
-	int i;
-	uint8_t num;
-	num = vd.pre_payload_len + vd.payload_len + vd.post_payload_len;
+	num = vd->pre_payload_len + vd->payload_len + vd->post_payload_len;
 	if( num > MAXBUFFSIZE ) {
 		TC_FLUSH_TX;
-		return 0;
+		TC_STROBE(CC2420_SNOP);
+		return;
 	}
-	TC_DISABLE_INTERRUPT;
+
+	// Flush the TXFIFO before you transmit.
+	TC_FLUSH_TX;
+
 	TC_SELECT_RADIO;
 	TC_WRITE_BYTE(CC2420_TXFIFO);
 	TC_WRITE_BYTE(num);
-	for(i=0;i<vd.pre_payload_len;i++)
-		TC_WRITE_BYTE(vd.pre_payload[i]);
-	for(i=0;i<vd.payload_len;i++)
-		TC_WRITE_BYTE(vd.payload[i]);
-	for(i=0;i<vd.post_payload_len;i++)
-		TC_WRITE_BYTE(vd.post_payload[i]);
+
+	// FCF, Sequence Number
+	for(i=0;i<3;i++)
+		TC_WRITE_BYTE(vd->pre_payload[i]);
+
+	// Skip the forth byte to work around msp430 gcc
+
+	// PANID, Destination Address, Source Address
+	// Did, Sid, Message Type 
+	for(i=4; i<13;i++)
+		TC_WRITE_BYTE(vd->pre_payload[i]);
+
+	// Actual message payload
+	for(i=0;i<vd->payload_len;i++)
+		TC_WRITE_BYTE(vd->payload[i]);
+
 	TC_UNSELECT_RADIO;
 	TC_STROBE(CC2420_STXONCCA);
-	if( TC_IS_TX_UNDERFLOW || !TC_IS_TX_ACTIVE  ) {
-		TC_FLUSH_TX;
-		TC_ENABLE_INTERRUPT;
-		return 0;
-	}
+	TC_STROBE(CC2420_SNOP);
+
+		// ACK was received! Everything went fine...
 	*timestamp = getTime();
-	TC_ENABLE_INTERRUPT;
-	return 1;
+	return;
 }
 
 int8_t Radio_Recv_Pack(vhal_data *vd)
 {	
 	uint8_t i;
 	uint8_t num;
+	uint8_t tmp_byte;
+	uint16_t FCF;
+	uint8_t CRC;
+#ifndef MICAZ_PLATFORM
+	uint8_t break_flag;
 	
+	break_flag=0;
+#endif
+
 	if( TC_IS_RX_OVERFLOW ) {
 		TC_FLUSH_RX;
+		TC_STROBE(CC2420_SNOP);
 		return 0;
 	}
 
 	TC_SELECT_RADIO;
 	TC_WRITE_BYTE( ( 0x40 | CC2420_RXFIFO ) );
 	TC_READ_BYTE(&num);
+	num = num & 0x7F; // The MSB of the length byte is not used!!!
+
+
+	// Frame Control Field
+	TC_READ_BYTE(&(vd->pre_payload[0]));
+	TC_READ_BYTE(&(vd->pre_payload[1]));
+	FCF = vd->pre_payload[0];
+	FCF |= ((uint16_t) (vd->pre_payload[1] << 8) );
+
+	// Sequence number
+	TC_READ_BYTE(&(vd->pre_payload[2]));
+
+	//error check
+	if(num < BASIC_RF_ACK_PACKET_SIZE)
+	{
+		// ignore everything
+		TC_UNSELECT_RADIO;
+		TC_FLUSH_RX;
+		TC_STROBE(CC2420_SNOP);
+		return 0;
+	} else if ((num == BASIC_RF_ACK_PACKET_SIZE) && (FCF == BASIC_RF_ACK_FCF))
+	{
+		// An ACK packet has been received!
+		// Footer
+		TC_READ_BYTE(&tmp_byte);
+		TC_READ_BYTE(&CRC);
+		if(((FCF & (BASIC_RF_FCF_BM)) && (CRC & BASIC_RF_CRC_OK_BM)))
+		{
+			_MacRecvAck(vd->pre_payload[2]);
+			//received_ack_seq = vd->pre_payload[2]; // notify the Transmitter that the ACK was received!
+		}
+		// Even if the CRC is correct do not pass the ACKs directly to the application layer
+		TC_UNSELECT_RADIO;
+		TC_FLUSH_RX;
+		return 0;
+	}
+
+
+	// A regular data packet has been received!
 	vd->payload_len = num - vd->pre_payload_len - vd->post_payload_len;
 	if( num>MAXBUFFSIZE || vd->pre_payload_len>=num || vd->payload_len>=num || vd->post_payload_len>=num) {
 		TC_UNSELECT_RADIO;
 		TC_FLUSH_RX;
+		TC_STROBE(CC2420_SNOP);
 		return 0;
 	}
 
@@ -298,54 +297,66 @@ int8_t Radio_Recv_Pack(vhal_data *vd)
 		if( vd->payload == NULL) {
 			TC_UNSELECT_RADIO;
 			TC_FLUSH_RX;
+			TC_STROBE(CC2420_SNOP);
 			return 0;
 		}
 	}
 
-	for(i=0;i<vd->pre_payload_len;i++){
+	//for(i=3;i<vd->pre_payload_len;i++){
+	// Simon: skip the forth byte when filling the buffer to avoid mspgcc problem
+	for(i=4;i<(vd->pre_payload_len+1);i++){
+#ifndef MICAZ_PLATFORM
 		if(!TC_FIFO_IS_SET)
+		{
+			break_flag=1;
 			break;
+		}
+#endif
 		TC_READ_BYTE(&(vd->pre_payload[i]));
 	}
 	for(i=0;i<vd->payload_len;i++){
+#ifndef MICAZ_PLATFORM
 		if(!TC_FIFO_IS_SET)
+		{
+			break_flag=1;
 			break;
+		}
+#endif
 		TC_READ_BYTE(&(vd->payload[i]));
 	}
 	for(i=0;i<vd->post_payload_len;i++){
+#ifndef MICAZ_PLATFORM
 		if(!TC_FIFO_IS_SET)
+		{
+			break_flag=1;
 			break;
+		}
+#endif
 		TC_READ_BYTE(&(vd->post_payload[i]));
 	}
-	
 	TC_UNSELECT_RADIO;
 	TC_FLUSH_RX;
-	return 1;
-}
+	TC_STROBE(CC2420_SNOP);
 
-//the showbyte function for debug
-void showbyte(int8_t bb)
-{
-	int i;
-	ker_led(LED_RED_OFF);
-	TC_MWAIT(100);
-	ker_led(LED_RED_ON);
-	ker_led(LED_YELLOW_OFF);
-	ker_led(LED_GREEN_OFF);
-	for(i=7;i>=0;i--) {
-		if(GETBIT(bb,i)) {
-				ker_led(LED_YELLOW_OFF);
-				TC_MWAIT(300);
-				ker_led(LED_YELLOW_ON);
-				TC_MWAIT(300);
-				ker_led(LED_YELLOW_OFF);
-		}
-		else {
-				ker_led(LED_GREEN_OFF);
-				TC_MWAIT(300);
-				ker_led(LED_GREEN_ON);
-				TC_MWAIT(300);
-				ker_led(LED_GREEN_OFF);
-		}
+#ifndef MICAZ_PLATFORM
+	if(break_flag==1) {
+		ker_free(vd->payload);
+		return 0;
+	}
+#endif
+
+	// vd->postpayload[i-1] corresponds to the CRC
+	CRC = (uint8_t) vd->post_payload[i-1];
+	if(((FCF & (BASIC_RF_FCF_BM)) && (CRC & BASIC_RF_CRC_OK_BM)))
+	{
+		// CRC is correct!
+		return 1;
+	}
+	else
+	{
+		// CRC is wrong...
+		ker_free(vd->payload);
+		return 0;
 	}
 }
+

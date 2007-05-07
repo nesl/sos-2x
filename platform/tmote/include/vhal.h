@@ -49,12 +49,33 @@
 //define the PID for VHAL, used by mem
 #define VHALPID		99
 
+//define PANID
+#define VMAC_PANID  ((uint16_t)(NODE_GROUP_ID + 0x2420))
+
+//define the maximum count to avoid dead loop
+#define MAX_COUNT      32000   
+
+// define the bitmasks used for FCF/CRC checking
+#define BASIC_RF_FCF_NOACK              0x8841
+#define BASIC_RF_FCF_ACK                0x8861
+#define BASIC_RF_FCF_ACK_BM             0x0020
+#define BASIC_RF_FCF_BM                 (~BASIC_RF_FCF_ACK_BM)
+#define BASIC_RF_ACK_FCF                0x0002
+#define BASIC_RF_CRC_OK_BM              0x80
+
+#define BASIC_RF_ACK_PACKET_SIZE        5
+// The time it takes for the acknowledgment packet to be received after the data packet has been
+// transmitted
+#define BASIC_RF_ACK_DURATION           (0.5 * 32 * 2 * ((4 + 1) + (1) + (2 + 1) + (2)))
+#define BASIC_RF_SYMBOL_DURATION        (32 * 0.5)
+
 //define the operatios on radio
 
 //define start up functions
 #define Radio_On()	TC_SET_VREG_EN
 #define Radio_Off()	TC_CLR_VREG_EN
-#define Radio_Reset()	( TC_CLR_RESET && TC_SET_RESET )
+//#define Radio_Reset()	( TC_CLR_RESET && TC_SET_RESET )
+#define Radio_Reset()  { TC_CLR_RESET; TC_UWAIT(20); TC_SET_RESET; }
 
 //define address functions
 #define Radio_Set_Address(C)	TC_SET_IEEEADR(C)
@@ -89,22 +110,24 @@ typedef struct _vhal_data {
 	uint8_t *payload;
 	uint8_t *post_payload;
 }vhal_data;
- 
-//define data transmission functions				
+
+//define data transmission functions
 extern int8_t Radio_Check_CCA();
 extern int8_t Radio_Check_SFD();
 extern int8_t Radio_Send(uint8_t *, uint8_t);
 extern int8_t Radio_Send_CCA(uint8_t *, uint8_t);
 extern int8_t Radio_Recv(uint8_t *, uint8_t *);
 
-extern int8_t Radio_Send_Pack(vhal_data, int16_t *);
+extern void Radio_Send_Pack(vhal_data *, int16_t *);
+#if 0
 extern int8_t Radio_Send_Pack_CCA(vhal_data, int16_t *);
+#endif
 extern int8_t Radio_Recv_Pack(vhal_data*);
 
 //define Security functions
 #define Radio_Set_ENC_Mode(N)
 #define Radio_Get_ENC_Mode(N)
-#define Radio_Set_ENC_KEY0(K)	
+#define Radio_Set_ENC_KEY0(K)
 #define Radio_Get_ENC_KEY0(K)
 #define Radio_Set_ENC_KEY1(K)
 #define Radio_Get_ENC_KEY1(K)

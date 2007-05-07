@@ -8,6 +8,11 @@ DEFS += -DTMOTE_PLATFORM
 #DEFS += -DNO_RADIO -DNO_SOS_RADIO
 DEFS += -DNO_SOS_I2C -DNO_KERTABLE_PLAT
 
+# set the radio channel for the CC2420. Must be between 11 and 26.
+ifdef RADIO_CHANNEL
+DEFS += -DRADIO_CHANNEL=$(RADIO_CHANNEL)
+endif
+
 PROCESSOR = msp430
 
 LIBCDIR = /usr

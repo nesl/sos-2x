@@ -171,6 +171,43 @@ void TC_READ_WORD(uint16_t *CC)
 	LEAVE_CRITICAL_SECTION();
 }
 
+/*****************************************************************
+ * read register word                                            *
+ *****************************************************************/
+void TC_GET_REG(uint8_t R, int8_t I, int8_t J, uint16_t* CC)
+{
+	int8_t i=I;
+	int8_t j=J;
+	TC_UNSELECT_RADIO;
+	TC_SELECT_RADIO;
+	TC_WRITE_BYTE((0x40|R));
+	TC_READ_WORD(CC);
+	*CC = GETBITS(*CC,i,j);
+	TC_UNSELECT_RADIO;
+	TC_SELECT_RADIO;
+}
+
+
+/*****************************************************************
+ * set register word                                             *
+ *****************************************************************/
+void TC_SET_REG(uint8_t R, int8_t I, int8_t J, uint16_t CC)
+{
+	uint16_t wd;
+	uint16_t tmp;
+	int8_t i=I;
+	int8_t j=J;
+	TC_UNSELECT_RADIO;
+	TC_SELECT_RADIO;
+	TC_WRITE_BYTE((0x40|R));
+	TC_READ_WORD(&wd);
+	tmp=SETBITS(wd,CC,i,j);
+	TC_WRITE_BYTE(R);
+	TC_WRITE_WORD(wd);
+	TC_UNSELECT_RADIO;
+	TC_SELECT_RADIO;
+}
+
 
 /*****************************************************************
  * run a strobe command on cc2420                                *

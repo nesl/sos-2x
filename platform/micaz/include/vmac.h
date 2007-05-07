@@ -71,6 +71,7 @@ typedef struct{
 typedef struct _VMAC_MPDU {
 	uint16_t fcf;
 	uint8_t seq;
+	uint8_t padding;                         // Simon: padding to make msp happy!
 	uint16_t panid;                          // Dimitrios: PANID!
 	uint16_t daddr;                          //!< node destination address
 	uint16_t saddr;                          //!< node source address

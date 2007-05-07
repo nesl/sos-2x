@@ -235,7 +235,7 @@ HAS_CRITICAL_SECTION;
  *************************************************************************/
 void radio_gc( void )
 {
-	mq_gc_mark_payload( &vmac_pq, RADIO_PID );	
+	mq_gc_mark_payload( &vmac_pq, RADIO_PID );  
 	malloc_gc( RADIO_PID );
 }
 
@@ -243,6 +243,7 @@ void radio_msg_gc( void )
 {
 	mq_gc_mark_hdr( &vmac_pq, RADIO_PID );
 }
+
 
 /*************************************************************************
  * define the callback function for receiving data                       *
@@ -339,7 +340,8 @@ static void radio_msg_send(Message *msg)
 		if(msg->daddr==BCAST_ADDRESS) {
 			ppdu.mpdu.fcf = BASIC_RF_FCF_NOACK;     //Broadcast: No Ack
 		} else {
-			ppdu.mpdu.fcf = BASIC_RF_FCF_ACK;       //Unicast: Ack
+			ppdu.mpdu.fcf = BASIC_RF_FCF_NOACK;     //Broadcast: No Ack
+			//ppdu.mpdu.fcf = BASIC_RF_FCF_ACK;       //Unicast: Ack
 		}
 
 		ppdu.mpdu.panid = host_to_net(VMAC_PANID); // PANID
@@ -352,7 +354,8 @@ static void radio_msg_send(Message *msg)
 		timestamp_outgoing(msg, ker_systime32());
 		Radio_Send_Pack(&vd, &timestamp);
 	
-		if( msg->daddr == BCAST_ADDRESS ) {
+		//if( msg->daddr == BCAST_ADDRESS ) {
+		if( 1 ) {
 			vmac_send_state = VMAC_SEND_STATE_IDLE;
 			retry_count = 0;
 			msg_send_senddone(msg, 1, RADIO_PID);
@@ -502,7 +505,6 @@ void _MacRecvCallBack(int16_t timestamp)
 		memcpy(((uint8_t*)(msg->data) + sizeof(uint32_t)),(uint8_t*)(&timestp),sizeof(uint32_t));
 	}
 	timestamp_incoming(msg, ker_systime32());
-	//if (msg->daddr == NODE_ADDR || msg->daddr == BCAST_ADDRESS)
 	handle_incoming_msg(msg, SOS_MSG_RADIO_IO);
 }
 
