@@ -155,7 +155,7 @@ extern void malloc_gc(sos_pid_t pid);
 
 extern void malloc_gc_kernel( void );
 
-extern void malloc_gc_module( sos_pid_t pid );
+extern uint8_t malloc_gc_module( sos_pid_t pid );
 #ifndef FAULT_TOLERANT_SOS
 #define ker_valid_access NULL
 #endif //FAULT_TOLERANT_SOS

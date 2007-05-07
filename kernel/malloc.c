@@ -892,7 +892,6 @@ void malloc_gc(sos_pid_t pid)
 		((block->blockhdr.blocks & RESERVED) != 0) ) { 
 			if( ((block->blockhdr.blocks & GC_MARK) == 0) ){
 				DEBUG_GC("Found memory leak: %d\n", (int) block->userPart);
-				led_red_toggle();
 				ker_free(block->userPart);
 			} else {
 				block->blockhdr.blocks &= ~GC_MARK;
@@ -952,7 +951,7 @@ void malloc_gc_kernel( void )
 #endif
 }
 
-void malloc_gc_module( sos_pid_t pid )
+uint8_t malloc_gc_module( sos_pid_t pid )
 {
 #ifdef SOS_USE_GC
 	sos_module_t *mcb;
@@ -964,6 +963,7 @@ void malloc_gc_module( sos_pid_t pid )
 	
 	Block*  mod_memmap_buf[MEM_MOD_GC_STACK_SIZE];
 	Block*  mod_gc_stack_buf[MEM_MOD_GC_STACK_SIZE];
+	uint8_t num_leaks = 0;
 	HAS_CRITICAL_SECTION;
 	//
 	// Get module control block
@@ -971,12 +971,12 @@ void malloc_gc_module( sos_pid_t pid )
 	mcb = ker_get_module( pid );
 	
 	if( mcb == NULL || mcb->handler_state == NULL) {
-		return;
+		return 0;
 	}
 	
 	if( (mcb->flag & SOS_KER_STATIC_MODULE) != 0 ) {
 		// Don't check for static module (kernel module)
-		return;
+		return 0;
 		//Block* baseArea; 
 		//baseArea = TO_BLOCK_PTR(mcb->handler_state);
 		//baseArea->blockhdr.blocks |= GC_MARK;
@@ -1010,7 +1010,7 @@ void malloc_gc_module( sos_pid_t pid )
 		if( mod_memmap == NULL ) {
 			LEAVE_CRITICAL_SECTION();
 			DEBUG_GC("no memory\n");
-			return;
+			return 0;
 		}
 		
 		mod_gc_stack = ker_malloc( sizeof(Block*) * mod_memmap_cnt, KER_MEM_PID );
@@ -1018,7 +1018,7 @@ void malloc_gc_module( sos_pid_t pid )
 			ker_free( mod_memmap );
 			LEAVE_CRITICAL_SECTION();
 			DEBUG_GC("no memory\n");
-			return;
+			return 0;
 		}
 	}
 	
@@ -1097,8 +1097,8 @@ void malloc_gc_module( sos_pid_t pid )
 		for( k = 0; k < mod_memmap_cnt; k++ ) {
 			if( ((mod_memmap[k])->blockhdr.blocks & GC_MARK) == 0 ) {
 				// found leak...
-				led_red_toggle();
 				DEBUG_GC("Found memory leak: %d\n", (int) (mod_memmap[k])->userPart);
+				num_leaks++;
 				ker_free( (mod_memmap[k])->userPart );
 			} else {
 				(mod_memmap[k])->blockhdr.blocks &= ~GC_MARK;
@@ -1115,6 +1115,7 @@ void malloc_gc_module( sos_pid_t pid )
 		ker_free( mod_gc_stack );
 	}
 	LEAVE_CRITICAL_SECTION();
+	return num_leaks;
 #endif	
 }
 
