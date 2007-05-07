@@ -1116,6 +1116,8 @@ uint8_t malloc_gc_module( sos_pid_t pid )
 	}
 	LEAVE_CRITICAL_SECTION();
 	return num_leaks;
+#else
+	return 0;
 #endif	
 }
 
