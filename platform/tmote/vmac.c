@@ -56,7 +56,7 @@
 #include <string.h> // for memcpy
 #include <spi_hal.h>
 #include <vmac.h>
-#define LED_DEBUG
+//#define LED_DEBUG
 #include <led_dbg.h>
 #include <sys_module.h>
 #include <module.h>

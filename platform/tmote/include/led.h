@@ -70,7 +70,7 @@
 #define led_red_toggle()    P5OUT ^= (1 << 4)
 #define led_green_toggle()  P5OUT ^= (1 << 5)
 #define led_yellow_toggle() P5OUT ^= (1 << 6)
-#define led_init()     {  P5SEL &= 0xFF8F; P5DIR |= 0x0070; led_green_off(); led_red_off(); led_yellow_off(); }
+#define led_init()     {  P5SEL &= 0xFF8F; P5DIR |= 0x0070; led_green_on(); led_red_off(); led_yellow_off(); }
 #else 
 #define led_red_on()        
 #define led_green_on()     

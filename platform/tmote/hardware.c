@@ -198,7 +198,6 @@ int main(void)
 {
 	led_init();
   // ALIVE INDICATOR
- LED_DBG(LED_GREEN_ON);
 
   sos_main(SOS_BOOT_NORMAL);
   return 0;
