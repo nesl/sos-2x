@@ -61,7 +61,7 @@
 #include <setjmp.h>
 #endif
 #ifdef FAULT_TOLERANT_SOS
-#define LED_DEBUG
+//#define LED_DEBUG
 #include <led_dbg.h>
 #endif
 #ifdef SOS_SFI
@@ -69,7 +69,7 @@
 #include <sfi_jumptable.h>
 #endif
 
-#define LED_DEBUG
+//#define LED_DEBUG
 #include <led_dbg.h>
 
 
