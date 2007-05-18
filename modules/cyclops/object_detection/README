@@ -1,0 +1,79 @@
+ALGORITHM DESCRIPTION
+
+This application contains an object detection algorithm that
+uses background subtraction.  The algorithm consists
+of:
+-capturing an image: keep a running average on all the
+images captured and consider this your background.  The 
+running average coefficient is currently 0.25.  This step is executed
+by calling the imgBackground.updateBackground function.
+-Compute your foreground by subtracting the background from
+the captured image.  This step gets done with matrixArithmetics.abssub.
+-calculate the illumination by taking an average of the 
+background  (imgBackground.estimateAvgBackground).  Then pick a threshold that is a 
+coefficient*illumination value.  the coefficient value can
+be changed in the objectDetectionM.nc file by changing the
+COEFFICIENT value.
+-Computes the maximum value in the foreground (basicStat.maxlocate), and count
+ the number of pixels that are above the threshold computed
+in the previous step(imgBackground.OverThresh).  Currently, the neighborhood of pixels
+that we look at is an 11x11 matrix with the max in the middle.
+This neighborhood can be changed by changing the RANGE value.
+-if more than 20 pixels are above the threshold, then it is
+considered an object.  This second threshold can be changed by
+changing the DETECT_THRESH value.
+
+This is a simple algorithm that has its limitations, mainly
+the fact that an object will be seen as a ghost in the next
+image, due to the running average.  
+
+TESTING
+
+To test the algorithm, you need to create an album first.  There is an
+R script, and a C file that will help you do that under the 
+objectDetection/R directory called AlbumScript.r and 
+frameBackground.c.  Before running anything, you need to make the .exe
+file with the command:
+
+make frameBackground
+
+Once the frameBackground.exe, you can run the algorith in the cyclops,
+and connect it to the serial port.  You can then run the file with:
+
+./frameBackground.exe <serial port name> 19200
+
+This will save the images that are captured.  There are four dumps per
+captured image, and image is saved as frameXY.dat.  X is a letter, 
+so it will be A for the first image, B for the second, etc.  Y is a
+number: 1 for the image, 2 for the background, and 3 for the
+foreground.  In addition, a file called resultsXdat (where X is a
+number) stores certain results, such as the threshold, the number of
+pixels above the threshold, etc.  For more info, consult the algorithm.
+
+Once you have saved the images, you can create an album using R that
+will display the images.  Note that this album gets created using the
+following files:
+
+          frameB1.dat, frame B2.dat, frameB3.dat
+          frameC1.dat, frame C2.dat, frameC3.dat
+          frameD1.dat, frame D2.dat, frameD3.dat
+          frameE1.dat, frame E2.dat, frameE3.dat
+          frameF1.dat, frame F2.dat, frameF3.dat
+          frameG1.dat, frame G2.dat, frameG3.dat
+
+Therefore, you have to make sure that these files are in the same
+directory as where you run R from.  The R script will create a file
+called "OutsideAlbum.jpg", which is a 4x6 album showing the captured
+image, calculated background, calculated foreground, and a 3-D graph
+of the foreground.  To run the script by sourcing the code (using the 
+source(AlbumScript.r) command ) and then running the command:
+ 
+filelist = list()
+filelist = main(filelist)
+
+filelist gets declared as an empty list, and main is the function that
+creates your album (OutsideAlbum.r). Note that after running this,
+filelist contains a list of all the matrices, so if you type in 
+"main(filelist)" again, the frameXY.dat will not be read again.
+
+
