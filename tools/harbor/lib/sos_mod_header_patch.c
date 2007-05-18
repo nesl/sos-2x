@@ -38,6 +38,8 @@ typedef struct harbor_sos_mod_header_t {
   uint16_t code_id;        //!< module image identifier
   uint8_t processor_type;  //!< processor type of this module
   uint8_t platform_type;   //!< platform type of this module
+  uint8_t num_out_port;     //!< Number of output ports exposed by the module in ViRe framework.
+  uint8_t padding;          //!< Extra padding to make it word aligned.
   uint16_t module_handler;//!< Message Handler
   harbor_sos_func_cb_t funct[];
 } __attribute__((packed)) harbor_sos_mod_header_t;

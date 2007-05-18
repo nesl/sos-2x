@@ -53,10 +53,12 @@
 #include <sfi_jumptable.h>
 #endif
 
+/*
 #ifndef SOS_DEBUG_FN_TABLE
 #undef DEBUG
 #define DEBUG(...)
 #endif
+*/
 //----------------------------------------------------------------------------
 // Typedefs
 //----------------------------------------------------------------------------
@@ -72,10 +74,13 @@
 static bool check_proto(uint8_t *proto1, uint8_t *proto2);
 static func_cb_ptr fntable_get_prov_cb(func_cb_ptr funct, uint8_t fid,
 		uint8_t start, uint8_t end);
-static func_cb_ptr fntable_real_subscribe(mod_header_ptr sub_h,
-		sos_pid_t pub_pid, uint8_t fid, uint8_t table_index);
 static void fntable_link_provided_functions(func_cb_ptr funct,
 		uint8_t start, uint8_t end, bool link);
+
+// Function exposed to wiring engine for ViRe
+func_cb_ptr fntable_real_subscribe(mod_header_ptr sub_h,
+		sos_pid_t pub_pid, uint8_t fid, uint8_t table_index);
+
 #endif
 
 
@@ -152,7 +157,7 @@ void* ker_fntable_get_dfunc_addr(sos_pid_t pub_pid, uint8_t fid)
 	return (void*)sos_read_header_ptr(pub_cb, offsetof(func_cb_t, ptr));
 }
 
-static func_cb_ptr fntable_real_subscribe(mod_header_ptr sub_h, sos_pid_t pub_pid, uint8_t fid, uint8_t table_index)
+func_cb_ptr fntable_real_subscribe(mod_header_ptr sub_h, sos_pid_t pub_pid, uint8_t fid, uint8_t table_index)
 {
 	mod_header_ptr pub_h;
 	uint8_t proto_pub[4];

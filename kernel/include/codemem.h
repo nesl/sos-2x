@@ -67,6 +67,8 @@ extern codemem_t ker_codemem_alloc(uint16_t size, codemem_type_t type);
  */
 extern int8_t ker_codemem_write(codemem_t h, sos_pid_t pid, void *buf, uint16_t nbytes, uint16_t offset);
 
+int8_t ker_codemem_direct_write(uint32_t start_addr, sos_pid_t pid, void *buf,uint16_t nbytes, uint16_t offset);
+
 /**
  * \brief Read from codemem section
  * \param h        Handle to codemem section
@@ -82,6 +84,8 @@ extern int8_t ker_codemem_write(codemem_t h, sos_pid_t pid, void *buf, uint16_t 
  *                           will be sent to the requester.
  */
 extern int8_t ker_codemem_read(codemem_t h, sos_pid_t pid, void *buf, uint16_t nbytes, uint16_t offset);
+
+int8_t ker_codemem_direct_read(uint32_t start_addr, sos_pid_t pid, void *buf, uint16_t nbytes, uint16_t  offset);
 
 /**
  * \brief Free codemem section

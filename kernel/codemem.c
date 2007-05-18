@@ -53,9 +53,9 @@ typedef struct codemem_hdr_t {
 } codemem_hdr_t;
 
 //
-// flash_start_page is used to compute the address 
+// flash_start_page_addr is used to compute the address 
 //
-static uint16_t flash_start_page;
+static uint32_t flash_start_page_addr;
 static uint8_t* flash_alloc_bitmap;
 static uint8_t  flash_bitmap_length;
 static uint16_t flash_num_pages;
@@ -239,7 +239,6 @@ static void codemem_cache_read( uint32_t addr, uint8_t* buf, uint16_t nbytes )
 	return;
 }
 
-
 //
 // Allocate flash memory according to the size
 // \return the address to the flash
@@ -276,7 +275,7 @@ static uint32_t flash_alloc( uint16_t size )
 				// set the bit map
 				//
 				flash_setbitmap(i*8 + j + 1 - num_blocks, num_blocks, true);
-				addr = (flash_start_page + i*8 + j + 1 - num_blocks) * FLASHMEM_PAGE_SIZE;
+				addr = flash_start_page_addr + ((i*8 + j + 1 - num_blocks) * FLASHMEM_PAGE_SIZE);
 				return addr;
 			}
 		}
@@ -286,7 +285,7 @@ static uint32_t flash_alloc( uint16_t size )
 
 static void flash_free( uint32_t addr, uint16_t size )
 {
-	uint16_t b = (addr / FLASHMEM_PAGE_SIZE) - flash_start_page;
+	uint16_t b = (addr - flash_start_page_addr) / FLASHMEM_PAGE_SIZE;
 	uint8_t num_blocks = (uint8_t)((size + FLASHMEM_PAGE_SIZE - 1) / FLASHMEM_PAGE_SIZE);
 	 
 	//
@@ -329,6 +328,7 @@ codemem_t ker_codemem_alloc(uint16_t size, codemem_type_t type)
 	}
 	
 	hdr->start_addr = flash_alloc( size );
+
 	//post_uart(KER_CODEMEM_PID, KER_CODEMEM_PID, 100, 4, &(hdr->start_addr), 0, BCAST_ADDRESS);
 	if( hdr->start_addr == 0 ) {
 		ker_free( hdr );
@@ -351,23 +351,32 @@ int8_t ker_codemem_write(codemem_t h, sos_pid_t pid, void *buf, uint16_t nbytes,
 {
 	uint8_t cmt = (uint8_t)(h & 0x00ff);
 	codemem_hdr_t *hdr;
-	uint8_t *b = buf;
-	uint32_t start_addr;
-	uint16_t size_written;
-	uint16_t remaining_size;
 	
-	DEBUG("ker_codemem_write: nbytes = %d, offset = %d\n", nbytes, offset);
+	DEBUG("ker_codemem_write: h = 0x%x nbytes = %d, offset = %d\n", h, nbytes, offset);
 	if( check_codemem_t( h ) == false ) {
 		return -ENOENT;
 	}
+	
+	hdr = codemem_handle_list[cmt];
+	DEBUG("ker_codemem_write: hdr = 0x%p \n", hdr);
+
+	return ker_codemem_direct_write(hdr->start_addr, pid, buf, nbytes, offset);
+
+}	
+
+int8_t ker_codemem_direct_write(uint32_t start_addr, sos_pid_t pid, void *buf, uint16_t nbytes, uint16_t offset)
+{
+	uint8_t *b = buf;
+	uint16_t size_written;
+	uint16_t remaining_size;
 	
 	if( codemem_cache_alloc() != SOS_OK ) {
 		return -ENOMEM;
 	}
 	
-	hdr = codemem_handle_list[cmt];
-	
-	start_addr = hdr->start_addr + offset;
+	DEBUG("ker_codemem_write: start_addr = 0x%x nbytes = %d, offset = %d\n", start_addr, nbytes, offset);
+
+	start_addr += offset;
 	size_written = 0;
 	//
 	// Remaining size in the page
@@ -394,26 +403,33 @@ int8_t ker_codemem_write(codemem_t h, sos_pid_t pid, void *buf, uint16_t nbytes,
 			break;
 		}
 	}
+
 	ker_log( SOS_LOG_CMEM_WRITE, pid, nbytes );	
 	return SOS_OK;
 }	
 
-
-
-int8_t ker_codemem_read(codemem_t h, sos_pid_t pid, void *buf, uint16_t nbytes, uint16_t offset)
-{
+int8_t ker_codemem_read(codemem_t h, sos_pid_t pid, void *buf, uint16_t nbytes, uint16_t offset) {
 	uint8_t cmt = (uint8_t)(h & 0x00ff);
-	codemem_hdr_t *hdr;
-	
+	codemem_hdr_t *hdr; 
+
 	if( check_codemem_t( h ) == false ) {
-		return -ENOENT;
+			return -ENOENT;
 	}
-	
+
 	hdr = codemem_handle_list[cmt];
-	codemem_cache_read( hdr->start_addr + offset, buf, nbytes );
+
+	return ker_codemem_direct_read(hdr->start_addr, pid, buf, nbytes, offset);
+}
+
+
+int8_t ker_codemem_direct_read(uint32_t start_addr, sos_pid_t pid, void *buf, uint16_t nbytes, uint16_t offset)
+{
+	codemem_cache_read( start_addr + offset, buf, nbytes );
+
 	ker_log( SOS_LOG_CMEM_READ, pid, nbytes );	
 	return SOS_OK;
 }
+
 
 int8_t ker_codemem_free(codemem_t h)
 {
@@ -538,10 +554,14 @@ void codemem_init(void)
 	//
 	// Compute the starting page for programming
 	//
-	flash_start_page = flash_init();
-	
-	flash_num_pages = (FLASHMEM_SIZE / FLASHMEM_PAGE_SIZE)  - flash_start_page;
-	
+	flash_start_page_addr = flash_init();
+
+#ifndef PC_PLATFORM
+	flash_num_pages = (FLASHMEM_SIZE - flash_start_page_addr) / FLASHMEM_PAGE_SIZE;
+#else
+	flash_num_pages = FLASHMEM_SIZE / FLASHMEM_PAGE_SIZE;
+#endif
+
 	flash_bitmap_length = (uint8_t)((flash_num_pages + 7) / 8);
 	//
 	// Allocate memory for bitmap

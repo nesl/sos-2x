@@ -55,7 +55,7 @@ void SpmBufferFill(uint16_t addr, uint16_t data);
  */
 void SpmCommand(uint16_t addr, uint8_t function);
 
-uint16_t flash_init( void );
+uint32_t flash_init( void );
 
 void flash_write( uint32_t address, uint8_t *data, uint16_t len );
 

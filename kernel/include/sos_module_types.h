@@ -17,7 +17,7 @@ typedef uint16_t sos_code_id_t;
  *
  * NOTE: access read only memory is slower than RAM access.
  * So please avoid using sos_read_header_* in the loop
- * NOTE: when modifying this structure, please keep it 16 bits align.
+ * NOTE: when modifying this structure, please keep it 16 bit aligned.
  * NOTE: MSP430-GCC does not permit function pointers in a packet structure
  * Simon: As of Feb 7, 2007, Changing mod_header_t requires
  * changing the same structure in tools/elfloader/minielf/minielf.h
@@ -36,6 +36,8 @@ typedef struct mod_header {
   uint8_t processor_type;  //!< processor type of this module
   uint8_t platform_type;   //!< platform type of this module
   //  uint8_t padding;
+  uint8_t num_out_port;     //!< Number of output ports exposed by the module in ViRe framework.
+  uint8_t padding;			//!< Extra padding to make it word aligned.
   msg_handler_t module_handler;
   func_cb_t funct[];
 } mod_header_t;

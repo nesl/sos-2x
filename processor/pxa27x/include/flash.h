@@ -44,7 +44,7 @@ void flash_read( uint32_t address, void *buf, uint16_t size );
 void flash_write( uint32_t address, uint8_t *data, uint16_t len );
 void flash_erase( uint32_t address, uint16_t len ) __attribute__ ; 
 
-uint16_t flash_init( void );
+uint32_t flash_init( void );
 
 
 //! we shift by 1 to take word address

@@ -9,9 +9,10 @@
 extern void* __text_end;
 static void __attribute__ ((section(".data"))) flash_write_block( uint32_t addr, uint8_t* buf, uint16_t len );
 
-uint16_t flash_init( void )
+uint32_t flash_init( void )
 {
-	return (((uint16_t)&__text_end) + FLASHMEM_PAGE_SIZE - 1) / FLASHMEM_PAGE_SIZE;
+	return (uint32_t)( (uint32_t)((((uint16_t)&__text_end) + FLASHMEM_PAGE_SIZE - 1) / FLASHMEM_PAGE_SIZE) 
+				* FLASHMEM_PAGE_SIZE );
 }
 
 /**

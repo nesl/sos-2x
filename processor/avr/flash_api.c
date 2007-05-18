@@ -11,19 +11,29 @@
 
 extern void* __text_end;
 
-uint16_t flash_init( void )
+uint32_t flash_init( void )
 {
+	// The __text_end pointer returned by GCC is 16-bit,
+	// but program memory on AVR can be referenced by
+	// 17 bits. GCC does not let us typecast a pointer to
+	// uint32_t. Thus, following checks try to determine
+	// the lost MSB of __text_end.
 	uint16_t tmp = (uint16_t)&(__text_end);
 	
 	if( tmp > (65536L - FLASHMEM_PAGE_SIZE) ) {
-		return 256L;
+		// tmp is 16 bit wide. Its close to 64 KB boundary.
+		// So, round it up manually to next page.
+		return (uint32_t)(256L * FLASHMEM_PAGE_SIZE);
 	}
 	if( tmp < (20L * 1024L) ) {
-		return (uint16_t)( (tmp +
-        (FLASHMEM_PAGE_SIZE - 1)) / FLASHMEM_PAGE_SIZE) + 256L;
+		// Assumption: SOS kernel (and compiled-in modules) occupy 
+		// atleast 20 KB and atmost 64+20 KB. Thus, the __text_end 
+		// pointer lies in second half of program memory on AVR.
+		tmp = ((tmp + (FLASHMEM_PAGE_SIZE - 1)) / FLASHMEM_PAGE_SIZE) + 256L;
+		return (uint32_t) ((uint32_t)tmp * FLASHMEM_PAGE_SIZE );
 	}
-	return (uint16_t)( (tmp +
-        (FLASHMEM_PAGE_SIZE - 1)) / FLASHMEM_PAGE_SIZE);
+	return (uint32_t)( (((uint32_t)tmp + (FLASHMEM_PAGE_SIZE - 1)) 
+					/ FLASHMEM_PAGE_SIZE) * FLASHMEM_PAGE_SIZE );
 }
 
 void flash_erase( uint32_t address, uint16_t len )

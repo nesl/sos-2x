@@ -39,4 +39,5 @@ char mod_pid_name[][256] = {
 	"RFSN             ",           // 162
 	"RFSN Outlier     ",           // 163
 	"UBMAC Module     ",           // 164
+	"DVM Module       ",           // 165
 };

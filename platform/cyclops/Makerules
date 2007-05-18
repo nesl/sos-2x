@@ -36,6 +36,9 @@ SRCS += radioDump.c
 
 SRCS += malloc_extmem.c ext_memmap.c
 
+ifdef USE_VIRE_FRAMEWORK
+SRCS += plat_token_capture.c
+endif
 
 LDFLAGS += -lm
 endif

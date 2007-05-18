@@ -80,6 +80,13 @@ SRCS += sos_logging.c
 SRCS += sos_shm.c slab.c
 #SRCS += version_sync.c sos_cam.c
 
+# Check if ViRe framework needs to be included.
+ifdef USE_VIRE_FRAMEWORK
+SRCS += spawn_copy_server.c wiring_engine.c token_capture.c vire_malloc.c
+INCDIR += -I$(ROOTDIR)/extensions/dataflow/
+VPATH += $(ROOTDIR)/extensions/dataflow/
+endif
+
 OBJS += $(SRCS_FIRST:.c=.o) $(OBJS_FIRST) $(SRCS:.c=.o) $(ASMSRCS:.S=.o)
 
 ifneq ($(PLATFORM),)

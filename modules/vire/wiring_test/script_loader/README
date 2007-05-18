@@ -1,0 +1,7 @@
+The script loader contains the application configurations
+for 6 different applications that can be used to test the
+ViRe framework.
+
+It is compiled in with the test modules, wiring engine and 
+SOS kernel. It emulates a message sent by the loader to the
+wiring engine to install a new application.

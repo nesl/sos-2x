@@ -36,9 +36,9 @@
 
 #include "flash.h"
 
-uint16_t flash_init( void )
+uint32_t flash_init( void )
 {
-	return 1;
+	return (uint32_t)( 1L * FLASHMEM_PAGE_SIZE );
 }
 
 void flash_erase( uint32_t address, uint16_t len )

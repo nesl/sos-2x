@@ -60,7 +60,7 @@ void flash_write( uint32_t address, uint8_t *data, uint16_t len ) __attribute__ 
 
 void flash_erase( uint32_t address, uint16_t len ) __attribute__ ((section (".sos_bls")));
 
-uint16_t flash_init( void );
+uint32_t flash_init( void );
 /**
  * @brief load flash buffer from flash
  * @param page The page number to check

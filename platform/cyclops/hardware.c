@@ -57,7 +57,7 @@
 #include <radioDump.h>
 #endif
 
-#define LED_DEBUG
+//#define LED_DEBUG
 #include <led_dbg.h>
 
 #ifndef NO_SOS_UART

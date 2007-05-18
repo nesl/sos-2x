@@ -60,6 +60,17 @@ typedef uint16_t func_cb_ptr;
 #define sos_read_header_word(addr, offset) (*(uint16_t*)(addr + offset))
 #define sos_read_header_ptr(addr, offset)  (*(void**)(addr + offset))
 
+// Added for ViRe framework
+/**
+ * @brief get module header ptr (or function control block ptr) from absolute physical address
+ */
+#define sos_get_header_ptr(x) ((uint16_t)(x))
+
+/**
+ * @brief get the exact physical address (2 bytes) of a member in a module header
+ */
+#define sos_get_physical_addr(header, offset) ((header) + (offset))
+
 // XXX - TODO - Put the CPU to sleep before enabling interrupts
 #define atomic_hardware_sleep() {eint();}
 

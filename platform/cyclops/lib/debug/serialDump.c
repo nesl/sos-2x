@@ -4,15 +4,15 @@
  * \brief Break up image into chunks and transfer over serial link
  */
 
-#include <module.h>
+#include <sys_module.h>
 #include <hardware.h>
 #include <image.h>
 #include "serialDump.h"
-//#define LED_DEBUG
+#define LED_DEBUG
 #include <led_dbg.h>
 
 #define CYCLOPS_NIC_PID		DFLT_APP_ID0+14
-#define NIC_ADDRESS		NODE_ADDR-1
+#define NIC_ADDRESS			NODE_ADDR-1
 
 //-------------------------------------------------------
 // SERIAL DUMP STATUS
@@ -39,7 +39,7 @@ typedef struct
 } serialDump_state_t;
 
 
-serialDumpFrame_t serialFrame;
+static serialDumpFrame_t serialFrame;
 
 //-------------------------------------------------------
 // STATIC FUNCTIONS
@@ -73,53 +73,56 @@ int8_t serialDumpControl_init()
 //-------------------------------------------------------
 static int8_t serialDump_msg_handler (void *state, Message * msg)
 {
-  serialDump_state_t *s = (serialDump_state_t *) state;
-  switch (msg->type)
-    {
-    case MSG_INIT:
-      {
-	InitSerialDump (s);
-	break;
-      }
-    case MSG_DUMP_BUFFER_TO_SERIAL:
-      {
-	CYCLOPS_Image *img;
-	img = (CYCLOPS_Image *) (msg->data);
-	s->appID = msg->sid;
-	if (SERIAL_DUMP_BUSY == s->currentState){
-	  ker_free_handle (img->imageDataHandle);
-	  return -EBUSY;
-	}
-	s->inputDumpBuffer =   (uint8_t *) ker_get_handle_ptr (img->imageDataHandle);
-	if (NULL == s->inputDumpBuffer) return -EINVAL;
-	s->currImageHandle = img->imageDataHandle;
-	s->bytesLeft = imageSize(img);
-	s->ptrInDumpBuffer = s->inputDumpBuffer;
-	s->currentState = SERIAL_DUMP_BUSY;
-	FragmentAndSend (s);
-	break;
-      }
-    case MSG_PKT_SENDDONE:
-      {
-	s->bytesLeft -= s->BytesTxInLastFrame;
-	if (s->bytesLeft > 0){
-	  FragmentAndSend (s);
-	}
-	else{
-	  ker_free_handle (s->currImageHandle);
-	  InitSerialDump (s);
-	  post_short (s->appID, SERIAL_DUMP_PID, MSG_SERIAL_DUMP_DONE,
-		      SOS_OK, SOS_OK, 0);
-	}
-	break;
-      }
+	serialDump_state_t *s = (serialDump_state_t *) state;
+	switch (msg->type)
+	{
+		case MSG_INIT:
+		{
+			InitSerialDump (s);
+			break;
+		}
+		case MSG_DUMP_BUFFER_TO_SERIAL:
+		{
+			CYCLOPS_Image *img;
+			img = (CYCLOPS_Image *)sys_msg_take_data(msg);
+			LED_DBG(LED_AMBER_TOGGLE);
+			s->appID = msg->sid;
+			if (s->currentState == SERIAL_DUMP_BUSY) {
+					ker_free_handle(img->imageDataHandle);
+					sys_free(img);
+					return -EBUSY;
+			}
+			s->inputDumpBuffer = (uint8_t *) ker_get_handle_ptr(img->imageDataHandle);
+			if (s->inputDumpBuffer == NULL) return -EINVAL;
 
-    default:
-      {
-	return -EINVAL;
-      }
-    }
-  return SOS_OK;
+			s->currImageHandle = img->imageDataHandle;
+			s->bytesLeft = imageSize(img);
+			s->ptrInDumpBuffer = s->inputDumpBuffer;
+			s->currentState = SERIAL_DUMP_BUSY;
+			
+			FragmentAndSend(s);
+			
+			sys_free(img);
+			break;
+		}
+		case MSG_PKT_SENDDONE:
+		{
+			s->bytesLeft -= s->BytesTxInLastFrame;
+			if (s->bytesLeft > 0) {
+				FragmentAndSend (s);
+			} else {
+				ker_free_handle(s->currImageHandle);
+				InitSerialDump(s);
+				sys_post_value(s->appID, MSG_SERIAL_DUMP_DONE, SOS_OK, 0);
+			}
+			break;
+		}
+		default:
+		{
+			return -EINVAL;
+		}
+	}
+	return SOS_OK;
 }
 
 //-------------------------------------------------------
@@ -127,11 +130,11 @@ static int8_t serialDump_msg_handler (void *state, Message * msg)
 //-------------------------------------------------------
 static uint8_t InitSerialDump (serialDump_state_t * s)
 {
-  s->inputDumpBuffer = NULL;
-  s->ptrInDumpBuffer = NULL;
-  s->bytesLeft = 0;
-  s->currentState = SERIAL_DUMP_IDLE;
-  return SOS_OK;
+	s->inputDumpBuffer = NULL;
+	s->ptrInDumpBuffer = NULL;
+	s->bytesLeft = 0;
+	s->currentState = SERIAL_DUMP_IDLE;
+	return SOS_OK;
 }
 
 //-------------------------------------------------------
@@ -139,24 +142,21 @@ static uint8_t InitSerialDump (serialDump_state_t * s)
 //-------------------------------------------------------
 static uint8_t FragmentAndSend (serialDump_state_t * s)
 {
-  if (s->bytesLeft >= UART_PAYLOAD_LEN){
-    memcpy ((uint8_t *) & (serialFrame.payload[0]), s->ptrInDumpBuffer, UART_PAYLOAD_LEN);
-    serialFrame.seq = s->bytesLeft / UART_PAYLOAD_LEN - 1;
-    post_uart (CYCLOPS_NIC_PID, SERIAL_DUMP_PID, MSG_RAW_IMAGE_FRAGMENT,
-	       sizeof (serialDumpFrame_t), &serialFrame, SOS_MSG_RELIABLE,
-	       NIC_ADDRESS);
-    s->ptrInDumpBuffer = s->ptrInDumpBuffer + UART_PAYLOAD_LEN;
-    s->BytesTxInLastFrame = UART_PAYLOAD_LEN;
-  }
-  else if (s->bytesLeft > 0){
-    uint8_t buffsize = offsetof (serialDumpFrame_t, payload) + s->bytesLeft;
-    memcpy ((uint8_t *) & (serialFrame.payload[0]), s->ptrInDumpBuffer,
-	    s->bytesLeft);
-    serialFrame.seq = s->bytesLeft / UART_PAYLOAD_LEN - 1;
-    post_uart (CYCLOPS_NIC_PID, SERIAL_DUMP_PID, MSG_RAW_IMAGE_FRAGMENT,
-	       buffsize, &serialFrame, SOS_MSG_RELIABLE, NIC_ADDRESS);
-    //    s->BytesTxInLastFrame = (serialFrame.seq + 1) * UART_PAYLOAD_LEN;
-    s->BytesTxInLastFrame = s->bytesLeft;
-  }
-  return SOS_OK;
+	LED_DBG(LED_GREEN_TOGGLE);
+	if (s->bytesLeft >= UART_PAYLOAD_LEN) {
+		memcpy((uint8_t *)&(serialFrame.payload[0]), s->ptrInDumpBuffer, UART_PAYLOAD_LEN);
+		serialFrame.seq = s->bytesLeft / UART_PAYLOAD_LEN - 1;
+		sys_post_uart(CYCLOPS_NIC_PID, MSG_RAW_IMAGE_FRAGMENT, sizeof (serialDumpFrame_t),
+			      &serialFrame, SOS_MSG_RELIABLE, NIC_ADDRESS);
+		s->ptrInDumpBuffer = s->ptrInDumpBuffer + UART_PAYLOAD_LEN;
+		s->BytesTxInLastFrame = UART_PAYLOAD_LEN;
+	} else if (s->bytesLeft > 0) {
+		uint8_t buffsize = offsetof (serialDumpFrame_t, payload) + s->bytesLeft;
+		memcpy((uint8_t *)&(serialFrame.payload[0]), s->ptrInDumpBuffer, s->bytesLeft);
+		serialFrame.seq = s->bytesLeft / UART_PAYLOAD_LEN - 1;
+		sys_post_uart(CYCLOPS_NIC_PID, MSG_RAW_IMAGE_FRAGMENT, buffsize, 
+			      &serialFrame, SOS_MSG_RELIABLE, NIC_ADDRESS);
+		s->BytesTxInLastFrame = s->bytesLeft;
+	}
+	return SOS_OK;
 }

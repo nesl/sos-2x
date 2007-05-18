@@ -51,7 +51,17 @@ typedef uint32_t func_cb_ptr;
 
 #define sos_get_header_address(x) ((uint32_t)&(x))
 
+/**
+ * @brief get module header ptr (or function control block ptr) from absolute physical address
+ */
+#define sos_get_header_ptr(x) ((uint32_t)(x))
+
 #define sos_get_header_member(header, offset) ((uint32_t)((header)+(offset)))
+/**
+ * @brief get the exact physical address (4 bytes) of a member in a module header
+ */
+#define sos_get_physical_addr(header, offset) \
+	((uint32_t)((header) + (offset)))
 
 #define sos_read_header_byte(addr, offset) (*(uint8_t*)(addr + offset))
 #define sos_read_header_word(addr, offset) (*(uint16_t*)(addr + offset))

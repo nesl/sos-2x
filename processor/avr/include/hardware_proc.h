@@ -124,6 +124,18 @@ typedef uint16_t func_cb_ptr;
 #define sos_get_header_member(header, offset)  \
 	((uint16_t)((((uint32_t)(header) << 1) + (offset)) >> 1))
 
+// Added for ViRe framework
+/**
+ * @brief get module header ptr (or function control block ptr) from absolute physical address
+ */
+#define sos_get_header_ptr(x) ((uint16_t)(((uint32_t)(x)) >> 1))
+
+/**
+ * @brief get the exact physical address (4 bytes) of a member in a module header
+ */
+#define sos_get_physical_addr(header, offset) \
+	((uint32_t)(((uint32_t)(header) << 1) + (offset)))
+
 /**
  * read header macros take two parameters
  * @param addr address to the header, this can be mod_header_t or func_cb_t

@@ -41,11 +41,16 @@ enum {
 	/* 18 */    KER_SPAWNER_PID,    //!< pid for server that spawns module
 	/* 19 */    KER_SHM_PID,        //!< pid for shared memory
 	/* 20 */    KER_ROUTING_PID,    //!< pid for routing dispatcher (in message_net.c)
+	/* 21 */	SPAWN_COPY_SERVER_PID,	//!< pid for server handling copies of module
+										//!< headers for spawning multiple instances.
+										//!< currently used in ViRe framework only.
+	/* 22 */	MULTICAST_SERV_PID,	//!< pid for ViRe framework engine.
+	/* 23 */	VIRE_MEM_SERVER_PID,	//!< pid for token memory manager in ViRe.
 	/* 255 */	NULL_PID           = 255, //!< pid to indicate module does not exist
 };
 // PLEASE add the string to kernel/pid.c
 
-#define SYS_MAX_PID 20
+#define SYS_MAX_PID 24
 
 enum {
 	KER_MOD_MAX_PID    = 63,      //! highest pid kernel module can use
