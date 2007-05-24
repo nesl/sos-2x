@@ -7,6 +7,7 @@ DEFS += -DSOS_SIM -D_SOS_SERVER_CLIENT_
 PROCESSOR = posix
 
 CFLAGS += -DNO_SOS_I2C 
+LDFLAGS += -ldl
 
 VPATH += $(ROOTDIR)/platform/$(PLATFORM)
 VPATH += $(ROOTDIR)/drivers/uart
