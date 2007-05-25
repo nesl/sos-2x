@@ -149,12 +149,30 @@ static inline void* malloc_longterm(uint16_t size, sos_pid_t id)
   return sos_blk_mem_longterm_alloc(size, id, true);
 }
 
+/**
+ * Mark the memory is valid (Used by the kernel only)
+ */
 extern int8_t ker_gc_mark( sos_pid_t pid, void *pntr );
 
+/**
+ * GC a module (Used by the kernel only)
+ *
+ * @note to GC a loadable module, one should always use malloc_gc_module
+ */
 extern void malloc_gc(sos_pid_t pid);
 
+/**
+ * Entry point for GC the entire kernel
+ * 
+ * The interface is intended to be called by malloc.c
+ */
 extern void malloc_gc_kernel( void );
 
+/**
+ * GC a loadable module 
+ * 
+ * The interface is intended to be called by malloc.c
+ */
 extern uint8_t malloc_gc_module( sos_pid_t pid );
 #ifndef FAULT_TOLERANT_SOS
 #define ker_valid_access NULL
