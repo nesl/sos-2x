@@ -83,7 +83,7 @@ then
 	echo "Installation directory is $INSTALL_DIR"
 	echo "Make sure that $INSTALL_DIR/msp430/bin is added to the system PATH variable!"
 	cd $INSTALL_DIR
-	wget http://userfs.cec.wustl.edu/%7Ekak1/tinyos2_mac_install/msp430_tools-i686-apple-darwin.tar.gz
+	wget --no-check-certificate https://projects.nesl.ucla.edu/public/sos-2x/files/msp430_toolchain/msp430_tools-i686-apple-darwin.tar.gz
 	tar -zxvf msp430_tools-i686-apple-darwin.tar.gz
 	echo "Cleaning tarball"
 	rm msp430_tools-i686-apple-darwin.tar.gz

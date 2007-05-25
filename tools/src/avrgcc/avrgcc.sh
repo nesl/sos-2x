@@ -35,7 +35,6 @@ tar xvfj gcc-3.4.3.tar.bz2
 wget http://download.savannah.gnu.org/releases/avr-libc/avr-libc-1.4.5.tar.bz2
 tar xvfj avr-libc-1.4.5.tar.bz2
 
-
 # Build binutils
 cd binutils-2.15
 mkdir obj-avr
@@ -67,7 +66,7 @@ make install
 cd ..
 
 # Get UISP for the mib510
-BIN_DIR=$SOSROOT/doc/executables
-mv $BIN_DIR/uisp/$UISP_DIR/uisp $SOSTOOLDIR/bin/
-chmod a+x $SOSTOOLDIR/bin/uisp
+#BIN_DIR=$SOSROOT/doc/executables
+#mv $BIN_DIR/uisp/$UISP_DIR/uisp $SOSTOOLDIR/bin/
+#chmod a+x $SOSTOOLDIR/bin/uisp
 

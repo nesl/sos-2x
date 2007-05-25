@@ -30,6 +30,9 @@ compiler on a machine of type X. This is important in SOS, where a desktop
 computer compiles programs for various micro-controllers. More detailed 
 toolchain installation instructions are provided below.
 
+In addition, for programming AVR micro-controllers (on Mica2, Micaz etc.), you also require
+a tool called UISP to interface with hardware in-system programmers.
+
 The installation process requires that you:
 
 - Obtain SOS 2.x distribution, either as a link:../downloads.html[release tarball],
@@ -130,11 +133,17 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/src/avrgcc
 source avrgcc.sh
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	
+
 TIP: Open the avrgcc.sh script in a text editor to see the sequence of
 commands followed to download, compile and install the required tools.
-It also copies the correct pre-compiled binary of uisp which is 
-required to program the embedded target.
+
+- Download UISP from link:https://projects.nesl.ucla.edu/public/sos-2x/files/uisp/linux/[here]
+and copy it to $SOSTOOLDIR/bin/ directory. Then execute
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+chmod +x $SOSTOOLDIR/bin/uisp
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - The MSP430 Tool Chain for TMote Sky
 	* Make sure that you have defined the environment variable SOSTOOLDIR as described above.
@@ -287,8 +296,17 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
 TIP: Open the avrgcc.sh script in a text editor to see the sequence of
 commands followed to download, compile and install the required tools.
-It also copies the correct pre-compiled binary of uisp which is 
-required to program the embedded target. 
+
+- Download UISP from link:https://projects.nesl.ucla.edu/public/sos-2x/files/uisp/[here]
+and copy it to $SOSTOOLDIR/bin/ directory. Then execute
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+chmod +x $SOSTOOLDIR/bin/uisp
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+NOTE: Choose the *macosx/* directory for PowerPC based Mac and *macosx_intel/* for
+Intel based Mac on the website.
 
 - The MSP430 Tool Chain for TMote Sky
 	* Make sure that you have defined the environment variable SOSTOOLDIR as described above.
@@ -401,7 +419,7 @@ Install Libraries for Cross-compilation
 - AVR tool chain for Mica2 and Micaz
 	* Already installed with WinAVR above.
 	* Download a patched version of uisp from 
-	link: https://projects.nesl.ucla.edu/view/viewcvs.cgi/sos-2x/trunk/doc/executables/uisp/winxp/uisp.exe?rev=164[here].
+	link:https://projects.nesl.ucla.edu/public/sos-2x/files/uisp/winxp/[here].
 	This patched version is required for use of the CrossBow programming boards. 
 	Save the binary into the "/usr/bin" directory of the Cygwin installation,
 	and modify its permissions to make it executable (chmod +x /usr/bin/uisp.exe), 
@@ -451,14 +469,14 @@ We use the following versions of tools:
 
 - AVR gdb 6.0
 	* You can download gdb-6.0.tar.bz2 from the 
-	link: http://ftp.gnu.org/gnu/gdb/[GNU GDB FTP server].
+	link:http://ftp.gnu.org/gnu/gdb/[GNU GDB FTP server].
 	
 NOTE: For Ubuntu users, no need to download the above source as AVR gdb is installed using
 the Synaptic package manager, or _apt-get_ command, included in the Ubuntu disribution.
 
 - Avarice 2.4
 	* You can download avarice-2.4.tar.bz2 from the 
-	link: http://avarice.sourceforge.net/[Avarice Sourceforge website].
+	link:http://avarice.sourceforge.net/[Avarice Sourceforge website].
 
 NOTE: You can try using the latest versions of these tools, and let us know if they work
 fine too. We will update this section accordingly. :-)
@@ -472,7 +490,7 @@ installation of SOS tool chain, binutils-2.15 would have been downloaded in
 $SOSROOT/tools/src/avrgcc/ directory. If that's not the case, then 
 
 - you can download binutils-2.15.tar.gz from the
-link: http://ftp.gnu.org/gnu/binutils/[GNU Binutils FTP server]. 
+link:http://ftp.gnu.org/gnu/binutils/[GNU Binutils FTP server]. 
 - Next, extract the source from the tarball using
 
 [c]
