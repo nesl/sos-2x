@@ -136,6 +136,9 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ./module_test_app.exe --file topo.def --node_address 5 --packet_loss 95 &
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Note: The packet_loss flag above specifies the how many of the messages will be
+delivered. For example, 90 specifies a 90 percent packet delivery rate. 
+
 This will result in output to the terminal describing each node's state.
 The output is a bit jumbled since all nodes are outputting to the same
 terminal.  Within a minute or two the routing tree should stabilize showing

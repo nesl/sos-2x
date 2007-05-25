@@ -84,7 +84,7 @@ sensor node.  Note that the make system assumes that you have a version of
 physical setup a node must be connected to a programming device that is in
 turn connected to the PC.  For this example, assume that the programming
 device is a `mib510` connected to the PC via `/dev/ttyUSB0`.  Note that
-the USB programmers use a seperate interface for data communications.  For
+the USB programmers use a separate interface for data communications.  For
 this and other hardware, you need to specify the serial port that is
 carrying the data.  To program the node use:
 
@@ -97,16 +97,20 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This single command can be used to both build the blank image and
 program it onto the node.
 
-NOTE: Different programming hardware uses different ports to communicate
-with the hardware.  And different operating systems use different port
-names.  The most common programming board is the `mib510` that uses a USB
-connector.  The `mib520ca` exposes to ports to the host machine: lower
+NOTE on PROG: Different programming hardware uses different ports to communicate
+with the hardware.  The most common programming board is the `mib510` that uses 
+a USB connector.  The `mib520ca` exposes to ports to the host machine: lower
 number port is used for programming the node using `uisp` (via the `make
 install` command) and the higher number port is used for data communication
 with `sos_tool`.  The `mib510ca` uses a serial interface to connect to the
 host machine.  With the `mib510ca` the same port is used for both
 programming the node via `uisp` and communicating with data from the node.
 
+NOTE on PORT: Different operating systems use different naming convention for ports.
+The normal naming convention of Linux is used in this documentation. The naming 
+convention on Mac OSX follows the convention of Linux closely except we have found
+that instead of ''tty'' using ''cu'' works for programming boards. Cygwin follows 
+the naming convention of Linux.
 
 Starting the SOS Server
 ~~~~~~~~~~~~~~~~~~~~~~~
