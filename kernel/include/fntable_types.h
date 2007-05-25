@@ -43,7 +43,7 @@ typedef struct func_cb {
 } func_cb_t;
 
 /**
- * \ingroup coreApi
+ * \ingroup system_api
  * \defgroup dymfunc Dynamic Functions
  * Function for invoking dyanmic functions
  * \note Do not use SOS_CALL within control statement such as while, if, switch

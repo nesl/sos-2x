@@ -129,9 +129,9 @@ typedef void *  (* sys_realloc_ker_func_t)( void *  ptr, uint16_t newSize );
  * This function is a slightly optimized way to extend the size of a buffer.
  * If it can, the function will simply extend the current block of memory so
  * that no data needs to be copied and return the ptr passed in.  If that
- * fails the kernel w ill attempt to allocate a fresh larger buffer, copy the
+ * fails the kernel will attempt to allocate a fresh larger buffer, copy the
  * data over, and return a pointer to this new buffer.  If neither of these
- * two succeed, the function returns NULL, but you still have access to ptr.
+ * two succeed, the function will enter ``panic'' mode.
  *
  * \note Returns a NULL if unable to reallocate but the original pointer is
  * still valid.
@@ -711,6 +711,7 @@ typedef void* (* sys_get_module_state_func_t)( void );
 /**
  * Get module specific state
  * This is mainly used in dynamic functions
+ * \return module state
  */
 static inline void* sys_get_state( void )
 {
@@ -731,6 +732,16 @@ static inline void* sys_get_state( void )
 typedef int8_t (* sys_fntable_subscribe_func_t)( sos_pid_t pub_pid, uint8_t fid, uint8_t table_index );
 /// \endcond
 
+/**
+ * Subscribe a function at runtime
+ * \param pub_pid the module ID of the function publisher the module intends to subscribe
+ * \param fid the function ID the module intends to subscribe
+ * \param table_index the index to the function record, starting zero
+ * \return SOS_OK
+ *
+ * \note table_index is the array index in the funct member of the mod_header_t.  table_index is mainly used for 
+ * function prototype checking during linking.   
+ */
 static inline int8_t sys_fntable_subscribe( sos_pid_t pub_pid, uint8_t fid, uint8_t table_index )
 {
 #ifdef SYS_JUMP_TBL_START
@@ -741,8 +752,22 @@ static inline int8_t sys_fntable_subscribe( sos_pid_t pub_pid, uint8_t fid, uint
 }
 /* @} */
 
+/**
+ * \ingroup system_api
+ * \ingroup malloc
+ * @{
+ */
+/// \cond NOTYPEDEF
 typedef int8_t (* sys_change_own_func_t)( void* ptr );
+/// \endcond
 
+/**
+ * Change the ownership of the memory.  
+ * \param ptr the pointer to the dynamically allocated memory
+ * \return SOS_OK
+ *
+ * \note if ptr is not a valid dynamic memory, sys_change_own enters a ``panic'' mode.
+ */
 static inline int8_t sys_change_own( void* ptr )
 {
 #ifdef SYS_JUMP_TBL_START
@@ -751,10 +776,26 @@ static inline int8_t sys_change_own( void* ptr )
 	return ker_sys_change_own( ptr );
 #endif
 }
+/* @} */
 
-
+/**
+ * \ingroup system_api
+ * \defgroup codemem Program Memory
+ * @{
+ */
+/// \cond NOTYPEDEF
 typedef int8_t (* sys_codemem_read_func_t)(codemem_t h, void *buf, uint16_t nbytes, uint16_t offset);
+/// \endcond
 
+/**
+ * Read from the program memory section
+ *
+ * \param h        Handle to codemem section
+ * \param *buf     Buffer for storing the read
+ * \param nbytes   Number of bytes in buf. Cannot be larger than FLASH_PAGE_SIZE
+ * \param offset   Offset relative to the start of codemem section
+ * \return SOS_OK  If read operation succeeded
+ */
 static inline int8_t sys_codemem_read(codemem_t h, void *buf, uint16_t nbytes, uint16_t offset)
 {
 #ifdef SYS_JUMP_TBL_START
@@ -763,9 +804,23 @@ static inline int8_t sys_codemem_read(codemem_t h, void *buf, uint16_t nbytes, u
   return ker_sys_codemem_read(h, buf, nbytes, offset);
 #endif
 }
+/* @} */
 
+/**
+ * \ingroup system_api
+ * \defgroup shm Share Memory
+ * @{
+ */
+/// \cond NOTYPEDEF
 typedef int8_t (* sys_shm_open_func_t )( sos_shm_t name, void *shm );
+/// \endcond
 
+/**
+ * Create a shared memory with the memory 'name' and the shared memory region shm
+ * \param name the name of shared memory in numeric value
+ * \param shm  the pointer to the shared memory region
+ * \return SOS_OK for success or enter a ``panic'' mode when the name already exists or when there is no memory
+ */
 static inline int8_t sys_shm_open(  sos_shm_t name, void *shm )
 {
 #ifdef SYS_JUMP_TBL_START
@@ -775,6 +830,16 @@ static inline int8_t sys_shm_open(  sos_shm_t name, void *shm )
 #endif
 }
 
+/**
+ * Bind an existing name to a new memory region
+ * 
+ * \param name the name of shared memory in numeric value
+ * \param shm  the pointer to the shared memory region
+ * \return SOS_OK for success or enter a ``panic'' mode if the name does not exist
+ *
+ * sys_shm_update signals the update of the shared memory region.  
+ * This could be either a new memory region or the update of existing memory
+ */
 static inline int8_t sys_shm_update(  sos_shm_t name, void *shm )
 {
 #ifdef SYS_JUMP_TBL_START
@@ -784,8 +849,18 @@ static inline int8_t sys_shm_update(  sos_shm_t name, void *shm )
 #endif
 }
 
+/// \cond NOTYPEDEF
 typedef int8_t (* sys_shm_close_func_t )( sos_shm_t name );
+/// \endcond
 
+/**
+ * Close the shared memory
+ * 
+ * \param name the name of shared memory in numeric value
+ * \return SOS_OK for success or enter a ``panic'' mode if the name does not exist or if the owner of 
+ * the shared memory mismatch
+ * \note the memory attached to the name is not freed.
+ */
 static inline int8_t sys_shm_close( sos_shm_t name )
 {
 #ifdef SYS_JUMP_TBL_START
@@ -795,8 +870,16 @@ static inline int8_t sys_shm_close( sos_shm_t name )
 #endif
 }
 
+/// \cond NOTYPEDEF
 typedef void* (* sys_shm_get_func_t )( sos_shm_t name );
+/// \endcond
 
+/**
+ * Find the shared memory (if any) that is bound to the name
+ *
+ * \param name the name of shared memory in numeric value
+ * \return the memory region corresponding to the name, NULL if not exist
+ */
 static inline void* sys_shm_get( sos_shm_t name )
 {
 #ifdef SYS_JUMP_TBL_START
@@ -806,6 +889,19 @@ static inline void* sys_shm_get( sos_shm_t name )
 #endif
 }
 
+/**
+ * Wait on the event from the shared memory
+ *
+ * \param name the name of the shared memory in numeric value
+ * \return SOS_OK for success or enter a ``panic'' mode if the name is invalid or there is no space to 
+ * store more waiter
+ *
+ * sys_shm_wait waits on the event due to share memory update and close for a 
+ * particular memory.  A message from KER_SHM_PID typed MSG_SHM will be generated and 
+ * sent to the module when the memory is either updated and closed.  When the module receives the MSG_SHM, 
+ * module can use shm_get_name to extract the event type.  SHM_UPDATED indicates the memory was updated.
+ * SHM_CLOSED indicates the memory was closed.  
+ */
 static inline int8_t sys_shm_wait( sos_shm_t name )
 {
 #ifdef SYS_JUMP_TBL_START
@@ -815,6 +911,11 @@ static inline int8_t sys_shm_wait( sos_shm_t name )
 #endif
 }
 
+/**
+ * Stop waiting on shared memory event 
+ * \param name the name of the shared memory in numeric value
+ * \return SOS_OK for success or enter a ``panic'' mode if the name is invalid or if the waiter does not exist
+ */
 static inline int8_t sys_shm_stopwait( sos_shm_t name )
 {
 #ifdef SYS_JUMP_TBL_START
@@ -823,9 +924,20 @@ static inline int8_t sys_shm_stopwait( sos_shm_t name )
   return ker_sys_shm_stopwait( name );
 #endif
 }
+/* @} */
 
+/**
+ * \ingroup system_api
+ * \defgroup modinfo Module Info
+ * @{
+ */
+/// \cond NOTYPEDEF
 typedef sos_pid_t (*sys_pid_func_t)();
+/// \endcond
 
+/**
+ * Reture the module ID of the caller.  
+ */
 static inline sos_pid_t sys_pid()
 {
 #ifdef SYS_JUMP_TBL_START
@@ -835,6 +947,11 @@ static inline sos_pid_t sys_pid()
 #endif
 }
 
+/**
+ * Return the caller of the function.
+ * \note this function will only return meanful ID when it is in the exported function 
+ * implementation
+ */
 static inline sos_pid_t sys_caller_pid()
 {
 #ifdef SYS_JUMP_TBL_START
@@ -843,6 +960,7 @@ static inline sos_pid_t sys_caller_pid()
   return ker_get_caller_pid( );
 #endif
 }
+/* @} */
 
 typedef int8_t (*sys_routing_register_func_t)( uint8_t fid );
 

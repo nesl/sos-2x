@@ -483,6 +483,10 @@ int8_t sos_blk_mem_change_own(void* ptr, sos_pid_t id, bool bCallFromModule)
 
 #else
   // Check for memory corruption                               
+  if ((blockptr < malloc_heap) || (blockptr >= (malloc_heap + mNumberOfBlocks)) ) {
+		
+	  return -EINVAL;
+  }
   if (blockptr->blockhdr.owner != BLOCK_GUARD_BYTE(blockptr))  {
     DEBUG("sos_blk_mem_change_own: detect memory corruption %x\n", (int)blockptr);
     DEBUG("possible owner %d %d\n", blockptr->blockhdr.owner, BLOCK_GUARD_BYTE(blockptr));

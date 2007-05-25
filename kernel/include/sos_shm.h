@@ -37,7 +37,7 @@ typedef uint16_t sos_shm_t;
 extern int8_t ker_shm_open(sos_pid_t pid, sos_shm_t name, void *shm);
 
 /**
- * Bind an old key to a new value
+ * Bind an existing name to a new memory region
  * 
  * \param pid the task ID that updated shared memory
  * \param name the name of shared memory in numeric value
@@ -50,11 +50,13 @@ extern int8_t ker_shm_open(sos_pid_t pid, sos_shm_t name, void *shm);
 extern int8_t ker_shm_update(sos_pid_t pid, sos_shm_t name, void *shm);
 
 /**
- * Unbind a key from a vlaue and remove it from the key set
+ * Close the shared memory
  * 
  * \param pid  the task ID of the shared memory owner
  * \param name the name of shared memory in numeric value
  * \return SOS_OK for success, -EBADF if the name does not exist, -EPERM for incorrect owner
+ * \note the memory attached to the name is not freed.
+ *
  */
 extern int8_t ker_shm_close(sos_pid_t pid, sos_shm_t name);
 
@@ -75,9 +77,18 @@ extern void* ker_shm_get(sos_pid_t pid, sos_shm_t name);
  * \return SOS_OK for success, -EBADF for invalid name, -ENOMEM for no space to 
  * store more waiter
  *
+ * ker_shm_wait waits on the event due to share memory update and close for a 
+ * particular memory.  A message from KER_SHM_PID typed MSG_SHM will be generated and 
+ * sent to the module when the memory is either updated and closed.  
  */
 extern int8_t ker_shm_wait( sos_pid_t pid, sos_shm_t name );
 
+/**
+ * Stop waiting on shared memory event 
+ * \param pid the task ID of the requester
+ * \param name the name of the shared memory in numeric value
+ * \return SOS_OK for success, -EBADF for invalid name, -EINVAL if the waiter does not exist
+ */
 extern int8_t ker_shm_stopwait( sos_pid_t pid, sos_shm_t name );
 /* @} */
 #endif
