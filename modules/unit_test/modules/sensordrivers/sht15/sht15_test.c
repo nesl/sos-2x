@@ -27,11 +27,13 @@
  * Test the sht15 kernel module
  * 
  * \author Roy Shea
+ * \date 6/06
+ * \date 5/07
  */
 
-#include <module.h>
-#include <ker_module/sht15/sht15.h>
-#include <led.h>
+#include <sys_module.h>
+#include <sensordrivers/sht15/sht15.h>
+#include <led_dbg.h>
 
 ////
 // Local enumerations
@@ -75,7 +77,7 @@ typedef struct {
 
 static int8_t sht15_test_msg_handler(void *start, Message *e);
 
-static mod_header_t mod_header SOS_MODULE_HEADER = {
+static const mod_header_t mod_header SOS_MODULE_HEADER = {
     .mod_id         = UNIT_SHT15_ID,
     .state_size     = sizeof(app_state_t),
     .num_sub_func   = 0,
@@ -109,8 +111,7 @@ static int8_t sht15_test_msg_handler(void *state, Message *msg) {
         case MSG_INIT:
             {
                 
-                ker_timer_init(UNIT_SHT15_ID, UNIT_SHT15_TIMER, TIMER_REPEAT);
-                ker_timer_start(UNIT_SHT15_ID, UNIT_SHT15_TIMER, UNIT_SHT15_TIMER_PERIOD);
+                sys_timer_start(UNIT_SHT15_TIMER, UNIT_SHT15_TIMER_PERIOD, TIMER_REPEAT);
                 s->state = UNIT_SHT15_GET_TEMPERATURE;
 
                 break;
@@ -119,23 +120,23 @@ static int8_t sht15_test_msg_handler(void *state, Message *msg) {
 
         case MSG_FINAL:
             {
-                ker_timer_release(UNIT_SHT15_ID, UNIT_SHT15_TIMER);
+                sys_timer_stop(UNIT_SHT15_TIMER);
                 break;
             }
 
 
         case MSG_TIMER_TIMEOUT:
             {
-                ker_led(LED_RED_TOGGLE);
+                sys_led(LED_RED_TOGGLE);
                 switch (s->state) {
 
                     case UNIT_SHT15_GET_TEMPERATURE:
-                        post_short(SHT15_ID, UNIT_SHT15_ID, SHT15_GET_TEMPERATURE, 0, 0, 0);
+                        sys_post_value(SHT15_ID, SHT15_GET_TEMPERATURE, 0, 0);
                         s->state = UNIT_SHT15_GET_HUMIDITY;
                         break;
 
                     case UNIT_SHT15_GET_HUMIDITY:
-                        post_short(SHT15_ID, UNIT_SHT15_ID, SHT15_GET_HUMIDITY, 0, 0, 0);
+                        sys_post_value(SHT15_ID, SHT15_GET_HUMIDITY, 0, 0);
                         s->state = UNIT_SHT15_GET_TEMPERATURE;
                         break;
 
@@ -149,19 +150,19 @@ static int8_t sht15_test_msg_handler(void *state, Message *msg) {
 
         case SHT15_TEMPERATURE:
             
-            ker_led(LED_YELLOW_TOGGLE);
+            sys_led(LED_YELLOW_TOGGLE);
             length = msg->len;
-            data = ker_msg_take_data(UNIT_SHT15_ID, msg);
-            post_uart(UNIT_SHT15_ID, UNIT_SHT15_ID, SHT15_TEMPERATURE,
+            data = sys_msg_take_data(msg);
+            sys_post_uart(UNIT_SHT15_ID, SHT15_TEMPERATURE,
                     length, data, SOS_MSG_RELEASE, BCAST_ADDRESS);
             break;
 
         case SHT15_HUMIDITY:
             
-            ker_led(LED_YELLOW_TOGGLE);
+            sys_led(LED_YELLOW_TOGGLE);
             length = msg->len;
-            data = ker_msg_take_data(UNIT_SHT15_ID, msg);
-            post_uart(UNIT_SHT15_ID, UNIT_SHT15_ID, SHT15_HUMIDITY,
+            data = sys_msg_take_data(msg);
+            sys_post_uart(UNIT_SHT15_ID, SHT15_HUMIDITY,
                     length, data, SOS_MSG_RELEASE, BCAST_ADDRESS);
             break;
 
