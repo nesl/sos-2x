@@ -1,0 +1,63 @@
+Debugging using jtag
+====================
+
+The following guide will go over how to start using avarice and avr-gdb to debug
+applications on real hardware using jtag. If you have not done so yet, please
+visit the link:installation.html[installation page] and follow the instructions 
+on installing avarice and avr-gdb. 
+
+We will not discuss how to use gdb here as there are plenty of documentation on
+this online. First compile you application into a link:static_kernel.html[static 
+kernel]. When you installed avarice and avr-gdb, it should also install an 
+extremely useful script called ice-gdb. Using this script you can start debugging
+in no time.
+
+First compile your application. Then load it onto the hardware and start debugging
+by typing the following command:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+AVARICE_ARGS="-j /dev/ttyXXX" ice-gdb application.elf
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+''ttyXXX'' of course, refers to the port your jtag device is connected to. Whenever
+an SOS application is compiled, it creates an elf file for that application. If all
+goes well, this will successfully locate your jtag device, program the application
+on the hardware, load gdb and you will be on your way. Some common pitfalls are 
+using the wrong device location for the jtag. 
+
+If you do not have ice-gdb or something fails to work, you can use the following
+cumbersome way for debugging.
+
+After compiling the application, run avarice using the following command:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+avarice --program --file [app name].elf --part [platform name] 
+--jtag [device location] :[port number]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+--file specifies which file you want to debug.
+--part specifies which platform you will be using to debug, like atmega128, etc.
+[device location] specifies which port the jtag is hooked up to.
+[port number] specifies which local port to use for tcp connections. gdb will be 
+connecting to avarice over this port.
+
+If successful, this command will discover the jtag device and program the hardware.
+
+Now start gdb by using the following command:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~
+avr-gdb application.elf
+code~~~~~~~~~~~~~~~~~~~~~~~~
+
+Then connect gdb to avarice using this command:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+target remote localhost:[port number]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You should now be set and ready to go. If things still continue not to work drop us
+an email on the mailing list. Good luck debugging.

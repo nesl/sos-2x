@@ -53,6 +53,13 @@ the support programs used in SOS. At the end of this tutorial you will:
 
 link:surge.html[Surge Module]
 
+Debugging using jtag
+--------------------
+A tutorial on how to begin debugging your application on real hardware 
+using jtag.
+
+link:debug.html[Debugging using jtag]
+
 Module Programming Guide
 ------------------------
 

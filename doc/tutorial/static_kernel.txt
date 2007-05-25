@@ -1,0 +1,14 @@
+Static Kernel
+=============
+
+The typical mechanism of using SOS consists of first compiling a blank kernel image
+and then dynamically loading different application modules to it as described in 
+the earlier portions of the tutorial.
+
+However, in some situations it is not possible to employ this mechanism. Some 
+examples are compiling SOS for a sim target or wanting to use a jtag debugger.
+
+In this case, it is possible to compile a static kernel where the kernel and the 
+modules are all compiled into a single image. A tutorial on how to do this can be 
+found under link:blink_sim.html[SOS Simulation of Blink]. Follow the entire
+tutorial but change the make target from sim to the desired platform.
