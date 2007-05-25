@@ -105,6 +105,7 @@ void flash_erase( uint32_t address, uint16_t len )
 void *FlashGetProgmem(uint32_t addr)
 {
 	//DEBUG("Get Progmem %d\n", addr);
-	return &(flash_image_buf[addr]);
+	//return &(flash_image_buf[addr]);
+	return (void *)addr;
 }
 
