@@ -27,7 +27,7 @@ on the hardware, load gdb and you will be on your way. Some common pitfalls are
 using the wrong device location for the jtag. 
 
 If you do not have ice-gdb or something fails to work, you can use the following
-cumbersome way for debugging.
+cumbersome way for debugging. Ack. link:winavr.sourceforge.net[winavr]
 
 After compiling the application, run avarice using the following command:
 
