@@ -47,6 +47,12 @@ These instructions have been tested on the following systems:
 - <<mac, Intel based Mac (Mac OS X 10.4.*)>>
 - <<windows, Windows XP>>
 
+NOTE: *Advanced users* who wish to use AVR gdb and JTAG to debug their code directly 
+on the hardware should follow the instructions <<advanced, here>>. It is suggested
+that you first go through the instructions for installing a basic toolchain for SOS
+for your system so that you setup the necessary environment variables that are also
+used for installing AVR gdb and Avarice.
+
 [[linux]]
 
 Debian Linux (eg. Ubuntu)
@@ -423,5 +429,159 @@ Configure SOS Utilities
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/src/
 sh sostools.sh
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[[advanced]]
+
+Advanced Users
+--------------
+
+With SOS, you can use AVR gdb to debug your code while executing on the hardware node. 
+Needless to say, this only supports platforms based on AVR Atmega 128 micro-controller.
+AVR gdb uses Avarice to interface with the JTAG. In this section, we assume that 
+
+- you have installed the necessary drivers for your JTAG device.
+- and, you have defined the $SOSROOT and $SOSTOOLDIR enviroment variables as described
+above.
+
+Obtaining the tools
+~~~~~~~~~~~~~~~~~~~
+
+We use the following versions of tools:
+
+- AVR gdb 6.0
+	* You can download gdb-6.0.tar.bz2 from the 
+	link: http://ftp.gnu.org/gnu/gdb/[GNU GDB FTP server].
+	
+NOTE: For Ubuntu users, no need to download the above source as AVR gdb is installed using
+the Synaptic package manager, or _apt-get_ command, included in the Ubuntu disribution.
+
+- Avarice 2.4
+	* You can download avarice-2.4.tar.bz2 from the 
+	link: http://avarice.sourceforge.net/[Avarice Sourceforge website].
+
+NOTE: You can try using the latest versions of these tools, and let us know if they work
+fine too. We will update this section accordingly. :-)
+
+Installation
+~~~~~~~~~~~~
+
+To use Avarice, you first need to build libbfd.a from binutils distribution downloaded
+during the basic toolchain installation. If you followed the above instructions for 
+installation of SOS tool chain, binutils-2.15 would have been downloaded in 
+$SOSROOT/tools/src/avrgcc/ directory. If that's not the case, then 
+
+- you can download binutils-2.15.tar.gz from the
+link: http://ftp.gnu.org/gnu/binutils/[GNU Binutils FTP server]. 
+- Next, extract the source from the tarball using
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ tar zxvf binutils-2.15.tar.gz
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- To build and install libbfd.a, execute the following instructions in the
+directory where you extracted the tarball. 
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ cd binutils-2.15/bfd
+$ ./configure --target=avr --prefix=$SOSTOOLDIR --disable-nls --enable-install-libbfd
+$ make
+$ make install
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Next, this section describes steps for installing AVR gdb and Avarice on the 
+following platforms:
+
+- <<macadv, Intel or PowerPC based Mac (Mac OS X 10.4.*)>>
+- <<linuxadv, Debian Linux (or some derivative like Ubuntu)>> 
+
+[[macadv]]
+
+Intel or PowerPC based Mac (Mac OS X 10.4.*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Installing AVR gdb 6.0
+	* Execute the following instructions in the directory where you downloaded
+	AVR gdb 6.0
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ tar jxvf gdb-6.0.tar.bz2
+$ cd gdb-6.0
+$ ./configure --target=avr --prefix=$SOSTOOLDIR
+$ make
+$ make install
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Installing Avarice
+	* Execute the following instructions in the directory where you downloaded
+	Avarice 2.4
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ tar jxvf avarice-2.4.tar.bz2
+$ cd avarice-2.4
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	* For Intel Mac ONLY, execute the following command
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ ./configure "LDFLAGS=-L$SOSTOOLDIR/i686-apple-darwinX.X.X/avr/lib -L$SOSTOOLDIR/lib" 
+"CPPFLAGS=-I$SOSTOOLDIR/i686-apple-darwinX.X.X/avr/include" --prefix=$SOSTOOLDIR
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+NOTE: X.X.X can vary depending on your MAC OS X version. It is 8.9.1 for my MAC OS 10.4.9
+
+	* For Power PC Mac ONLY, execute the following command
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ ./configure "LDFLAGS=-L$SOSTOOLDIR/powerpc-apple-darwinX.X.X/avr/lib -L$SOSTOOLDIR/lib" 
+"CPPFLAGS=-I$SOSTOOLDIR/powerpc-apple-darwinX.X.X/avr/include" --prefix=$SOSTOOLDIR
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+NOTE: X.X.X can vary depending on your MAC OS X version. It is 8.4.4 for my MAC OS 10.4.4
+
+	* Next, execute the following commands irrespective of Intel or PowerPC processor
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ make
+$ make install
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[[linuxadv]]
+
+Debian Linux (eg. Ubuntu)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Installing AVR gdb
+	* Execute the following command.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ sudo apt-get install gdb-avr
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+NOTE: This will install version 6.4 of avr-gdb. It seems to work fine, except that
+it gives a _putpkt_ error while quiting avr-gdb. Ideally, we would like to install
+and use version 6.0, but we were unable to build it successfully. If someone
+is able to do that, please let us know how to go about it. :-)
+
+- Installing Avarice
+	* Execute the following instructions in the directory where you downloaded
+	Avarice 2.4
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ tar jxvf avarice-2.4.tar.bz2
+$ cd avarice-2.4
+$ ./configure "LDFLAGS=-L$SOSTOOLDIR/i686-pc-linux-gnu/avr/lib -L$SOSTOOLDIR/lib" 
+"CPPFLAGS=-I$SOSTOOLDIR/i686-pc-linux-gnu/avr/include" --prefix=$SOSTOOLDIR
+$ make
+$ make install
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
