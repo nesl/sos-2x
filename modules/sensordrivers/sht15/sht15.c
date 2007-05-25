@@ -13,12 +13,13 @@
  *
  * \author Roy Shea (roy@cs.ucla.edu)
  * \date 06-2006
+ * \date 05-2007
  * Ported driver to current version of SOS
  */
 
-#include <module.h>
+#include <sys_module.h>
 #include "sht15.h"
-#include <led.h>
+#include <led_dbg.h>
 
 ////
 // Hardware specific defines
@@ -104,7 +105,7 @@ typedef struct
     uint8_t calling_module;
 } sht15_state_t;
 
-static mod_header_t mod_header SOS_MODULE_HEADER = {
+static const mod_header_t mod_header SOS_MODULE_HEADER = {
     .mod_id         = SHT15_ID,
     .state_size     = sizeof(sht15_state_t),
     .num_sub_func   = 0,
@@ -175,14 +176,11 @@ static int8_t sht15_msg_handler(void *state, Message *msg) {
 
         case MSG_INIT:
             { 
-                ker_timer_init(SHT15_ID, SHT15_TEMPERATURE_TIMER, TIMER_ONE_SHOT);
-                ker_timer_init(SHT15_ID, SHT15_HUMIDITY_TIMER, TIMER_ONE_SHOT);
-
                 s->calling_module = 0;
                 
-                ker_led(LED_RED_ON);
-                ker_led(LED_GREEN_ON);
-                ker_led(LED_YELLOW_ON);
+                sys_led(LED_RED_ON);
+                sys_led(LED_GREEN_ON);
+                sys_led(LED_YELLOW_ON);
                 break; 
             }
 
@@ -193,9 +191,9 @@ static int8_t sht15_msg_handler(void *state, Message *msg) {
              */    
         case MSG_FINAL:
             { 
-                ker_led(LED_RED_OFF);
-                ker_led(LED_GREEN_OFF);
-                ker_led(LED_YELLOW_OFF);
+                sys_led(LED_RED_OFF);
+                sys_led(LED_GREEN_OFF);
+                sys_led(LED_YELLOW_OFF);
                 break; 
             }   
 
@@ -209,7 +207,7 @@ static int8_t sht15_msg_handler(void *state, Message *msg) {
                 uint8_t *data;
                 bool no_error;
 
-                data = (uint8_t *)ker_malloc(2, SHT15_ID);
+                data = (uint8_t *)sys_malloc(2);
                 
                 MsgParam *param = (MsgParam*) (msg->data);
                 switch (param->byte) {
@@ -222,9 +220,9 @@ static int8_t sht15_msg_handler(void *state, Message *msg) {
                             data[1] = 0xFF;
                             connection_reset();
                         }
-                        ker_led(LED_GREEN_TOGGLE);
-                        post_long(s->calling_module, 
-                                SHT15_ID, SHT15_TEMPERATURE, 
+                        sys_led(LED_GREEN_TOGGLE);
+                        sys_post(s->calling_module, 
+                                SHT15_TEMPERATURE, 
                                 2, 
                                 data, 
                                 SOS_MSG_RELEASE);
@@ -238,9 +236,8 @@ static int8_t sht15_msg_handler(void *state, Message *msg) {
                             data[1] = 0xFF;
                             connection_reset();
                         }
-                        ker_led(LED_GREEN_TOGGLE);
-                        post_long(s->calling_module, 
-                                SHT15_ID, 
+                        sys_led(LED_GREEN_TOGGLE);
+                        sys_post(s->calling_module, 
                                 SHT15_HUMIDITY, 
                                 2, 
                                 data, 
@@ -248,7 +245,7 @@ static int8_t sht15_msg_handler(void *state, Message *msg) {
                         break;
 
                     default:
-                        ker_free(data);
+                        sys_free(data);
                         break;
 
                 }
@@ -285,9 +282,9 @@ static int8_t sht15_msg_handler(void *state, Message *msg) {
                 } else if (msg->type == SHT15_GET_HUMIDITY) {
                     no_error = measure(HUMIDITY);
                 } else {
-                    ker_led(LED_RED_TOGGLE);
-                    ker_led(LED_GREEN_TOGGLE);
-                    ker_led(LED_YELLOW_TOGGLE);
+                    sys_led(LED_RED_TOGGLE);
+                    sys_led(LED_GREEN_TOGGLE);
+                    sys_led(LED_YELLOW_TOGGLE);
                     return SOS_OK;
                     //return -EINVAL;
                 }
@@ -508,19 +505,19 @@ static bool measure(enum sht15_command command)
         case TEMPERATURE: 
             no_error = write_byte(MEASURE_TEMPERATURE); 
             if(no_error == false) {
-                ker_led(LED_RED_TOGGLE);
+                sys_led(LED_RED_TOGGLE);
                 return false;
             }
-            ker_timer_start(SHT15_ID, SHT15_TEMPERATURE_TIMER, SHT15_TEMPERATURE_TIME);
+            sys_timer_start(SHT15_TEMPERATURE_TIMER, SHT15_TEMPERATURE_TIME, TIMER_ONE_SHOT);
             break;
 
         case HUMIDITY: 
             no_error = write_byte(MEASURE_HUMIDITY); 
             if(no_error == false) {
-                ker_led(LED_RED_TOGGLE);
+                sys_led(LED_RED_TOGGLE);
                 return false;
             }
-            ker_timer_start(SHT15_ID, SHT15_HUMIDITY_TIMER, SHT15_HUMIDITY_TIME);
+            sys_timer_start(SHT15_HUMIDITY_TIMER, SHT15_HUMIDITY_TIME, TIMER_ONE_SHOT);
             break;
 
         default:   

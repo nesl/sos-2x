@@ -1,7 +1,7 @@
 # PROJ is the file name of your module.
 PROJ = sht15
-ROOTDIR = $(SOSROOT)
+SB = sht15
+ROOTDIR = ../../..
 
-include $(SOSROOT)/modules/Makerules
-
+include $(ROOTDIR)/modules/Makerules
 
