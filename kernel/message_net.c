@@ -64,6 +64,7 @@
 #endif
 
 typedef int8_t (*routing_func_t)(func_cb_ptr cb, Message *m);
+static int8_t no_router(func_cb_ptr p, Message *msg);
 //-------------------------------------------------------------------------------
 // STATIC FUNCTION DECLARATIONS
 //-------------------------------------------------------------------------------
@@ -82,10 +83,14 @@ static mod_header_t mod_header SOS_MODULE_HEADER =
   module_handler: routing_handler,
   funct : {
     // routing function
-    {error_8, "czv1", RUNTIME_PID, RUNTIME_FID},
+    {no_router, "czv1", RUNTIME_PID, RUNTIME_FID},
   },
 };
 
+static int8_t no_router(func_cb_ptr p, Message *msg)
+{
+	return -1;
+}
 static int8_t routing_handler(void *state, Message *msg)
 {
 	return -EINVAL;
