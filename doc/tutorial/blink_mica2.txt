@@ -97,6 +97,16 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This single command can be used to both build the blank image and
 program it onto the node.
 
+NOTE: Different programming hardware uses different ports to communicate
+with the hardware.  And different operating systems use different port
+names.  The most common programming board is the `mib510` that uses a USB
+connector.  The `mib520ca` exposes to ports to the host machine: lower
+number port is used for programming the node using `uisp` (via the `make
+install` command) and the higher number port is used for data communication
+with `sos_tool`.  The `mib510ca` uses a serial interface to connect to the
+host machine.  With the `mib510ca` the same port is used for both
+programming the node via `uisp` and communicating with data from the node.
+
 
 Starting the SOS Server
 ~~~~~~~~~~~~~~~~~~~~~~~
