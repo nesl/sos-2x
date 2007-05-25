@@ -30,7 +30,7 @@ platform that is going to be used:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-cd $SOSROOT/modules/test_modules/blink/
+cd $SOSROOT/modules/demos/blink/
 make mica2
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

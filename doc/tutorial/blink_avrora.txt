@@ -6,9 +6,9 @@ analysis tools used to examine AVR programs.  Using Avrora with SOS provides
 a high quality simulation of the actual code that runs on a Mica2 node.
 This allows for more in-depth testing and debugging of applications that do
 not quite do what they should. The
-http://compilers.cs.ucla.edu/avrora/[Avrora website] includes good
+http://compilers.cs.ucla.edu/avrora/[Avrora website] includes basic
 instructions on installation and instructions on getting started with
-Avrora. While this provides a very brief overview of using Avrora with SOS,
+Avrora. While this document provides a very brief overview of using Avrora with SOS,
 users are highly encouraged to look there for more help.
 
 Since Avrora simulates the actual AVR chip, custom kernel configurations
@@ -27,6 +27,33 @@ install these modules, and propagate the modules through the network.
 
 Building the Parts
 ------------------
+
+Installing Avrora
+~~~~~~~~~~~~~~~~~
+
+Go to the http://compilers.cs.ucla.edu/avrora/cvs.html[Avrora CVS] download page.  Use
+CVS to download the Avrora source.  Note that the Avrora release (as of May
+2007) is missing features required to run SOS simulations, so be sure to use
+the CVS version.  The following command checks out the latest CVS version of
+Avrora and installs it `$SOSROOT`:
+
+----
+cd $SOSROOT
+cvs -d :pserver:anonymous@samoa.cs.ucla.edu:/project/cvs/pub login
+cvs -d :pserver:anonymous@samoa.cs.ucla.edu:/project/cvs/pub checkout avrora
+----
+
+Building Avrora requires minor changes to the make file.  In particular the
+rule for building `jintgen` assumes the use of `javac5`.  Change `javac5` to
+`javac` in the `jintgen` target in `$SOSROOT/avrora/Makefile`.  This assumes
+that you have a 1.5.x java compiler.  Building avrora after this change simply
+requires running `make`:
+
+----
+cd $SOSROOT/avrora
+make
+----
+
 
 Building the Blink Module
 ~~~~~~~~~~~~~~~~~~~~~~~~~
