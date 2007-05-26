@@ -1,16 +1,16 @@
-bin_PROGRAMS = sossrv.exe
+bin_PROGRAMS = sossrv
 
 if ARCH_X86
-sossrv_exe_SOURCES = sossrv.c sock_utils.c parsecmd.c dev_serial.c dev_network.c
+sossrv_SOURCES = sossrv.c sock_utils.c parsecmd.c dev_serial.c dev_network.c
 endif
 
 if ARCH_PPC
-sossrv_exe_SOURCES = sossrv.c sock_utils.c parsecmd.c dev_serial_mac.c dev_network.c
-sossrv_exe_LDFLAGS = -framework IOKit -framework CoreFoundation 
+sossrv_SOURCES = sossrv.c sock_utils.c parsecmd.c dev_serial_mac.c dev_network.c
+sossrv_LDFLAGS = -framework IOKit -framework CoreFoundation 
 endif
 
 if ARCH_ARM
-sossrv_exe_SOURCES = sossrv.c sock_utils.c parsecmd.c dev_serial.c dev_network.c
+sossrv_SOURCES = sossrv.c sock_utils.c parsecmd.c dev_serial.c dev_network.c
 endif
 
 INCLUDES = -Iinclude
