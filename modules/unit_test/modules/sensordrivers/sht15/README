@@ -1,0 +1,13 @@
+This test uses a mote connected a UART (probably via a programming board)
+and a MDA300 or MDA320 sensor board.  To run the test:
+
+- Install the blank configuration onto the mote
+
+- Use sos_tool to install ../../modules/sensordrivers/sht15/sht15.mlf
+
+- Use sos_tool to install modules/unit_test/modules/sensordrivers/sht15/sht15_test.mlf
+
+- Run modules/unit_test/modules/sensordrivers/sht15/sht15_test.py to observe
+  output
+
+
