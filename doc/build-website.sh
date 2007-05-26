@@ -13,6 +13,7 @@ $ASCIIDOC_HTML --conf-file=${LAYOUT}.conf --attribute iconsdir=./icons --attribu
 $ASCIIDOC_HTML --conf-file=${LAYOUT}.conf --attribute iconsdir=./icons --attribute=index-only acknowledgments.txt
 $ASCIIDOC_HTML --conf-file=${LAYOUT}.conf --attribute iconsdir=./icons --attribute=index-only policies.txt
 $ASCIIDOC_HTML --conf-file=${LAYOUT}.conf --attribute iconsdir=./icons --attribute=index-only sosage.txt
+$ASCIIDOC_HTML --conf-file=${LAYOUT}.conf --attribute iconsdir=./icons --attribute=index-only todo.txt
 
 cd publications
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute=styledir=.. publications.txt
@@ -34,6 +35,8 @@ $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --att
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. blink_mica2.txt
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. surge_mica2.txt
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. surge.txt
+$ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. debug.txt
+$ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. static_kernel.txt
 cd ..
 
 cd api

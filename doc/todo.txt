@@ -1,0 +1,37 @@
+TODO
+====
+
+Here is a list of things to do.
+
+Test Suite
+----------
+Everyone is required to select one item from here and finish work on it
+by next month.
+
+Kernel:
+-malloc
+-codemem
+-module loading
+-slab
+-schedular
+-shared memory
+-timer
+-uart
+-i2c
+-radio
+-module register/deregister
+-function linking
+
+Protocols:
+Tree routing
+-neighbor discovery
+-module distribution
+-rats
+-aodv
+
+Sensor Boards:
+-sht15 & Co.
+-h23c
+-mts310
+
+Check node voltage on motes
