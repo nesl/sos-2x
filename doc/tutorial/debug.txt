@@ -7,12 +7,12 @@ visit the link:installation.html[installation page] and follow the instructions
 on installing avarice and avr-gdb. 
 
 We will not discuss how to use gdb here as there are plenty of documentation on
-this online. First compile you application into a link:static_kernel.html[static 
+this online. First compile the application into a link:static_kernel.html[static 
 kernel]. When you installed avarice and avr-gdb, it should also install an 
 extremely useful script called ice-gdb. Using this script you can start debugging
 in no time.
 
-First compile your application. Then load it onto the hardware and start debugging
+After compiling your application, load it onto the hardware and start debugging
 by typing the following command:
 
 [c]
@@ -27,7 +27,7 @@ on the hardware, load gdb and you will be on your way. Some common pitfalls are
 using the wrong device location for the jtag. 
 
 If you do not have ice-gdb or something fails to work, you can use the following
-cumbersome way for debugging. Ack. link:winavr.sourceforge.net[winavr]
+cumbersome way for debugging. Ack link:http://winavr.sourceforge.net[winavr].
 
 After compiling the application, run avarice using the following command:
 

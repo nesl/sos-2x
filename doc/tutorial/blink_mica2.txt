@@ -97,7 +97,7 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This single command can be used to both build the blank image and
 program it onto the node.
 
-NOTE on PROG: Different programming hardware uses different ports to communicate
+NOTE: *PROG* Different programming hardware uses different ports to communicate
 with the hardware.  The most common programming board is the `mib510` that uses 
 a USB connector.  The `mib520ca` exposes to ports to the host machine: lower
 number port is used for programming the node using `uisp` (via the `make
@@ -106,7 +106,7 @@ with `sos_tool`.  The `mib510ca` uses a serial interface to connect to the
 host machine.  With the `mib510ca` the same port is used for both
 programming the node via `uisp` and communicating with data from the node.
 
-NOTE on PORT: Different operating systems use different naming convention for ports.
+NOTE: *PORT* Different operating systems use different naming convention for ports.
 The normal naming convention of Linux is used in this documentation. The naming 
 convention on Mac OSX follows the convention of Linux closely except we have found
 that instead of ''tty'' using ''cu'' works for programming boards. Cygwin follows 
