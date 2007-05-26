@@ -1,0 +1,59 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.61)
+AC_INIT(FULL-PACKAGE-NAME, VERSION, BUG-REPORT-ADDRESS)
+AM_INIT_AUTOMAKE(sossrv, 0.1)
+AC_CONFIG_SRCDIR([src/sossrv.c])
+AC_DEFINE(NO_PID_PROC)
+AC_DEFINE(NO_PID_PLAT) 
+AC_DEFINE(_SOS_SERVER_APP_) 
+
+AC_CANONICAL_HOST
+case "${host}" in
+  i[[3456]]86-*)
+    AC_DEFINE(LLITTLE_ENDIAN)
+    AM_CONDITIONAL(ARCH_X86, true)
+    AM_CONDITIONAL(ARCH_ARM, false)
+    AM_CONDITIONAL(ARCH_PPC, false)
+  ;;
+  powerpc-apple-darwin*)
+    AC_DEFINE(BBIG_ENDIAN)
+    AM_CONDITIONAL(ARCH_PPC, true)
+    AM_CONDITIONAL(ARCH_X86, false)
+    AM_CONDITIONAL(ARCH_ARM, false)
+  ;;
+  arm-*)
+    AC_DEFINE(LLITTLE_ENDIAN)
+    AM_CONDITIONAL(ARCH_ARM, true)
+    AM_CONDITIONAL(ARCH_X86, false)
+    AM_CONDITIONAL(ARCH_PPC, false)
+  ;;
+esac
+
+# Checks for programs.
+AC_PROG_CC
+AC_PROG_MAKE_SET
+
+# Checks for libraries.
+
+# Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h paths.h stddef.h stdlib.h string.h sys/ioctl.h sys/param.h sys/socket.h sys/time.h termios.h unistd.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_HEADER_STDBOOL
+AC_TYPE_UINT16_T
+AC_TYPE_UINT32_T
+AC_TYPE_UINT8_T
+
+# Checks for library functions.
+AC_PROG_GCC_TRADITIONAL
+AC_FUNC_MALLOC
+AC_FUNC_SELECT_ARGTYPES
+AC_TYPE_SIGNAL
+AC_CHECK_FUNCS([bzero inet_ntoa memset select socket strerror])
+
+AC_CONFIG_FILES([Makefile
+                 src/Makefile])
+AC_OUTPUT
