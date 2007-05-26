@@ -36,7 +36,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = sossrv.exe$(EXEEXT)
+bin_PROGRAMS = sossrv$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -48,24 +48,23 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__sossrv_exe_SOURCES_DIST = sossrv.c sock_utils.c parsecmd.c \
+am__sossrv_SOURCES_DIST = sossrv.c sock_utils.c parsecmd.c \
 	dev_serial.c dev_network.c dev_serial_mac.c
-@ARCH_ARM_FALSE@@ARCH_PPC_FALSE@@ARCH_X86_TRUE@am_sossrv_exe_OBJECTS = sossrv.$(OBJEXT) \
+@ARCH_ARM_FALSE@@ARCH_PPC_FALSE@@ARCH_X86_TRUE@am_sossrv_OBJECTS = sossrv.$(OBJEXT) \
 @ARCH_ARM_FALSE@@ARCH_PPC_FALSE@@ARCH_X86_TRUE@	sock_utils.$(OBJEXT) \
 @ARCH_ARM_FALSE@@ARCH_PPC_FALSE@@ARCH_X86_TRUE@	parsecmd.$(OBJEXT) \
 @ARCH_ARM_FALSE@@ARCH_PPC_FALSE@@ARCH_X86_TRUE@	dev_serial.$(OBJEXT) \
 @ARCH_ARM_FALSE@@ARCH_PPC_FALSE@@ARCH_X86_TRUE@	dev_network.$(OBJEXT)
-@ARCH_ARM_FALSE@@ARCH_PPC_TRUE@am_sossrv_exe_OBJECTS =  \
-@ARCH_ARM_FALSE@@ARCH_PPC_TRUE@	sossrv.$(OBJEXT) \
+@ARCH_ARM_FALSE@@ARCH_PPC_TRUE@am_sossrv_OBJECTS = sossrv.$(OBJEXT) \
 @ARCH_ARM_FALSE@@ARCH_PPC_TRUE@	sock_utils.$(OBJEXT) \
 @ARCH_ARM_FALSE@@ARCH_PPC_TRUE@	parsecmd.$(OBJEXT) \
 @ARCH_ARM_FALSE@@ARCH_PPC_TRUE@	dev_serial_mac.$(OBJEXT) \
 @ARCH_ARM_FALSE@@ARCH_PPC_TRUE@	dev_network.$(OBJEXT)
-@ARCH_ARM_TRUE@am_sossrv_exe_OBJECTS = sossrv.$(OBJEXT) \
+@ARCH_ARM_TRUE@am_sossrv_OBJECTS = sossrv.$(OBJEXT) \
 @ARCH_ARM_TRUE@	sock_utils.$(OBJEXT) parsecmd.$(OBJEXT) \
 @ARCH_ARM_TRUE@	dev_serial.$(OBJEXT) dev_network.$(OBJEXT)
-sossrv_exe_OBJECTS = $(am_sossrv_exe_OBJECTS)
-sossrv_exe_LDADD = $(LDADD)
+sossrv_OBJECTS = $(am_sossrv_OBJECTS)
+sossrv_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -73,8 +72,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(sossrv_exe_SOURCES)
-DIST_SOURCES = $(am__sossrv_exe_SOURCES_DIST)
+SOURCES = $(sossrv_SOURCES)
+DIST_SOURCES = $(am__sossrv_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -170,10 +169,10 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-@ARCH_ARM_TRUE@sossrv_exe_SOURCES = sossrv.c sock_utils.c parsecmd.c dev_serial.c dev_network.c
-@ARCH_PPC_TRUE@sossrv_exe_SOURCES = sossrv.c sock_utils.c parsecmd.c dev_serial_mac.c dev_network.c
-@ARCH_X86_TRUE@sossrv_exe_SOURCES = sossrv.c sock_utils.c parsecmd.c dev_serial.c dev_network.c
-@ARCH_PPC_TRUE@sossrv_exe_LDFLAGS = -framework IOKit -framework CoreFoundation 
+@ARCH_ARM_TRUE@sossrv_SOURCES = sossrv.c sock_utils.c parsecmd.c dev_serial.c dev_network.c
+@ARCH_PPC_TRUE@sossrv_SOURCES = sossrv.c sock_utils.c parsecmd.c dev_serial_mac.c dev_network.c
+@ARCH_X86_TRUE@sossrv_SOURCES = sossrv.c sock_utils.c parsecmd.c dev_serial.c dev_network.c
+@ARCH_PPC_TRUE@sossrv_LDFLAGS = -framework IOKit -framework CoreFoundation 
 INCLUDES = -Iinclude -I$(top_srcdir)/../../kernel/include \
 	-I$(top_srcdir)/../../modules/include \
 	-I$(top_srcdir)/../../drivers/include \
@@ -237,9 +236,9 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-sossrv.exe$(EXEEXT): $(sossrv_exe_OBJECTS) $(sossrv_exe_DEPENDENCIES) 
-	@rm -f sossrv.exe$(EXEEXT)
-	$(LINK) $(sossrv_exe_LDFLAGS) $(sossrv_exe_OBJECTS) $(sossrv_exe_LDADD) $(LIBS)
+sossrv$(EXEEXT): $(sossrv_OBJECTS) $(sossrv_DEPENDENCIES) 
+	@rm -f sossrv$(EXEEXT)
+	$(LINK) $(sossrv_LDFLAGS) $(sossrv_OBJECTS) $(sossrv_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
