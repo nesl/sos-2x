@@ -41,8 +41,13 @@ endif
 
 ifeq ($(BUILD),_MODULE_)
 #CFLAGS += -O -Wall -dynamic -dynamiclib
+ifeq ($(shell uname -s), Darwin)
 CFLAGS += -O -Wall -fno-common 
 LDFLAGS += -bundle -undefined dynamic_lookup 
+else
+CFLAGS += -fpic
+LDFLAGS += -shared
+endif
 #LDFLAGS += -Wl,-r -nodefaultlibs -nostdlib -lgcc -lc
 endif
 ##############################################################################

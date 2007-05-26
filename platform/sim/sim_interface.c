@@ -46,11 +46,12 @@ mod_header_ptr get_header_from_sim(sos_code_id_t cid)
 		dlh = dlfd[cid];
 	} else {
 		DEBUG("try look for %d.sos\n", cid);
-		cnt = sprintf(name_buf, "%d.sos", cid);
+		cnt = sprintf(name_buf, "./%d.sos", cid);
 		name_buf[cnt] = '\0';
 		dlh = dlopen(name_buf, RTLD_NOW | RTLD_LOCAL );
 		if( dlh == NULL ) {
 			DEBUG("cannot find %d.sos\n", cid);
+			DEBUG("dlerror: %s\n", dlerror());
 			return (mod_header_ptr)NULL;
 		}
 		if( dlsym( dlh, "mod_header" ) != NULL ) {

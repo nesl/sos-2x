@@ -7,7 +7,14 @@ DEFS += -DSOS_SIM -D_SOS_SERVER_CLIENT_
 PROCESSOR = posix
 
 CFLAGS += -DNO_SOS_I2C 
+
+ifeq ($(BUILD), _SOS_KERNEL_)
+ifeq ($(shell uname -s), Linux)
+CFLAGS += -rdynamic
+LDFLAGS += -export-dynamic
+endif
 LDFLAGS += -ldl
+endif
 
 VPATH += $(ROOTDIR)/platform/$(PLATFORM)
 VPATH += $(ROOTDIR)/drivers/uart
