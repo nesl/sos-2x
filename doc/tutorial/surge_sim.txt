@@ -8,7 +8,7 @@ sufficient to learn a fair bit more about the SOS simulation framework.
 Wrapping Revisited
 ------------------
 
-The tutorial for blink_sim.html[simulating blink in SOS] describes wrapping
+The tutorial for link:blink_sim.html[simulating blink in SOS] describes wrapping
 modules within a configuration for simulation. For more complex
 applications this can quickly become tedious. SOS includes a script that
 will create custom simulation configurations on the fly.  This script is
