@@ -13,7 +13,7 @@ NOTE: This tutorial assumes that the base station IDs in `$SOSROOT/modules/routi
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-cd $SOSROOT/modules/test_modules/surge/
+cd $SOSROOT/modules/demos/surge/
 make mica2
 cd $SOSROOT/modules/routing/tree_routing/
 make mica2
