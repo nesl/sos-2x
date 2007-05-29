@@ -194,7 +194,7 @@ that might occur during installation and later use.
 
 - Download and install the latest version of *Xcode* from link:http://developer.apple.com/[here].
 This will ensure that you have the required development libraries for gcc.
-- Download and install *DarwinPorts* from link:http://darwinports.opendarwin.org/[here].
+- Download and install *DarwinPorts* from link:http://darwinports.com/[here].
 It is a tool (like Fink) to provide an easy way to download, configure and install
 various open-source software products on the Darwin OS family. 
 
