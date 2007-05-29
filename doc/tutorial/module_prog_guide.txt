@@ -37,24 +37,24 @@ link:http://gcc.gnu.org/onlinedocs/gcc-3.4.3/gcc/Designated-Inits.html[designate
 [c]
 source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 static const mod_header_t mod_header SOS_MODULE_HEADER = {
-  .mod_id         = SURGE_MOD_PID,
-  .code_id        = ehtons(SURGE_MOD_PID),
-  .module_handler = surge_module,
-  .state_size     = sizeof(surge_state_t),
+  .mod_id        = SURGE_MOD_PID,
+  .state_size    = sizeof(surge_state_t),
+  .num_sub_func  = 1,
+  .num_prov_func = 0,
   .platform_type  = HW_TYPE /* or PLATFORM_ANY */,
   .processor_type = MCU_TYPE,
-  .num_sub_func   = 1,
-  .num_prov_func  = 0,
+  .code_id       = ehtons(SURGE_MOD_PID),
+  .module_handler = surge_module_handler,
   .funct = {
-	[0] = {error_8, "Cvv0", TREE_ROUTING_PID, MOD_GET_HDR_SIZE_FID},
+    [0] = {error_8, "Cvv0", TREE_ROUTING_PID, MOD_GET_HDR_SIZE_FID},
   },
 };
 source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TIP: Module header can be created by copying the header template and
+TIP: A module header can be created by copying the header template and
 modifying the values as needed.
 
-Module header is declared as a static constant variable of type
+A module header is declared as a static constant variable of type
 `mod_header_t`.
 Module headers are stored in program memory space.
 The compiler (e.g. avr-gcc) requires special directives to place the data
