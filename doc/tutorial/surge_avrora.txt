@@ -23,7 +23,7 @@ cd $SOSROOT/modules/demos/surge/
 make mica2
 cd $SOSROOT/modules/routing/tree_routing/
 make mica2
-cd $SOSROOT/modules/sensordrivers/micasb/photosensor/
+cd $SOSROOT/modules/sensordrivers/mts310/photo_temp/
 make mica2
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -180,12 +180,15 @@ is accomplished using the SOS tool:
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/config/sos_tool/
 ./sos_tool.exe --insmod
-../../modules/sensordrivers/micasb/photosensor/photosensor.mlf
+../../modules/sensordrivers/mts310/photo_temp/phototemp_sensor.mlf
 ./sos_tool.exe --insmod ../../modules/routing/tree_routing/tree_routing.mlf
 ./sos_tool.exe --insmod ../../modules/demo/surge/surge.mlf
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After these modules load, the routing tree should form and sensor data
-will begin to stream out of the network. 
+will begin to stream out of the network.  If all has gone well you will see
+messages from the tree routing module with PID 141 and type 34.  The surge
+packet is embedded in the data payload of these packets.
+
 
 Next: link:surge_mica2.html[Running surge on Mica2 nodes]
