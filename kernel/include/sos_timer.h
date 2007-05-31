@@ -85,6 +85,13 @@ static inline uint8_t timer_get_tid( Message *msg )
 	return params->byte;
 }
 
+static inline uint8_t sys_timer_tid( Message *msg )
+{
+	MsgParam* params = (MsgParam*)(msg->data);
+
+	return params->byte;
+}
+
 /**
  * Application timer API
  */

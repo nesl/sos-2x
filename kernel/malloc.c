@@ -319,7 +319,7 @@ void* sos_blk_mem_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule)
   BLOCK_GUARD_BYTE(block) = id; 
 #endif
 
-  //printMem("malloc_end: ");
+  printMem("malloc_end: ");
   LEAVE_CRITICAL_SECTION();
 
   ker_log( SOS_LOG_MALLOC, id, reqBlocks );
@@ -408,7 +408,7 @@ void sos_blk_mem_free(void* pntr, bool bCallFromModule)
 		      BLOCK_FREE);
 #endif
   InsertAfter(baseArea);
-  //printMem("free_end: ");
+  printMem("free_end: ");
   LEAVE_CRITICAL_SECTION();
   ker_log( SOS_LOG_FREE, owner, freed_blocks );
   return;
@@ -546,8 +546,11 @@ void* sos_blk_mem_realloc(void* pntr, uint16_t newSize, bool bCallFromModule)
 #endif
   // Check for errors.
   //
-  if ( (pntr == NULL ) || (newSize == 0) ) return pntr;
+  if ( (pntr == NULL ) || (newSize == 0) ) {
+	  return pntr;
+  }
 
+  printMem("realloc start: ");
 #ifdef SOS_SFI
   ENTER_CRITICAL_SECTION();
   // Get the permission of the first block
@@ -613,6 +616,7 @@ void* sos_blk_mem_realloc(void* pntr, uint16_t newSize, bool bCallFromModule)
 #ifndef SOS_SFI
       uint16_t oldSize = BLOCKS_TO_BYTES(block->blockhdr.blocks);
 #endif
+	  block->blockhdr.blocks |= RESERVED;         // convert it back
       block = (Block*)ker_malloc(newSize, id);
       if (NULL != block)
         {
@@ -647,6 +651,7 @@ void* sos_blk_mem_realloc(void* pntr, uint16_t newSize, bool bCallFromModule)
   BLOCK_GUARD_BYTE(block) = id; 
 #endif
   LEAVE_CRITICAL_SECTION();
+  printMem("realloc end: ");
   return block->userPart;
 }
 //-----------------------------------------------------------------------------

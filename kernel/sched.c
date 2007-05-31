@@ -60,16 +60,12 @@
 #ifdef SOS_USE_EXCEPTION_HANDLING
 #include <setjmp.h>
 #endif
-#ifdef FAULT_TOLERANT_SOS
-//#define LED_DEBUG
-#include <led_dbg.h>
-#endif
 #ifdef SOS_SFI
 #include <cross_domain_cf.h>
 #include <sfi_jumptable.h>
 #endif
 
-//#define LED_DEBUG
+#define LED_DEBUG
 #include <led_dbg.h>
 
 
