@@ -59,7 +59,7 @@
 //-----------------------------------------------------------------------------
 // DEBUG
 //-----------------------------------------------------------------------------
-#define SOS_PROFILE_FRAGMENTATION
+//#define SOS_PROFILE_FRAGMENTATION
 #define LED_DEBUG
 #include <led_dbg.h>
 //#define SOS_DEBUG_MALLOC
