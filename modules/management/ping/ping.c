@@ -6,7 +6,7 @@
 
 // 
 // This is for randomly pinging node 2-5 at node 1
-#define TEST_PING
+//#define TEST_PING
 
 enum {
 	MSG_SEND_PING      =    ( MOD_MSG_START + 0 ),
