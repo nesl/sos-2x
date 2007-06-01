@@ -46,7 +46,7 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
 	.num_prov_func  = 0,
 	.platform_type  = HW_TYPE /* or PLATFORM_ANY */,
 	.processor_type = MCU_TYPE,
-	.code_id        = ehtons(DFLT_APP_ID0),
+	.code_id        = ehtons(NBHOOD_PID),
 	.module_handler = nbr_msg_handler,
 };
 
