@@ -124,6 +124,8 @@ cd $SOSROOT/tools/sos_server/bin/
 ./sossrv.exe -s /dev/ttyUSB1
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+NOTE: The port to install blank and the port to use for sos server are different 
+even though the board it connected to a single port on the CPU. 
 
 Inserting Modules
 ~~~~~~~~~~~~~~~~~
