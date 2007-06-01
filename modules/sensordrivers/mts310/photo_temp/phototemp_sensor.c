@@ -64,25 +64,6 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
 	},
 };
 
-
-/**
- * adc call back
- * not a one to one mapping so not SOS_CALL
- */
-int8_t phototemp_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, uint8_t flags) {
-
-	// post data ready message here
-	if ((flags & 0xC0) == PHOTO_SENSOR_ID) {
-		LED_DBG(LED_YELLOW_TOGGLE);
-		ker_sensor_data_ready(MTS310_PHOTO_SID, value, flags);
-	} else {
-		LED_DBG(LED_GREEN_TOGGLE);
-		ker_sensor_data_ready(MTS310_TEMP_SID, value, flags);
-	}
-	return SOS_OK;
-}
-
-
 static inline void photo_on() {
 	SET_PHOTO_EN();
 	SET_PHOTO_EN_DD_OUT();
@@ -101,6 +82,25 @@ static inline void temp_off() {
 	CLR_TEMP_EN();
 }
 
+/**
+ * adc call back
+ * not a one to one mapping so not SOS_CALL
+ */
+int8_t phototemp_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, uint8_t flags) {
+
+	// post data ready message here
+	if ((flags & 0xC0) == PHOTO_SENSOR_ID) {
+		LED_DBG(LED_YELLOW_TOGGLE);
+		photo_off();
+		ker_sensor_data_ready(MTS310_PHOTO_SID, value, flags);
+	} else {
+		LED_DBG(LED_GREEN_TOGGLE);
+		temp_off();
+		ker_sensor_data_ready(MTS310_TEMP_SID, value, flags);
+	}
+	return SOS_OK;
+}
+
 
 static int8_t phototemp_control(func_cb_ptr cb, uint8_t cmd, void* data) {
 
@@ -109,8 +109,12 @@ static int8_t phototemp_control(func_cb_ptr cb, uint8_t cmd, void* data) {
 	switch (cmd) {
 		case SENSOR_GET_DATA_CMD:
 			// get ready to read phototemp sensor
+			if ((ctx->options & 0xC0) == PHOTO_SENSOR_ID) {
+				photo_on();
+			} else {
+				temp_on();
+			}
 			return ker_adc_proc_getData(MTS310_PHOTO_SID, (ctx->options & 0xC0));
-			break;
 
 		case SENSOR_ENABLE_CMD:
 			if ((ctx->options & 0xC0) == PHOTO_SENSOR_ID) {
