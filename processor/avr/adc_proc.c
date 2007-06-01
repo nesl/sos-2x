@@ -79,10 +79,12 @@ typedef struct adc_proc_state {
 
 	uint8_t portmap[ADC_PROC_EXTENDED_PORTMAPSIZE];
 	uint8_t calling_pid[ADC_PROC_EXTENDED_PORTMAPSIZE];
+	uint8_t pending_flag[ADC_PROC_EXTENDED_PORTMAPSIZE];
 	uint8_t calling_flags;
 	
 	uint8_t reqPort;  // current port
-	uint8_t portMask; // mask of mapped ports
+	uint16_t portMask; // mask of mapped ports
+	uint16_t reqMask;  // the mask for pending requested port
 	uint16_t refVal;  // system reference value
 
 	uint8_t sampleCnt;
@@ -148,6 +150,7 @@ int8_t adc_proc_init() {
 	sched_register_kernel_module(&adc_proc_module, sos_get_header_address(mod_header), &s.cb);
 	
 	s.portMask = 0;
+	s.reqMask = 0;
 	// wtf???
 	s.refVal = 0x17d; // Reference value assuming 3.3 Volt power source
 	s.state = ADC_PROC_IDLE;
@@ -221,7 +224,9 @@ int8_t ker_adc_proc_getData(uint8_t port, uint8_t flags) {
 		case ADC_PROC_INIT:
 		case ADC_PROC_INIT_BUSY:
 		case ADC_PROC_BUSY:
-			return -EBUSY;
+			s.reqMask |= (1 << port);
+			s.pending_flag[port] = flags;
+			return SOS_OK;
 			break;
 			
 		case ADC_PROC_IDLE:
@@ -310,9 +315,7 @@ int8_t ker_adc_proc_stopPerodicData(uint8_t port) {
 adc_proc_interrupt() {
 	uint16_t adcValue;
 
-	SOS_MEASUREMENT_IDLE_END();
 	if (s.state != ADC_PROC_BUSY) {
-		//ADCSRA &= ~_BV(ADIE);
 		s.state = ADC_PROC_IDLE;
 		return;
 	}
@@ -329,6 +332,27 @@ adc_proc_interrupt() {
 	if (!(s.sampleCnt > 0)) {
 		s.state = ADC_PROC_IDLE;
 		ADCSRA &= ~_BV(ADIE);
+	} else {
+		return;
+	}
+
+	if( s.reqMask != 0 ) {
+		// we have pending request
+		uint8_t i;
+		uint16_t m = 1;
+		for( i = 0; i < ADC_PROC_EXTENDED_PORTMAPSIZE; i++, m<<=1) {
+			if( m & s.reqMask ) {
+				s.reqMask &= ~m;
+				s.state = ADC_PROC_BUSY;
+				s.reqPort = i;
+				s.sampleCnt = 1;
+				s.calling_flags = s.pending_flag[i];
+				ADMUX = (ADC_PROC_VREF | s.portmap[i]);
+				ADCSRA |= _BV(ADIE);        
+				ADCSRA |= _BV(ADSC);  // start conversion
+				return;
+			}
+		}
 	}
 }
 
