@@ -59,6 +59,7 @@
 //-----------------------------------------------------------------------------
 // DEBUG
 //-----------------------------------------------------------------------------
+#define SOS_PROFILE_FRAGMENTATION
 #define LED_DEBUG
 #include <led_dbg.h>
 //#define SOS_DEBUG_MALLOC
@@ -77,7 +78,6 @@ static void printMem(char*);
 #else
 #define DEBUG_GC(...)
 #endif
-
 
 //-----------------------------------------------------------------------------
 // CONSTANTS
@@ -139,17 +139,32 @@ static void Unlink(Block*);
 static Block* MergeBlocks(Block* block);
 static Block* MergeBlocksQuick(Block *block, uint16_t req_blocks);
 static void SplitBlock(Block* block, uint16_t reqBlocks);
-//static void verify_memory( void );
 
 //-----------------------------------------------------------------------------
-// LOCAL GLOBAL VARIABLES
+// LOCAL VARIABLES
 //-----------------------------------------------------------------------------
+#ifdef SOS_PROFILE_FRAGMENTATION
+typedef struct malloc_frag_t {
+	uint16_t malloc_max_efrag;  // maximum external fragmentation in blocks
+	uint32_t malloc_efrag;       // total external fragmentation
+	uint32_t malloc_efrag_cnt;  // number of external fragmentation counts
+
+	uint32_t  malloc_ifrag;       // total internal fragmentation
+	uint32_t malloc_alloc_cnt;  // number of allocations used for 
+                                    // computing average
+} PACK_STRUCT 
+malloc_frag_t;
+
+static malloc_frag_t mf;
+static void malloc_record_efrag(Block *b);
+static void malloc_record_ifrag(Block *b, uint16_t size);
+#endif
+
 #define NUM_HEAP_BLOCKS  ((MALLOC_HEAP_SIZE + (BLOCK_SIZE - 1))/BLOCK_SIZE)
 static Block*           mPool;
 static Block*           mSentinel;
 static uint16_t         mNumberOfBlocks;
 static Block            malloc_heap[NUM_HEAP_BLOCKS] SOS_HEAP_SECTION;
-
 
 
 #ifdef SOS_USE_GC
@@ -176,73 +191,78 @@ static mod_header_t mod_header SOS_MODULE_HEADER ={
 //-----------------------------------------------------------------------------
 void* sos_blk_mem_longterm_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule)
 {
-#if 0
-  return sos_blk_mem_alloc(size, id, false);
-#else
-  HAS_CRITICAL_SECTION;
-  uint16_t reqBlocks;
-  Block* block;
-  Block* max_block = NULL;
-  Block* newBlock;
+	HAS_CRITICAL_SECTION;
+	uint16_t reqBlocks;
+	Block* block;
+	Block* max_block = NULL;
+	Block* newBlock;
 #ifdef SOS_SFI
-  int8_t domid;
+	int8_t domid;
 #endif
 
-  if (size == 0) return NULL;
-  printMem("malloc_longterm begin: ");
-  reqBlocks = (size + BLOCKOVERHEAD + sizeof(Block) - 1) >> SHIFT_VALUE;
-  ENTER_CRITICAL_SECTION();
-  // First defragment the memory
-  for (block = mSentinel->next; block != mSentinel; block = block->next)
-    {
-      block = MergeBlocks(block);
-    }
-	
-  // Find the block that has largest address and larger than request
-  for (block = mSentinel->next; block != mSentinel; block = block->next)
-    {
-      //block = MergeBlocks(block);
-      if( (block > max_block) &&  (block->blockhdr.blocks >= reqBlocks) ) {
-	max_block = block;
-      }
-    }
+	if (size == 0) { return NULL; }
 
-  if( max_block == NULL ) {
-    printMem("Malloc Failed!!!: ");
-    LEAVE_CRITICAL_SECTION();
-    return NULL;
-  }
+	printMem("malloc_longterm begin: ");
+	reqBlocks = (size + BLOCKOVERHEAD + sizeof(Block) - 1) >> SHIFT_VALUE;
+	ENTER_CRITICAL_SECTION();
+	// First defragment the memory
+	for (block = mSentinel->next; block != mSentinel; block = block->next) {
+		block = MergeBlocks(block);
+	}
 
-  // Now take the tail of this block
-  newBlock = max_block + (max_block->blockhdr.blocks - reqBlocks);
+	// Find the block that has largest address and larger than request
+	for (block = mSentinel->next; block != mSentinel; block = block->next) {
+		if( (block > max_block) &&  (block->blockhdr.blocks >= reqBlocks) ) {
+			max_block = block;
+		}
+	}
 
-  if( newBlock == max_block ) {
-    Unlink(newBlock);
-  } else {
-    // otherwise we just steal the tail by reducing the size
-    max_block->blockhdr.blocks -= reqBlocks;
-    newBlock->blockhdr.blocks = reqBlocks;
-  }
+#ifdef SOS_PROFILE_FRAGMENTATION
+	// Record external fragmentation
+	for (block = max_block->next; block != mSentinel; block = block->next) {
+		malloc_record_efrag( block );
+	}	
+#endif
 
-  // Mark newBlock as reserved
-  //
-  newBlock->blockhdr.blocks |= RESERVED;
-  newBlock->blockhdr.owner = id;
+	if( max_block == NULL ) {
+		printMem("Malloc Failed!!!: ");
+		LEAVE_CRITICAL_SECTION();
+		return NULL;
+	}
+
+	// Now take the tail of this block
+	newBlock = max_block + (max_block->blockhdr.blocks - reqBlocks);
+
+	if( newBlock == max_block ) {
+		Unlink(newBlock);
+	} else {
+		// otherwise we just steal the tail by reducing the size
+		max_block->blockhdr.blocks -= reqBlocks;
+		newBlock->blockhdr.blocks = reqBlocks;
+	}
+
+#ifdef SOS_PROFILE_FRAGMENTATION
+	// Record internal fragmentation
+	malloc_record_ifrag(newBlock, size);
+#endif
+
+	// Mark newBlock as reserved
+	//
+	newBlock->blockhdr.blocks |= RESERVED;
+	newBlock->blockhdr.owner = id;
 
 #ifdef SOS_SFI
-  domid = sfi_get_domain_id(id);
-  memmap_set_perms((void*) newBlock, sizeof(Block), DOM_SEG_START(domid));
-  memmap_set_perms((void*) ((Block*)(newBlock + 1)), sizeof(Block) * (reqBlocks - 1), DOM_SEG_LATER(domid));
+	domid = sfi_get_domain_id(id);
+	memmap_set_perms((void*) newBlock, sizeof(Block), DOM_SEG_START(domid));
+	memmap_set_perms((void*) ((Block*)(newBlock + 1)), sizeof(Block) * (reqBlocks - 1), DOM_SEG_LATER(domid));
 #else
-  BLOCK_GUARD_BYTE(newBlock) = id;
+	BLOCK_GUARD_BYTE(newBlock) = id;
 #endif
 
-  printMem("malloc_longterm end: ");
-  //DEBUG("malloc_longterm return %x\n", (unsigned int)newBlock);
-  LEAVE_CRITICAL_SECTION();
-  ker_log( SOS_LOG_MALLOC, id, reqBlocks );
-  return newBlock->userPart;
-#endif
+	printMem("malloc_longterm end: ");
+	LEAVE_CRITICAL_SECTION();
+	ker_log( SOS_LOG_MALLOC, id, reqBlocks );
+	return newBlock->userPart;
 }
 
 //-----------------------------------------------------------------------------
@@ -251,38 +271,43 @@ void* sos_blk_mem_longterm_alloc(uint16_t size, sos_pid_t id, bool bCallFromModu
 //-----------------------------------------------------------------------------
 void* sos_blk_mem_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule)
 {
-  HAS_CRITICAL_SECTION;
-  uint16_t reqBlocks;
-  Block* block;
+	HAS_CRITICAL_SECTION;
+	uint16_t reqBlocks;
+	Block* block;
 #ifdef SOS_SFI
-  int8_t domid;
+	int8_t domid;
 #endif
 
-  // Check for errors.
-  if (size == 0) return NULL;
+	// Check for errors.
+	if (size == 0) return NULL;
 
-  // Compute the number of blocks to satisfy the request.
-  reqBlocks = (size + BLOCKOVERHEAD + sizeof(Block) - 1) >> SHIFT_VALUE;
+	// Compute the number of blocks to satisfy the request.
+	reqBlocks = (size + BLOCKOVERHEAD + sizeof(Block) - 1) >> SHIFT_VALUE;
 
-  //DEBUG("sizeof(BlockHeaderType) = %d, sizeof(block) = %d\n", sizeof(BlockHeaderType), sizeof(Block));
-  //DEBUG("req size = %d, reqBlocks = %d\n", size, reqBlocks);
-    
-  ENTER_CRITICAL_SECTION();
-  //verify_memory();
-  // Traverse the free list looking for the first block that will fit the
-  // request. This is a "first-fit" strategy.
-  //
-  printMem("malloc_start: ");
-  for (block = mSentinel->next; block != mSentinel; block = block->next)
-    {
-      block = MergeBlocksQuick(block, reqBlocks);
-      // Is this free area (which could have just expanded somewhat)
-      // large enough to satisfy the request.
-      //
-      if (block->blockhdr.blocks >= reqBlocks)
+	//DEBUG("sizeof(BlockHeaderType) = %d, sizeof(block) = %d\n", sizeof(BlockHeaderType), sizeof(Block));
+	//DEBUG("req size = %d, reqBlocks = %d\n", size, reqBlocks);
+
+	ENTER_CRITICAL_SECTION();
+	//verify_memory();
+	// Traverse the free list looking for the first block that will fit the
+	// request. This is a "first-fit" strategy.
+	//
+	printMem("malloc_start: ");
+	for (block = mSentinel->next; block != mSentinel; block = block->next)
+	{
+		block = MergeBlocksQuick(block, reqBlocks);
+		// Is this free area (which could have just expanded somewhat)
+		// large enough to satisfy the request.
+		//
+		if (block->blockhdr.blocks >= reqBlocks)
         {
-	  break;
+			break;
         }
+#ifdef SOS_PROFILE_FRAGMENTATION
+		//
+		// otherwise it is an external fragmentation
+		malloc_record_efrag( block );
+#endif
     }
 
   // If we are pointing at the sentinel then all blocks are allocated.
@@ -308,6 +333,12 @@ void* sos_blk_mem_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule)
   // as reserved.
   //
   Unlink(block);
+
+#ifdef SOS_PROFILE_FRAGMENTATION
+	// Record internal fragmentation
+	malloc_record_ifrag(block, size);
+#endif
+  
   block->blockhdr.blocks |= RESERVED;
   block->blockhdr.owner = id;
 
@@ -431,7 +462,7 @@ int8_t sos_blk_mem_change_own(void* ptr, sos_pid_t id, bool bCallFromModule)
   Block* blockptr = TO_BLOCK_PTR(ptr); // Convert to a block address         
   sos_pid_t old_owner;
   // Check for errors                                          
-  if (NULL_PID == id || NULL == ptr) return -EINVAL;           
+  if (NULL_PID == id || NULL == ptr) return SOS_OK;           
 
 #ifdef SOS_SFI
   ENTER_CRITICAL_SECTION();
@@ -685,6 +716,14 @@ void mem_init(void)
 #ifdef SOS_SFI
   memmap_init(); // Initialize all the memory to be owned by the kernel
   memmap_set_perms((void*) mPool, mNumberOfBlocks * sizeof(Block), MEMMAP_SEG_START|BLOCK_FREE); // Init heap to unallocated
+#endif
+
+#ifdef SOS_PROFILE_FRAGMENTATION
+	mf.malloc_max_efrag = 0;
+	mf.malloc_efrag = 0;
+	mf.malloc_efrag_cnt = 0;
+	mf.malloc_ifrag = 0;
+	mf.malloc_alloc_cnt = 0;
 #endif
 
 }
@@ -1194,6 +1233,32 @@ static void printMem(char* s)
 #endif // SOS_SFI
 #endif
 
+#ifdef SOS_PROFILE_FRAGMENTATION
+static void malloc_record_efrag(Block *b)
+{
+	mf.malloc_efrag_cnt++;
+	if( b->blockhdr.blocks > mf.malloc_max_efrag ) {            
+		mf.malloc_max_efrag = b->blockhdr.blocks;        
+	}
+	mf.malloc_efrag += b->blockhdr.blocks;
+#ifdef SOS_SIM
+	printf("max efrag = %d bytes\n", mf.malloc_max_efrag << SHIFT_VALUE);
+	printf("average efrag = %f\n", (float)mf.malloc_efrag * (1<<SHIFT_VALUE) / (float)mf.malloc_efrag_cnt );
+#endif
+	
+}
+
+static void malloc_record_ifrag(Block *b, uint16_t size)
+{
+	mf.malloc_alloc_cnt++;	
+	mf.malloc_ifrag += ((b->blockhdr.blocks << SHIFT_VALUE) - (size + BLOCKOVERHEAD));    
+#ifdef SOS_SIM
+	printf("internal frag = %d\n",  
+		(int)((b->blockhdr.blocks << SHIFT_VALUE) - (size + BLOCKOVERHEAD)));    
+	printf("average internel frag = %f\n", (float)mf.malloc_ifrag / mf.malloc_alloc_cnt);
+#endif
+}
+#endif
 
 void* ker_sys_malloc(uint16_t size)
 {    
@@ -1202,6 +1267,9 @@ void* ker_sys_malloc(uint16_t size)
   if( ret != NULL ) {        
     return ret;    
   }    
+  if( size == 0 ) {
+	return NULL;
+  }
   ker_mod_panic(my_id);    
   return NULL;
 }
@@ -1211,6 +1279,9 @@ void* ker_sys_realloc(void* pntr, uint16_t newSize)
   void *ret = sos_blk_mem_realloc(pntr, newSize, true);
   if( ret != NULL ) {
     return ret;
+  }
+  if( newSize == 0 ) {
+	return NULL;
   }
   ker_mod_panic(ker_get_current_pid());
   return NULL;
