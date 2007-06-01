@@ -76,11 +76,11 @@ enum {
   // Ram - Two sounders ??
   ACK_MOD_PID    =  (APP_MOD_MIN_PID + 19),
 
-  //! 148 AODV1 Module
+  //! 148 AODV Module
   AODV_PID       =  (APP_MOD_MIN_PID + 20),
 
-  //! 149 AODV2 Module
-  AODV2_PID      =  (APP_MOD_MIN_PID + 21),
+  //! 149 Ping Module
+  PING_PID      =  (APP_MOD_MIN_PID + 21),
 
   //! 150 GPSR routing module
   GPSR_MOD_PID   =   (APP_MOD_MIN_PID + 22),
