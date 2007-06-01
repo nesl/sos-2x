@@ -6,6 +6,7 @@
 //#define LED_DEBUG
 #include <led_dbg.h>
 
+#include <routing/tree_routing/tree_routing.h>
 #include "neighbor.h"
 
 #define NEIGHBOR_TIMER_INTERVAL	   (8 * 1024L)
@@ -17,7 +18,6 @@
 typedef struct {
 	nbr_entry_t *nb_list;
 	int16_t gCurrentSeqNo;                                                   
-	uint8_t gbCurrentHopCount;      
 	uint8_t nb_cnt;
 	uint8_t est_ticks; 
 } nbr_state_t;
@@ -31,9 +31,9 @@ static void recv_beacon(nbr_state_t *s, Message *msg);
 static void update_table(nbr_state_t *s);
 static void init_nb(nbr_entry_t *nb, uint16_t id);
 #ifdef PC_PLATFORM
-static void tr_debug(nbr_state_t *s);
+static void nb_debug(nbr_state_t *s);
 #else
-#define tr_debug(...)
+#define nb_debug(...)
 #endif
 
 /**
@@ -66,7 +66,6 @@ static int8_t nbr_msg_handler(void *state, Message *msg)
 			s->nb_cnt = 0;
 			s->est_ticks = 0;
 			s->gCurrentSeqNo = 0;
-			s->gbCurrentHopCount = ROUTE_INVALID;
 			
 			sys_shm_open( sys_shm_name(NBHOOD_PID, SHM_NBR_LIST), s->nb_list );
 			
@@ -90,7 +89,7 @@ static int8_t nbr_msg_handler(void *state, Message *msg)
 				update_table( s );
 				sys_shm_update( sys_shm_name(NBHOOD_PID, SHM_NBR_LIST), s->nb_list );
 				send_beacon( s );
-				tr_debug(s);
+				nb_debug(s);
 			}
 			break;
 		}
@@ -253,7 +252,7 @@ static void send_beacon(nbr_state_t *s)
 	nbr_beacon_t *pkt;
 	uint8_t pkt_size;
 	uint8_t i = 0;
-	uint16_t *tr_parent;
+	tr_shared_t *tr_shared;
 	// sort the table according to recv estimate, NO NEED
 	
 	// Count how many in the list
@@ -276,10 +275,14 @@ static void send_beacon(nbr_state_t *s)
 		nb = nb->next;
 		i++;
 	}
-	tr_parent = sys_shm_get( sys_shm_name( TREE_ROUTING_PID, 0 ) );
+	tr_shared = sys_shm_get( sys_shm_name( TREE_ROUTING_PID, SHM_TR_VALUE ) );
 	pkt->seqno = ehtons((s->gCurrentSeqNo)++);
-	pkt->hopcount = s->gbCurrentHopCount;
-	pkt->parent = (tr_parent) ? ehtons(*tr_parent) : ehtons(BCAST_ADDRESS);
+	pkt->parent = (tr_shared) ? ehtons(tr_shared->parent) : ehtons(BCAST_ADDRESS);
+	if( tr_shared != NULL ) {
+		pkt->hopcount = tr_shared->hop_count;
+	} else {
+		pkt->hopcount = ROUTE_INVALID;
+	}
 	pkt->estEntries = s->nb_cnt;
 	DEBUG("Send Beacon seq = %d\n", entohs(pkt->seqno));
 	sys_post_net(NBHOOD_PID, MSG_BEACON_PKT, pkt_size, pkt, SOS_MSG_RELEASE, BCAST_ADDRESS);
@@ -311,7 +314,7 @@ static void recv_beacon(nbr_state_t *s, Message *msg)
 }
 
 #ifdef PC_PLATFORM
-static void tr_debug(nbr_state_t *s)
+static void nb_debug(nbr_state_t *s)
 {
   nbr_entry_t *nb = s->nb_list;
 

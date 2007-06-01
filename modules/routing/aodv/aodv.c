@@ -373,7 +373,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 				//sys_led(LED_GREEN_TOGGLE);
 				
 				user_data = sys_malloc(data_pkt->hdr.length);
-				if( user_data ) {
+				if( user_data || data_pkt->hdr.length == 0) {
 					memcpy(user_data, data_pkt->data, data_pkt->hdr.length);
 				
 					post_longer(data_pkt->hdr.dst_pid, data_pkt->hdr.src_pid, data_pkt->hdr.msg_type,
