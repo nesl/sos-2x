@@ -21,7 +21,7 @@
 static int8_t sosbase_handler(void *state, Message *msg);
 void send_group(uint16_t daddr, uint8_t did);
 
-static mod_header_t mod_header SOS_MODULE_HEADER =
+static const mod_header_t mod_header SOS_MODULE_HEADER =
   {
     .mod_id = SOSBASE_PID,
     .state_size = 0,

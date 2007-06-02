@@ -12,8 +12,6 @@ enum {
 	MSG_SEND_PING      =    ( MOD_MSG_START + 0 ),
 	MSG_PING      =    ( MOD_MSG_START + 1 ),
 	MSG_PING_REPLY      =    ( MOD_MSG_START + 2 ),
-	// WARNING: number of message cannot be more than 32
-	MSG_LAST_MSG     =    ( MOD_MSG_START + 31 ),  
 	MAX_PING_REPEAT  = 3,
 };
 
@@ -24,7 +22,7 @@ typedef struct _sos_state_t {
 
 static int8_t _sos_handler(void *state, Message *msg);
 
-static mod_header_t mod_header SOS_MODULE_HEADER =
+static const mod_header_t mod_header SOS_MODULE_HEADER =
 {
 	.mod_id          = PING_PID,
 	.state_size      = sizeof ( _sos_state_t ),
@@ -35,12 +33,6 @@ static mod_header_t mod_header SOS_MODULE_HEADER =
 	.processor_type = MCU_TYPE,
 	.code_id         = ehtons(PING_PID),
 	.module_handler  = _sos_handler,
-	/* TODO : uncomment to use function pointer pointer 
-	 * TODO : update num_sub_func as needed
-	.funct = {
-		[0] = {error_16, "Svv0", <Module ID>, <Function ID>},
-	}
-	*/
 };
 
 
@@ -50,7 +42,6 @@ static int8_t _sos_handler ( void *state, Message *msg )
 	switch ( msg->type ) {
 		case MSG_TIMER_TIMEOUT: {
 			if( sys_timer_tid(msg) == 0 ) {
-				// TODO : handle timer 0
 				if( s->repeated < MAX_PING_REPEAT) {
 					sys_post_net( sys_pid(), MSG_PING, 0, NULL, 0, s->node_pinged);
 					s->repeated++;
@@ -65,7 +56,7 @@ static int8_t _sos_handler ( void *state, Message *msg )
 			else {
 				if( s->node_pinged == BCAST_ADDRESS ) {
 				uint16_t *dest = sys_malloc(2);
-				*dest = sys_rand() % 4 + 2;
+				*dest = sys_rand() % 20 + 2;
 				sys_post(sys_pid(), MSG_SEND_PING, 2, dest, SOS_MSG_RELEASE);
 				}
 			}
