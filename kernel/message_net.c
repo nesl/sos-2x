@@ -70,7 +70,7 @@ static int8_t no_router(func_cb_ptr p, Message *msg);
 //-------------------------------------------------------------------------------
 static int8_t sos_msg_dispatch(Message* m);
 static inline void msg_change_endian(Message* e);
-static void sos_msg_find_right_link(Message *m);
+static bool sos_msg_find_right_link(Message *m);
 static int8_t routing_handler(void *state, Message *msg);
 static sos_module_t routing_module;
 static func_cb_ptr routing_func_ptr[1];
@@ -147,6 +147,12 @@ int8_t post(Message *e){
   }
   // deep copy the header
   *m = *e;
+
+	// Transfer the memory
+	e->len = 0;
+	e->data = NULL;
+	e->flag &= ~SOS_MSG_RELEASE;
+		
   
   // Dispatch Message
   return sos_msg_dispatch(m);
@@ -188,7 +194,7 @@ int8_t post_link(sos_pid_t did, sos_pid_t sid,
 //-----------------------------------------------------------------------------
 // SOS Find Right link
 //-----------------------------------------------------------------------------
-static void sos_msg_find_right_link(Message *m)
+static bool sos_msg_find_right_link(Message *m)
 {
 		bool link_found = false;
 		
@@ -220,6 +226,7 @@ static void sos_msg_find_right_link(Message *m)
 		} else {
 			m->flag &= ~SOS_MSG_RADIO_IO;	
 		}
+		return link_found;
 }
 
 //--------------------------------------------------------------------------------
@@ -247,11 +254,13 @@ static int8_t sos_msg_dispatch(Message* m)
 	if( m->daddr != BCAST_ADDRESS && flag_msg_raw(m->flag) == 0 ) {
 		int8_t ret;
 		// Not using raw message, send to the routing layer first
-		ret = SOS_CALL(routing_func_ptr[0], routing_func_t, m);
-		if( ret == SOS_OK ) {
-			msg_send_senddone( m, true, KER_ROUTING_PID );
-			msg_dispose(m);
-			return SOS_OK;
+		if( sos_msg_find_right_link(m) == false ) {
+			ret = SOS_CALL(routing_func_ptr[0], routing_func_t, m);
+			if( ret == SOS_OK ) {
+				msg_send_senddone( m, true, KER_ROUTING_PID );
+				msg_dispose(m);
+				return SOS_OK;
+			}
 		}
 	}
 

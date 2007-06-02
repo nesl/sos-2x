@@ -596,6 +596,7 @@ int8_t ker_deregister_module(sos_pid_t pid)
   timer_remove_all(pid);
   sensor_remove_all(pid);
   ker_timestamp_deregister(pid);
+	monitor_remove_all(pid);
   fntable_remove_all(handle);
 
   // free up memory
@@ -992,6 +993,8 @@ int8_t ker_panic(void)
   LED_DBG(LED_YELLOW_ON);
   val = 0xffff;
 #ifdef SOS_SIM
+		printf("kernel panic\n");
+		printf("Possible faulting module = %d\n", ker_get_current_pid());
     exit(1);
     return -EINVAL;
 #else

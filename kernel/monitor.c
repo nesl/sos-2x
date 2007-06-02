@@ -72,6 +72,31 @@ int8_t ker_deregister_monitor(monitor_cb *cb)
 	return -EINVAL;
 }
 
+void monitor_remove_all(sos_pid_t pid )
+{
+	monitor_cb *curr = cb_list;
+	monitor_cb *prev = cb_list;
+
+	while(curr) {
+		if(curr->mod_handle->pid == pid) {
+			if(curr == prev) {
+				/**
+				 * Removing the head
+				 */
+				cb_list = curr->next;
+			} else {
+				/**
+				 * Removing non-head item in the list
+				 */
+				prev->next = curr->next;
+			}
+			return;
+		}
+		prev = curr;
+		curr = curr->next;
+	}
+}
+
 void monitor_deliver_incoming_msg_to_monitor(Message *m)
 {
 	uint8_t type;
@@ -111,6 +136,7 @@ void monitor_deliver_incoming_msg_to_monitor(Message *m)
 							curr->mod_handle->header,
 							offsetof(mod_header_t,module_handler));
 			void *handler_state = curr->mod_handle->handler_state;
+			curr_pid = curr->mod_handle->pid;
 			handler(handler_state, m);
 		}
 		curr = curr->next;
@@ -120,6 +146,7 @@ void monitor_deliver_incoming_msg_to_monitor(Message *m)
 void monitor_deliver_outgoing_msg_to_monitor(Message *m)
 {
 	monitor_cb *curr;
+	sos_pid_t prev_pid;
 #ifdef MSG_TRACE
 #ifdef PC_PLATFORM
 	msg_trace(m, true);
@@ -140,7 +167,10 @@ void monitor_deliver_outgoing_msg_to_monitor(Message *m)
 							curr->mod_handle->header,
 							offsetof(mod_header_t,module_handler));
 			void *handler_state = curr->mod_handle->handler_state;
+			prev_pid = curr_pid;
+			curr_pid = curr->mod_handle->pid;
 			handler(handler_state, m);
+			curr_pid = prev_pid;
 		}
 		curr = curr->next;
 	}

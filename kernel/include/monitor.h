@@ -118,7 +118,10 @@ extern void monitor_deliver_incoming_msg_to_monitor(Message *m);
 
 extern void monitor_deliver_outgoing_msg_to_monitor(Message *m);
 
-
+/**
+ * @brief remove monitor
+ */
+extern void monitor_remove_all(sos_pid_t pid);
 
 #ifdef PC_PLATFORM
 
