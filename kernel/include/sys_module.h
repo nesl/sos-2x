@@ -967,7 +967,7 @@ typedef int8_t (*sys_routing_register_func_t)( uint8_t fid );
 static inline int8_t sys_routing_register( uint8_t fid )
 {
 #ifdef SYS_JUMP_TBL_START
-	return ((sys_routing_register_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*29))( fid );
+	return ((sys_routing_register_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*30))( fid );
 #else
 	return ker_sys_routing_register( fid );
 #endif
