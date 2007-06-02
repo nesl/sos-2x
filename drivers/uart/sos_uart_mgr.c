@@ -8,7 +8,7 @@
 #include <sos_uart_mgr.h>
 #include <sos_info.h>
 
-static uint16_t uart_address = NODE_ADDRESS;
+static uint16_t uart_address = BCAST_ADDRESS;
 
 int8_t check_uart_address(uint16_t addr) {
 	if (addr != uart_address) {
