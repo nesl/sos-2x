@@ -146,18 +146,20 @@ static void SplitBlock(Block* block, uint16_t reqBlocks);
 #ifdef SOS_PROFILE_FRAGMENTATION
 typedef struct malloc_frag_t {
 	uint16_t malloc_max_efrag;  // maximum external fragmentation in blocks
-	uint32_t malloc_efrag;       // total external fragmentation
+	uint32_t malloc_efrag;      // total external fragmentation
 	uint32_t malloc_efrag_cnt;  // number of external fragmentation counts
 
-	uint32_t  malloc_ifrag;       // total internal fragmentation
+	uint32_t malloc_ifrag;      // total internal fragmentation
 	uint32_t malloc_alloc_cnt;  // number of allocations used for 
-                                    // computing average
+                                // computing average
+	uint16_t num_blocks;        // num_blocks allocated so far
 } PACK_STRUCT 
 malloc_frag_t;
 
 static malloc_frag_t mf;
 static void malloc_record_efrag(Block *b);
 static void malloc_record_ifrag(Block *b, uint16_t size);
+static void malloc_record_blocks(int16_t blks);
 #endif
 
 #define NUM_HEAP_BLOCKS  ((MALLOC_HEAP_SIZE + (BLOCK_SIZE - 1))/BLOCK_SIZE)
@@ -244,6 +246,7 @@ void* sos_blk_mem_longterm_alloc(uint16_t size, sos_pid_t id, bool bCallFromModu
 #ifdef SOS_PROFILE_FRAGMENTATION
 	// Record internal fragmentation
 	malloc_record_ifrag(newBlock, size);
+	malloc_record_blocks(newBlock->blockhdr.blocks);
 #endif
 
 	// Mark newBlock as reserved
@@ -337,6 +340,7 @@ void* sos_blk_mem_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule)
 #ifdef SOS_PROFILE_FRAGMENTATION
 	// Record internal fragmentation
 	malloc_record_ifrag(block, size);
+	malloc_record_blocks(block->blockhdr.blocks);
 #endif
   
   block->blockhdr.blocks |= RESERVED;
@@ -441,6 +445,9 @@ void sos_blk_mem_free(void* pntr, bool bCallFromModule)
   InsertAfter(baseArea);
   printMem("free_end: ");
   LEAVE_CRITICAL_SECTION();
+#ifdef SOS_PROFILE_FRAGMENTATION
+	malloc_record_blocks(-1*(int16_t)freed_blocks);
+#endif
   ker_log( SOS_LOG_FREE, owner, freed_blocks );
   return;
 }
@@ -569,6 +576,9 @@ void* sos_blk_mem_realloc(void* pntr, uint16_t newSize, bool bCallFromModule)
 {
   HAS_CRITICAL_SECTION;
   sos_pid_t id;
+#ifdef SOS_PROFILE_FRAGMENTATION
+  uint16_t old_blocks = 0;
+#endif
 #ifdef SOS_SFI
   uint16_t block_num;
   uint8_t perms;  
@@ -609,6 +619,9 @@ void* sos_blk_mem_realloc(void* pntr, uint16_t newSize, bool bCallFromModule)
   ENTER_CRITICAL_SECTION();
   id = block->blockhdr.owner;
   block->blockhdr.blocks &= ~RESERVED;         // expose the size
+#ifdef SOS_PROFILE_FRAGMENTATION
+  old_blocks = block->blockhdr.blocks;
+#endif
 #ifdef SOS_SFI
   oldSize = BLOCKS_TO_BYTES(block->blockhdr.blocks);
 #endif
@@ -624,7 +637,11 @@ void* sos_blk_mem_realloc(void* pntr, uint16_t newSize, bool bCallFromModule)
       // into two blocks. This also takes care of the case where the
       // new size is less than the old.
       //
+#ifdef SOS_PROFILE_FRAGMENTATION
+	malloc_record_blocks( (int16_t) reqBlocks - (int16_t) old_blocks );	
+#endif
       SplitBlock(block, reqBlocks);
+	  
 #ifdef SOS_SFI
       if (reqBlocks < oldSize){
 	memmap_set_perms((Block*)(block + reqBlocks), 
@@ -724,6 +741,7 @@ void mem_init(void)
 	mf.malloc_efrag_cnt = 0;
 	mf.malloc_ifrag = 0;
 	mf.malloc_alloc_cnt = 0;
+	mf.num_blocks = 0;
 #endif
 
 }
@@ -1257,6 +1275,11 @@ static void malloc_record_ifrag(Block *b, uint16_t size)
 		(int)((b->blockhdr.blocks << SHIFT_VALUE) - (size + BLOCKOVERHEAD)));    
 	printf("average internel frag = %f\n", (float)mf.malloc_ifrag / mf.malloc_alloc_cnt);
 #endif
+}
+
+static void malloc_record_blocks(int16_t blks)
+{
+	mf.num_blocks += blks;
 }
 #endif
 
