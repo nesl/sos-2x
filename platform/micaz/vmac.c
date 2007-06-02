@@ -56,7 +56,7 @@
 #include <string.h> // for memcpy
 #include <spi_hal.h>
 #include <vmac.h>
-#define LED_DEBUG
+//#define LED_DEBUG
 #include <led_dbg.h>
 #include <sys_module.h>
 #include <module.h>
@@ -340,13 +340,11 @@ static void radio_msg_send(Message *msg)
 		if(msg->daddr==BCAST_ADDRESS) {
 			ppdu.mpdu.fcf = BASIC_RF_FCF_NOACK;     //Broadcast: No Ack
 		} else {
-			ppdu.mpdu.fcf = BASIC_RF_FCF_NOACK;     //Broadcast: No Ack
-			//ppdu.mpdu.fcf = BASIC_RF_FCF_ACK;       //Unicast: Ack
+			//ppdu.mpdu.fcf = BASIC_RF_FCF_NOACK;     //Broadcast: No Ack
+			ppdu.mpdu.fcf = BASIC_RF_FCF_ACK;       //Unicast: Ack
 		}
 
 		ppdu.mpdu.panid = host_to_net(VMAC_PANID); // PANID
-		//ppdu.mpdu.panid = host_to_net((uint16_t)PANID);
-		//ppdu.mpdu.panid = 0x2420;
 		ppdu.mpdu.seq = getSeq();	//count by software
 		ppdu.mpdu.fcs = 1;		//doesn't matter, hardware supports it
 
@@ -354,8 +352,8 @@ static void radio_msg_send(Message *msg)
 		timestamp_outgoing(msg, ker_systime32());
 		Radio_Send_Pack(&vd, &timestamp);
 	
-		//if( msg->daddr == BCAST_ADDRESS ) {
-		if( 1 ) {
+		if( msg->daddr == BCAST_ADDRESS ) {
+		//if( 1 ) {
 			vmac_send_state = VMAC_SEND_STATE_IDLE;
 			retry_count = 0;
 			msg_send_senddone(msg, 1, RADIO_PID);
@@ -369,8 +367,11 @@ static void radio_msg_send(Message *msg)
 				//
 				// We add TWO milliseconds for the ACK transmission time
 				//
-				ker_timer_restart(RADIO_PID, WAKEUP_TIMER_TID, 
-					MacBackoff_congestionBackoff(retry_count) + 2);
+				if( ker_timer_restart(RADIO_PID, WAKEUP_TIMER_TID, 
+					MacBackoff_congestionBackoff(retry_count) + 2) != SOS_OK ) {
+					ker_timer_start(RADIO_PID, WAKEUP_TIMER_TID,
+							MacBackoff_congestionBackoff(retry_count) + 2);
+				}
 				retry_count++;
 			} else {
 				vmac_send_state = VMAC_SEND_STATE_IDLE;
@@ -386,8 +387,12 @@ static void radio_msg_send(Message *msg)
 		if( (retry_count + 1) <= (uint8_t)MAX_RETRIES ) {
 			vmac_msg = msg;
 			vmac_send_state = VMAC_SEND_STATE_BACKOFF;
-			ker_timer_restart(RADIO_PID, WAKEUP_TIMER_TID, 
-				MacBackoff_congestionBackoff(retry_count));	// setup backoff timer
+			if( ker_timer_restart(RADIO_PID, WAKEUP_TIMER_TID, 
+				MacBackoff_congestionBackoff(retry_count)) != SOS_OK ) 	// setup backoff timer
+			{
+				ker_timer_start(RADIO_PID, WAKEUP_TIMER_TID,
+						MacBackoff_congestionBackoff(retry_count));
+			}
 			retry_count++;
 		} else {
 			vmac_send_state = VMAC_SEND_STATE_IDLE;
@@ -443,7 +448,7 @@ void radio_msg_alloc(Message *msg)
 void _MacRecvAck(uint8_t ack_seq)
 {
 	if( (vmac_send_state == VMAC_SEND_STATE_WAIT_FOR_ACK) && (getSeq() == ack_seq) ) {
-		LED_DBG(LED_GREEN_TOGGLE);
+		//LED_DBG(LED_GREEN_TOGGLE);
 		post_short( RADIO_PID, RADIO_PID, MSG_VMAC_TX_ACKED, 0, 0, 0 );
 	}
 }
@@ -473,7 +478,7 @@ void _MacRecvCallBack(int16_t timestamp)
 	*/
 	// Andreas - filter node ID here, even before allocating any new memory 
 	// if you're using sos/config/base you must comment this block out!
-	if (net_to_host(ppdu.mpdu.daddr) != NODE_ADDR && net_to_host(ppdu.mpdu.daddr) != BCAST_ADDRESS)
+	if (net_to_host(ppdu.mpdu.daddr) != node_address && net_to_host(ppdu.mpdu.daddr) != BCAST_ADDRESS)
 	{
 		ker_free(vd.payload);
 		return;

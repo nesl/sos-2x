@@ -76,7 +76,7 @@ void Radio_Init()
 	TC_SET_REG(CC2420_MDMCTRL0,4,4,1);
 
 	//Set parameters
-	SRC_ADDRESS = NODE_ADDR;
+	SRC_ADDRESS = node_address;
 	TC_SET_SHORTADR(&SRC_ADDRESS);
 
 	PANID = VMAC_PANID;
