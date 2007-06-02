@@ -525,14 +525,11 @@ static int8_t routing_msg_alloc(func_cb_ptr p, Message *msg)
 	
 	DEBUG("[AODV] node %d SEND_DATA: dest=%d length=%d\n",
 		  sys_id(), msg->daddr, msg->len);
-	
-	// I MUST ASK FOR THAT!!!
-	/*			if(s->num_of_neighbors == 0)
-			{
-				DEBUG("[AODV] node %d ERROR: No neighbors. Discarding packet\n", sys_id());
-				return SOS_OK;
-			} */
-	
+	if( check_neighbors(s, msg->daddr) == FOUND ) {
+		// If we found the neighbor, send directly to the node
+		msg->flag |= (SOS_MSG_LINK_AUTO | SOS_MSG_RAW);
+		return post(msg);
+	}	
 	data_pkt = (AODV_pkt_t *)sys_malloc(sizeof(AODV_hdr_t) +msg->len);
 	
 	data_pkt->hdr.source_addr = sys_id();
@@ -553,6 +550,7 @@ static int8_t routing_msg_alloc(func_cb_ptr p, Message *msg)
 		  data_pkt->data[4]); 
 	
 	//if the route is known, then forward to next hop
+	/*
 	if(check_neighbors(s, msg->daddr) == FOUND)
 	{	
 		DEBUG("[AODV] node %d: sending packet directly to node %d", sys_id(), msg->daddr);
@@ -565,7 +563,9 @@ static int8_t routing_msg_alloc(func_cb_ptr p, Message *msg)
 			SOS_MSG_RELEASE | SOS_MSG_LINK_AUTO | SOS_MSG_RAW, msg->daddr);
 					
 		return SOS_OK;		
-	} else if((next_hop = get_next_hop(s, data_pkt->hdr.dest_addr)) != INVALID_NODE_ID)
+	} else 
+	*/	
+	if((next_hop = get_next_hop(s, data_pkt->hdr.dest_addr)) != INVALID_NODE_ID)
 	{
 		DEBUG("[AODV] node %d: forwarding packet to node %d", sys_id(), next_hop);
 		s->seq_no++;
@@ -1505,7 +1505,8 @@ static uint8_t check_neighbors( AODV_state_t *s, uint16_t addr )
 		return NOT_FOUND;
 	}
 	while( nb_list != NULL ) {
-		if( nb_list->id == addr && nb_list->receiveEst > 25) {
+		//if( nb_list->id == addr && nb_list->receiveEst > 25) {
+		if( nb_list->id == addr) {
 			return FOUND;
 		}
 		nb_list = nb_list->next;
