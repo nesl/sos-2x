@@ -153,6 +153,7 @@ typedef struct malloc_frag_t {
 	uint32_t malloc_alloc_cnt;  // number of allocations used for 
                                 // computing average
 	uint16_t num_blocks;        // num_blocks allocated so far
+	uint16_t max_num_blocks;    // max num_blocks
 } PACK_STRUCT 
 malloc_frag_t;
 
@@ -742,6 +743,7 @@ void mem_init(void)
 	mf.malloc_ifrag = 0;
 	mf.malloc_alloc_cnt = 0;
 	mf.num_blocks = 0;
+	mf.max_num_blocks = 0;
 #endif
 
 }
@@ -1280,6 +1282,9 @@ static void malloc_record_ifrag(Block *b, uint16_t size)
 static void malloc_record_blocks(int16_t blks)
 {
 	mf.num_blocks += blks;
+	if( mf.max_num_blocks < mf.num_blocks ) {
+		mf.max_num_blocks = mf.num_blocks;
+	}
 }
 #endif
 
