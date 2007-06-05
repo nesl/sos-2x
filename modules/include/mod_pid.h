@@ -130,6 +130,9 @@ enum {
   //! 165
   DVM_MODULE_PID   = (APP_MOD_MIN_PID + 37),
 
+  //! 166 - ADS7828 ADC on mda300
+  ADS7828_SENSOR_PID = (APP_MOD_MIN_PID + 38),
+
 //! PLEASE add the name to modules/mod_pid.c
 };
 
