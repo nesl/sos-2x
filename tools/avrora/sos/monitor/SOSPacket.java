@@ -21,35 +21,37 @@ public class SOSPacket {
     }
     
     public SOSPacket(byte buf[], int size) {
-	valid = true;
-	if (size < SOS_HEADER_SIZE) valid = false;
-	dstMod = unsign(buf[0]);
-	srcMod = unsign(buf[1]);
-	dstAdr = unsign(buf[2]) + unsign(buf[3]) * 256;
-	srcAdr = unsign(buf[4]) + unsign(buf[5]) * 256;
-	type = unsign(buf[6]);
-	length = unsign(buf[7]);
-	if (size < (length + 7)) valid = false;
-	data = new byte[length];
-	for(int i=0; i < length; i++) {
-            data[i] = buf[8+i];
+		valid = true;
+		if (size < SOS_HEADER_SIZE) valid = false;
+		dstMod = unsign(buf[0]);
+		srcMod = unsign(buf[1]);
+		dstAdr = unsign(buf[2]) + unsign(buf[3]) * 256;
+		srcAdr = unsign(buf[4]) + unsign(buf[5]) * 256;
+		type = unsign(buf[6]);
+		length = unsign(buf[7]);
+		if (size < (length + 8)) valid = false;
+		data = new byte[length];
+		if( valid == true ) {
+			for(int i=0; i < length; i++) {
+				data[i] = buf[8+i];
+			}
+		}
 	}
-    }
-      
 
-    public boolean isValid()
-    {
-	return valid;   
-    }
 
-    public int get_dstMod()
-    {
-	return dstMod;
-    }
-      
-    public int get_srcMod()
-    {
-	return srcMod;
+	public boolean isValid()
+	{
+		return valid;   
+	}
+
+	public int get_dstMod()
+	{
+		return dstMod;
+	}
+
+	public int get_srcMod()
+	{
+		return srcMod;
     }
 
     public int get_type()
