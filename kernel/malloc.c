@@ -145,17 +145,13 @@ static void SplitBlock(Block* block, uint16_t reqBlocks);
 //-----------------------------------------------------------------------------
 #ifdef SOS_PROFILE_FRAGMENTATION
 typedef struct malloc_frag_t {
-	uint16_t malloc_max_efrag;  // maximum external fragmentation in blocks
-	uint32_t malloc_efrag;      // total external fragmentation
-	uint32_t malloc_efrag_cnt;  // number of external fragmentation counts
+	uint16_t malloc_efrag;      // external fragmentation
 
-	uint32_t malloc_ifrag;      // total internal fragmentation
-	uint32_t malloc_alloc_cnt;  // number of allocations used for 
-                                // computing average
+	uint16_t malloc_ifrag;      // internal fragmentation
 	uint16_t num_blocks;        // num_blocks allocated so far
-	uint16_t max_num_blocks;    // max num_blocks
 	uint16_t alloc;             // memory size for current allocation
 	uint16_t num_outstanding;   // number of outstanding memory
+	uint16_t gc_bytes;          // number of bytes GC sweep
 	uint8_t alloc_pid;          // the ID that allocates the memory
 } PACK_STRUCT 
 malloc_frag_t;
@@ -749,13 +745,7 @@ void mem_init(void)
 #endif
 
 #ifdef SOS_PROFILE_FRAGMENTATION
-	mf.malloc_max_efrag = 0;
-	mf.malloc_efrag = 0;
-	mf.malloc_efrag_cnt = 0;
-	mf.malloc_ifrag = 0;
-	mf.malloc_alloc_cnt = 0;
 	mf.num_blocks = 0;
-	mf.max_num_blocks = 0;
 	mf.num_outstanding = 0;
 #endif
 
@@ -1045,6 +1035,9 @@ uint8_t malloc_gc_module( sos_pid_t pid )
 	Block*  mod_memmap_buf[MEM_MOD_GC_STACK_SIZE];
 	Block*  mod_gc_stack_buf[MEM_MOD_GC_STACK_SIZE];
 	uint8_t num_leaks = 0;
+#ifdef SOS_PROFILE_FRAGMENTATION
+	uint16_t num_bytes_gc = 0;
+#endif
 	HAS_CRITICAL_SECTION;
 	//
 	// Get module control block
@@ -1116,8 +1109,14 @@ uint8_t malloc_gc_module( sos_pid_t pid )
 			block->blockhdr.blocks &= ~GC_MARK;
 			mod_memmap[mod_memmap_cnt] = block;
 			mod_memmap_cnt++;
+#ifdef SOS_PROFILE_FRAGMENTATION
+			num_bytes_gc += BLOCKS_TO_BYTES(block->blockhdr.blocks);
+#endif
 		}
 	}
+#ifdef SOS_PROFILE_FRAGMENTATION
+	mf.gc_bytes = num_bytes_gc;
+#endif
 	
 	//
 	// Use module state as the root
@@ -1270,38 +1269,20 @@ static void printMem(char* s)
 #ifdef SOS_PROFILE_FRAGMENTATION
 static void malloc_record_efrag(uint16_t b)
 {
-	mf.malloc_efrag_cnt++;
-	if( b > mf.malloc_max_efrag ) {            
-		mf.malloc_max_efrag = b;        
-	}
-	mf.malloc_efrag += b;
-#ifdef SOS_SIM
-	printf("max efrag = %d bytes\n", mf.malloc_max_efrag << SHIFT_VALUE);
-	printf("average efrag = %f\n", (float)mf.malloc_efrag * (1<<SHIFT_VALUE) / (float)mf.malloc_efrag_cnt );
-#endif
-	
+	mf.malloc_efrag = b << SHIFT_VALUE;
 }
 
 static void malloc_record_ifrag(Block *b, uint16_t size, sos_pid_t id)
 {
-	mf.malloc_alloc_cnt++;	
-	mf.malloc_ifrag += ((b->blockhdr.blocks << SHIFT_VALUE) - (size + BLOCKOVERHEAD));    
+	mf.malloc_ifrag = ((b->blockhdr.blocks << SHIFT_VALUE) - (size + BLOCKOVERHEAD));    
 	mf.alloc = size;
 	mf.alloc_pid = id;
 
-#ifdef SOS_SIM
-	printf("internal frag = %d\n",  
-		(int)((b->blockhdr.blocks << SHIFT_VALUE) - (size + BLOCKOVERHEAD)));    
-	printf("average internel frag = %f\n", (float)mf.malloc_ifrag / mf.malloc_alloc_cnt);
-#endif
 }
 
 static void malloc_record_blocks(int16_t blks)
 {
 	mf.num_blocks += blks;
-	if( mf.max_num_blocks < mf.num_blocks ) {
-		mf.max_num_blocks = mf.num_blocks;
-	}
 }
 
 static void malloc_record_outstanding(int8_t alloc)
