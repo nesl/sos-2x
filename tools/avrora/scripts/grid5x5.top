@@ -1,0 +1,28 @@
+###################################################
+# Topology specification - 5x5 grid of 25 nodes
+###################################################
+node0 0 0 0
+node1 0 15 0
+node2 0 30 0
+node3 0 45 0
+node4 15 0 0
+node5 15 15 0
+node6 15 30 0
+node7 15 45 0
+node8 30 0 0
+node9 30 15 0
+node10 30 30 0 
+node11 30 45 0
+node12 45 0 0 
+node13 45 15 0 
+node14 45 30 0 
+node15 45 45 0
+node16 60 0 0
+node17 60 15 0
+node18 60 30 0
+node19 60 45 0
+node20 60 60 0
+node21 0 60 0
+node22 15 60 0
+node23 30 60 0
+node24 45 60 0
