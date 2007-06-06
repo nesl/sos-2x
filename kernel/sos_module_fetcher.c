@@ -69,6 +69,7 @@ static const mod_header_t mod_header SOS_MODULE_HEADER ={
 //! the status of sending fragment
 enum {
     FETCHER_SENDING_FRAGMENT_INTERVAL  = 512L,
+	FETCHER_MAX_MSG_IN_QUEUE           = 2,
 };
 
 typedef struct {
@@ -78,6 +79,7 @@ typedef struct {
     fetcher_bitmap_t   *map;
     sos_timer_t        timer;
 	uint8_t            num_funcs;
+	uint8_t            num_msg_in_queue;
 } fetcher_sending_state_t;
 
 /**
@@ -281,7 +283,16 @@ static int8_t fetcher_handler(void *state, Message *msg)
 				handle_request_timeout();
 			} else if(params->byte == FETCHER_TRANSMIT_TID) {
 				//DEBUG("send fragment timeout\n");
-				send_fragment();
+				if( send_state.num_msg_in_queue < FETCHER_MAX_MSG_IN_QUEUE ) {
+					send_fragment();
+				}
+			}
+			return SOS_OK;
+		}
+		case MSG_PKT_SENDDONE:
+		{
+			if( send_state.num_msg_in_queue > 0 ) {
+				send_state.num_msg_in_queue--;
 			}
 			return SOS_OK;
 		}
@@ -312,6 +323,7 @@ static int8_t fetcher_handler(void *state, Message *msg)
 			send_state.map = NULL;
 			send_state.frag = NULL;
 			send_state.fragr = NULL;
+			send_state.num_msg_in_queue = 0;	
 			ker_msg_change_rules(KER_FETCHER_PID, SOS_MSG_RULES_PROMISCUOUS);
 			ker_permanent_timer_init(&(send_state.timer), KER_FETCHER_PID, FETCHER_TRANSMIT_TID, TIMER_REPEAT);
 			ker_timer_init(KER_FETCHER_PID, FETCHER_REQUEST_TID, TIMER_ONE_SHOT);
@@ -462,8 +474,11 @@ static inline void send_fragment()
 			MSG_FETCHER_FRAGMENT,
 			sizeof(fetcher_fragment_t),
 			out_pkt,
-			SOS_MSG_RELEASE,
+			SOS_MSG_RELEASE | SOS_MSG_RELIABLE,
 			send_state.dest);
+	if( ret == SOS_OK ) {
+		send_state.num_msg_in_queue++;	
+	}
 send_fragment_postproc:
 	if(check_map(send_state.map)) {
 		//! no more fragment to send

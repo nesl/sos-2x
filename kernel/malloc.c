@@ -170,7 +170,6 @@ static void malloc_record_outstanding(int8_t alloc);
 #define NUM_HEAP_BLOCKS  ((MALLOC_HEAP_SIZE + (BLOCK_SIZE - 1))/BLOCK_SIZE)
 static Block*           mPool;
 static Block*           mSentinel;
-static uint16_t         mNumberOfBlocks;
 static Block            malloc_heap[NUM_HEAP_BLOCKS] SOS_HEAP_SECTION;
 
 
@@ -395,16 +394,14 @@ void sos_blk_mem_free(void* pntr, bool bCallFromModule)
   HAS_CRITICAL_SECTION;
   // Check for errors.
   //
-  Block* top;
   Block* baseArea;   // convert to a block address
 
   if( pntr == NULL ) {
     return;
   }
-  top = mPool + mNumberOfBlocks;
   baseArea = TO_BLOCK_PTR(pntr);   // convert to a block address
 
-  if ( (baseArea < malloc_heap) || (baseArea >= (malloc_heap + mNumberOfBlocks)) ) {
+  if ( (baseArea < malloc_heap) || (baseArea >= (malloc_heap + NUM_HEAP_BLOCKS)) ) {
     DEBUG("sos_blk_mem_free: try to free invalid memory\n");
     DEBUG("possible owner %d %d\n", baseArea->blockhdr.owner, BLOCK_GUARD_BYTE(baseArea));
     return;
@@ -540,7 +537,7 @@ int8_t sos_blk_mem_change_own(void* ptr, sos_pid_t id, bool bCallFromModule)
 
 #else
   // Check for memory corruption                               
-  if ((blockptr < malloc_heap) || (blockptr >= (malloc_heap + mNumberOfBlocks)) ) {
+  if ((blockptr < malloc_heap) || (blockptr >= (malloc_heap + NUM_HEAP_BLOCKS)) ) {
 		
 	  return -EINVAL;
   }
@@ -731,13 +728,10 @@ void* sos_blk_mem_realloc(void* pntr, uint16_t newSize, bool bCallFromModule)
 void mem_init(void)
 {
   Block* head;
-  char* heapStart = (char*)malloc_heap; //&__heap_start;
-  char* heapEnd = (char*)(((char*)malloc_heap) + MALLOC_HEAP_SIZE);//&__heap_end;
 
   DEBUG("malloc init\n");
-  mPool = (Block*)heapStart;
-  mNumberOfBlocks = (uint16_t)(((heapEnd - (char*)mPool) >> SHIFT_VALUE) - 1L);
-  mSentinel = mPool + mNumberOfBlocks;
+  mPool = malloc_heap;
+  mSentinel = &(malloc_heap[NUM_HEAP_BLOCKS-1]);
 
   mSentinel->blockhdr.blocks = RESERVED;           // now cannot be used
   mSentinel->prev = mSentinel;
@@ -746,12 +740,12 @@ void mem_init(void)
   // Entire pool is initially a single unallocated area.
   //
   head = &mPool[0];
-  head->blockhdr.blocks = mNumberOfBlocks;         // initially all of free memeory
+  head->blockhdr.blocks = NUM_HEAP_BLOCKS-1;         // initially all of free memeory
   InsertAfter(head);                      // link the sentinel
 
 #ifdef SOS_SFI
   memmap_init(); // Initialize all the memory to be owned by the kernel
-  memmap_set_perms((void*) mPool, mNumberOfBlocks * sizeof(Block), MEMMAP_SEG_START|BLOCK_FREE); // Init heap to unallocated
+  memmap_set_perms((void*) mPool, NUM_HEAP_BLOCKS * sizeof(Block), MEMMAP_SEG_START|BLOCK_FREE); // Init heap to unallocated
 #endif
 
 #ifdef SOS_PROFILE_FRAGMENTATION
@@ -934,7 +928,7 @@ int8_t ker_gc_mark( sos_pid_t pid, void *pntr )
 	
 	baseArea = TO_BLOCK_PTR(pntr);   // convert to a block address
 	
-	if ( (baseArea < malloc_heap) || (baseArea >= (malloc_heap + mNumberOfBlocks)) ) {
+	if ( (baseArea < malloc_heap) || (baseArea >= (malloc_heap + NUM_HEAP_BLOCKS)) ) {
 		// Not a valid block
 		return -EINVAL;
 	}
@@ -972,7 +966,7 @@ void malloc_gc(sos_pid_t pid)
 	// If the memory is reserved and is not marked, free it
 	//
 	for (block = (Block*)malloc_heap; 
-       block != mSentinel; 
+       block != mSentinel && block >= malloc_heap && block < &(malloc_heap[NUM_HEAP_BLOCKS]); 
        block += block->blockhdr.blocks & ~MEM_MASK) 
     {
 		if ( (block->blockhdr.owner == pid) &&

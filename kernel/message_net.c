@@ -142,6 +142,8 @@ int8_t post(Message *e){
   if(m == NULL){ 
 	if(flag_msg_release(e->flag)) {
 	  ker_free(e->data);
+		e->data = NULL;
+		e->len = 0;
 	}
 	return -ENOMEM;
   }
@@ -256,9 +258,13 @@ static int8_t sos_msg_dispatch(Message* m)
 		// Not using raw message, send to the routing layer first
 		if( sos_msg_find_right_link(m) == false ) {
 			ret = SOS_CALL(routing_func_ptr[0], routing_func_t, m);
-			if( ret == SOS_OK ) {
-				msg_send_senddone( m, true, KER_ROUTING_PID );
+			if( ret == ( SOS_OK + 1 )) {
+				// Forward to the link layer (don't generate senddone)
 				msg_dispose(m);
+				return SOS_OK;
+			} else if( ret == SOS_OK ) {
+				// generate senddone
+				msg_send_senddone( m, true, KER_ROUTING_PID );
 				return SOS_OK;
 			}
 		}
