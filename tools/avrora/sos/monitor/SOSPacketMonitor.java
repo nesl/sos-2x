@@ -19,16 +19,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 
-// import avrora.monitors.Monitor;
-// import avrora.monitors.MonitorFactory;
-// import avrora.sim.Simulator;
-// import avrora.sim.platform.Platform;
-// import avrora.sim.radio.Radio;
-// import cck.util.*;
-// import java.util.Iterator;
-// import java.util.LinkedList;
-
-
 public class SOSPacketMonitor extends MonitorFactory {
 
 	/**
