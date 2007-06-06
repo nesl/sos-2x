@@ -77,7 +77,7 @@ static int8_t _sos_handler ( void *state, Message *msg )
 		   s->node_pinged = BCAST_ADDRESS;
 #ifdef TEST_PING
 		   if( sys_id() == 1 ) {
-			   sys_timer_start ( 1, 1024, TIMER_REPEAT );
+			   sys_timer_start ( 1, 5 * 1024L, TIMER_REPEAT );
 		   }
 #endif
 			return SOS_OK;
@@ -90,7 +90,7 @@ static int8_t _sos_handler ( void *state, Message *msg )
 			s->repeated = 0;
 			s->node_pinged = *(uint16_t*)msg->data;
 			DEBUG("Send Ping to %d\n", s->node_pinged);
-			sys_timer_start ( 0, 1024L, TIMER_REPEAT );
+			sys_timer_start ( 0, 5 * 1024L, TIMER_REPEAT );
 			sys_post_net( sys_pid(), MSG_PING, 0, NULL, 0, s->node_pinged);
 			return SOS_OK;
 		}
