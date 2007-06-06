@@ -6,24 +6,6 @@
 #define MSG_CMN_DATA_PKT  200
 #define MOD_GET_BUFFER    1
 
-/*
-typedef union {
-	uint16_t     id;
-} __attribute__((packed)) node_identifier_t;
-
-typedef struct {
-	node_identifier_t    dst;
-	node_identifier_t    src;
-	uint16_t             payload_len;
-} __attribute__((packed)) cmn_packet_hdr_t;
-
-typedef struct {
-	cmn_packet_hdr_t   hdr;
-	uint8_t            payload[CMN_PAYLOAD_SIZE];
-} __attribute__((packed)) cmn_packet_t;
-*/
-
-
 enum {
 	//algorithm parameters
 	UNLIMITED_ENTRIES 						= 0,
@@ -47,6 +29,7 @@ enum {
 	NOT_FOUND = 0,
 	FOUND = 1,
 	SUCCESS = 1,
+	NO_NEIGHBOR = 2,
 	FOUND_BETTER = 1,
 	FOUND_OLDER =2,
 	FOUND_LONGER =3,
@@ -135,7 +118,7 @@ typedef struct AODV_cache_entry_str {
   uint16_t source_seq_no;
   uint8_t hop_count;
 	struct AODV_cache_entry_str *next;
-} __attribute__ ((packed))
+} 
 AODV_cache_entry_t;
 
 typedef struct AODV_route_entry_str{
@@ -145,14 +128,14 @@ typedef struct AODV_route_entry_str{
   uint16_t dest_seq_no;
   uint8_t lifetime;
   struct AODV_route_entry_str *next;
-} __attribute__ ((packed))
+} 
 AODV_route_entry_t;
 
 typedef struct AODV_buf_pkt_entry_str{
-  uint8_t lifetime;	
+	uint8_t lifetime;	
 	AODV_pkt_t *buf_packet;
 	struct AODV_buf_pkt_entry_str *next;
-} __attribute__ ((packed))
+} 
 AODV_buf_pkt_entry_t;
 
 typedef struct AODV_node_entry_str{
@@ -167,7 +150,6 @@ typedef struct AODV_rreq_entry_str{
 } AODV_rreq_entry_t;
 
 typedef struct AODV_state_str{
-    sos_pid_t pid;
     uint16_t seq_no;
     uint16_t broadcast_id;
 
@@ -191,7 +173,7 @@ typedef struct AODV_state_str{
 	uint8_t max_buf_packets;
     uint8_t max_rreq;	
     uint8_t max_nodes;
-} __attribute__ ((packed))
+} 
 AODV_state_t;
 
 #endif

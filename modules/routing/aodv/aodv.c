@@ -75,11 +75,6 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 			#endif
 			sys_routing_register( 0 );	
 
-			//sys_led(LED_RED_OFF);
-			//sys_led(LED_YELLOW_OFF);
-			//sys_led(LED_GREEN_OFF);
-			
-			s->pid = msg->did;
 			s->seq_no = 0;
 			s->broadcast_id = 0;
 			
@@ -501,7 +496,13 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 			remove_expired_buffer_entries(s);
 						
 			// Check my own leak
-			//malloc_gc_module(sys_pid() );
+			if( malloc_gc_module(sys_pid() ) ) {
+				led_red_toggle();
+				led_red_toggle();
+				led_red_toggle();
+				led_red_toggle();
+				led_red_toggle();
+			}
 			return SOS_OK;
 		}
 		
@@ -522,13 +523,21 @@ static int8_t routing_msg_alloc(func_cb_ptr p, Message *msg)
 	
 	AODV_pkt_t *data_pkt;
 	uint16_t next_hop;
+	uint8_t ret;
 	
 	DEBUG("[AODV] node %d SEND_DATA: dest=%d length=%d\n",
 		  sys_id(), msg->daddr, msg->len);
-	if( check_neighbors(s, msg->daddr) == FOUND ) {
+	ret = check_neighbors(s, msg->daddr);
+	if( ret == NO_NEIGHBOR ) {
+		return -EAGAIN;
+	}
+	if( ret == FOUND ) {
 		// If we found the neighbor, send directly to the node
 		msg->flag |= (SOS_MSG_LINK_AUTO | SOS_MSG_RAW);
-		return post(msg);
+		if( post(msg) == SOS_OK ) {
+			// Senddone is handled in the kernel
+			return (SOS_OK + 1);
+		}
 	}	
 	data_pkt = (AODV_pkt_t *)sys_malloc(sizeof(AODV_hdr_t) +msg->len);
 	
@@ -550,21 +559,6 @@ static int8_t routing_msg_alloc(func_cb_ptr p, Message *msg)
 		  data_pkt->data[4]); 
 	
 	//if the route is known, then forward to next hop
-	/*
-	if(check_neighbors(s, msg->daddr) == FOUND)
-	{	
-		DEBUG("[AODV] node %d: sending packet directly to node %d", sys_id(), msg->daddr);
-				
-		s->seq_no++;
-		data_pkt->hdr.seq_no = s->seq_no;
-							
-		sys_post_net(AODV_PID, MSG_AODV_RECV_DATA,
-			sizeof(AODV_hdr_t) + data_pkt->hdr.length, data_pkt, 
-			SOS_MSG_RELEASE | SOS_MSG_LINK_AUTO | SOS_MSG_RAW, msg->daddr);
-					
-		return SOS_OK;		
-	} else 
-	*/	
 	if((next_hop = get_next_hop(s, data_pkt->hdr.dest_addr)) != INVALID_NODE_ID)
 	{
 		DEBUG("[AODV] node %d: forwarding packet to node %d", sys_id(), next_hop);
@@ -574,7 +568,7 @@ static int8_t routing_msg_alloc(func_cb_ptr p, Message *msg)
 		use_route(s, data_pkt->hdr.dest_addr);			
 		sys_post_net(AODV_PID, MSG_AODV_RECV_DATA,
 					 sizeof(AODV_hdr_t) + data_pkt->hdr.length, data_pkt, 
-					 SOS_MSG_RELEASE | SOS_MSG_LINK_AUTO | SOS_MSG_RAW, next_hop);			
+					 SOS_MSG_RELEASE | SOS_MSG_LINK_AUTO | SOS_MSG_RAW, next_hop);
 	} else {
 		//route is unknown
 		DEBUG("[AODV] node %d: buffering packet to node %d\n", sys_id(), msg->daddr);
@@ -1092,22 +1086,9 @@ static void add_to_buffer(AODV_state_t *s, AODV_pkt_t *pkt)
 		sys_id(), pkt->hdr.source_addr, pkt->hdr.dest_addr);
 
 	AODV_tmp_buf_ptr = (AODV_buf_pkt_entry_t *)sys_malloc(sizeof(AODV_buf_pkt_entry_t));
-	DEBUG("after first\n");
-	//AODV_tmp_buf_ptr->buf_packet = (AODV_pkt_t *)sys_malloc(sizeof(AODV_hdr_t) + pkt->hdr.length);
 	AODV_tmp_buf_ptr->buf_packet = pkt;
-	DEBUG("after second\n");
 	AODV_tmp_buf_ptr->lifetime = ROUTE_DISCOVERY_TIMEOUT;
 	
-	//memcpy(AODV_tmp_buf_ptr->buf_packet, pkt, sizeof(AODV_hdr_t)+pkt->hdr.length);
-
-/*DEBUG("[AODV] Buffered packet to %d: %i %i %i %i %i!\n",
-	AODV_tmp_buf_ptr->buf_packet->hdr.dest_addr,
-	AODV_tmp_buf_ptr->buf_packet->data[0], 
-	AODV_tmp_buf_ptr->buf_packet->data[1],
-	AODV_tmp_buf_ptr->buf_packet->data[2],
-	AODV_tmp_buf_ptr->buf_packet->data[3],
-	AODV_tmp_buf_ptr->buf_packet->data[4]); */
-
 	//the entry will always be placed at the tail of the list
 
 	if(s->AODV_buf_ptr != NULL)
@@ -1151,21 +1132,10 @@ static uint8_t get_from_buffer(AODV_state_t *s, uint8_t dest_addr, AODV_pkt_t **
 			else
 				AODV_previous_ptr->next = AODV_buf_ptr->next;
 			
-			//s->num_of_buf_packets--;			
-			/* Return the packet */
-			//*data_pkt = (AODV_pkt_t *)sys_malloc(sizeof(AODV_hdr_t) + AODV_buf_ptr->buf_packet->hdr.length);
-
-			//(*data_pkt)->hdr.source_addr = AODV_buf_ptr->buf_packet->hdr.source_addr;
-			//(*data_pkt)->hdr.dest_addr = AODV_buf_ptr->buf_packet->hdr.dest_addr;
-			//(*data_pkt)->hdr.dst_pid = AODV_buf_ptr->buf_packet->hdr.dst_pid;
-			//(*data_pkt)->hdr.length = AODV_buf_ptr->buf_packet->hdr.length;
-
-			//memcpy((*data_pkt)->data, AODV_buf_ptr->buf_packet->data, AODV_buf_ptr->buf_packet->hdr.length);
 			*data_pkt = AODV_buf_ptr->buf_packet;
 			sys_free(AODV_buf_ptr);
 
 			s->num_of_buf_packets--;
-
 			return FOUND;
 
 		}
@@ -1174,50 +1144,6 @@ static uint8_t get_from_buffer(AODV_state_t *s, uint8_t dest_addr, AODV_pkt_t **
 		
 	}
 	return NOT_FOUND;		 
-	
-        
-/*        AODV_buf_pkt_entry_t * AODV_previous_ptr = NULL;
-
-        AODV_buf_pkt_entry_t * AODV_buf_ptr = s->AODV_buf_ptr;
-        
-        if(AODV_buf_ptr == NULL)
-                return NULL;
-
-        while(AODV_buf_ptr != NULL && AODV_buf_ptr->buf_packet->hdr.dest_addr != dest_addr)
-        {
-                AODV_previous_ptr = AODV_buf_ptr;
-                AODV_buf_ptr = AODV_buf_ptr->next;
-        }
-
-        if(AODV_buf_ptr == NULL)
-                return NULL;
-        else
-        {
-                if(AODV_previous_ptr == NULL)
-                {
-                        s->AODV_buf_ptr = AODV_buf_ptr->next;
-                }
-                else
-                {
-                        AODV_previous_ptr->next = AODV_buf_ptr->next;
-                }
-                
-                *data_pkt = (AODV_pkt_t *)sys_malloc(sizeof(AODV_hdr_t) );
-
-				(*data_pkt)->hdr.source_addr = AODV_buf_ptr->buf_packet->hdr.source_addr;
-				(*data_pkt)->hdr.dest_addr = AODV_buf_ptr->buf_packet->hdr.dest_addr;
-				(*data_pkt)->hdr.dst_pid = AODV_buf_ptr->buf_packet->hdr.dst_pid;
-				(*data_pkt)->hdr.length = AODV_buf_ptr->buf_packet->hdr.length;
-
-        		sys_free(AODV_buf_ptr);
-        		
-        		s->num_of_buf_packets--;
-
-				return FOUND;
-                
-        }
-        return NOT_FOUND; */
-
 }
 
 static void remove_expired_buffer_entries(AODV_state_t *s)
@@ -1258,7 +1184,6 @@ static void remove_expired_buffer_entries(AODV_state_t *s)
 			sys_free( AODV_delete_ptr );
 			
 			s->num_of_buf_packets--;
-			
 			continue;
 		}
 		AODV_previous_ptr = AODV_buf_ptr;
@@ -1502,7 +1427,7 @@ static uint8_t check_neighbors( AODV_state_t *s, uint16_t addr )
 	nb_list = sys_shm_get( sys_shm_name(NBHOOD_PID, SHM_NBR_LIST) );
 	
 	if( nb_list == NULL ) {
-		return NOT_FOUND;
+		return NO_NEIGHBOR;
 	}
 	while( nb_list != NULL ) {
 		//if( nb_list->id == addr && nb_list->receiveEst > 25) {
