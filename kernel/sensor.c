@@ -191,9 +191,10 @@ int8_t ker_sensor_get_data(sos_pid_t calling_id, uint8_t sensor_id)
 
 int8_t ker_sys_sensor_get_data( uint8_t sensor_id )
 {
-	int8_t ret;
+	//int8_t ret;
 	sos_pid_t calling_id = ker_get_current_pid();
 
+	/*
 	if ((sensor_id > MAX_SENSOR_ID) || (st[sensor_id].pid == NULL_PID) || (st[sensor_id].client_pid != NULL_PID)) {
 		return -EINVAL;
 	}
@@ -206,6 +207,8 @@ int8_t ker_sys_sensor_get_data( uint8_t sensor_id )
 		return -EINVAL;
 	}
 	return SOS_OK;
+	*/
+	return ker_sensor_get_data( calling_id, sensor_id );
 }
 
 

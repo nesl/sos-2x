@@ -192,8 +192,9 @@ void* ker_sys_msg_take_data(Message *msg)
 	return NULL;
 }
 
-int8_t ker_sys_post_value(sos_pid_t dst_mod_id,
-		        uint8_t type, uint32_t data, uint16_t flag)
+
+int8_t ker_sys_post_value_do(sos_pid_t dst_mod_id,                
+		                uint8_t type, uint32_t data, uint16_t flag)
 {
 	Message *m = msg_create();
 	sos_pid_t my_id = ker_get_current_pid();
@@ -211,6 +212,12 @@ int8_t ker_sys_post_value(sos_pid_t dst_mod_id,
 	sched_msg_alloc(m);
 
 	return SOS_OK;
+}
+
+int8_t ker_sys_post_value(sos_pid_t dst_mod_id,
+		        uint8_t type, uint32_t data, uint16_t flag)
+{
+	return ker_sys_post_value_do(dst_mod_id, type, data, flag);
 }
 
 
