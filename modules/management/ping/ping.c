@@ -12,7 +12,7 @@ enum {
 	MSG_SEND_PING      =    ( MOD_MSG_START + 0 ),
 	MSG_PING      =    ( MOD_MSG_START + 1 ),
 	MSG_PING_REPLY      =    ( MOD_MSG_START + 2 ),
-	MAX_PING_REPEAT  = 3,
+	MAX_PING_REPEAT  = 6,
 };
 
 typedef struct _sos_state_t {
@@ -42,12 +42,13 @@ static int8_t _sos_handler ( void *state, Message *msg )
 	switch ( msg->type ) {
 		case MSG_TIMER_TIMEOUT: {
 			if( sys_timer_tid(msg) == 0 ) {
+				DEBUG("Ping to %d failed!\n", s->node_pinged);
 				if( s->repeated < MAX_PING_REPEAT) {
+					DEBUG("Send Ping to %d\n", s->node_pinged);
 					sys_post_net( sys_pid(), MSG_PING, 0, NULL, 0, s->node_pinged);
 					s->repeated++;
 				} else {
 					// Ping failed
-					DEBUG("Ping to %d failed!\n", s->node_pinged);
 					sys_timer_stop(0);
 					s->node_pinged = BCAST_ADDRESS;
 				}
