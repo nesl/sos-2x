@@ -38,7 +38,7 @@ static void del_pending_rreq(AODV_state_t *s, uint16_t addr);
 static uint8_t check_pending_rreq(AODV_state_t *s, uint16_t addr);
 
 static void add_to_buffer(AODV_state_t *s, AODV_pkt_t *pkt);
-static uint8_t get_from_buffer(AODV_state_t *s, uint8_t dest_addr, AODV_pkt_t ** data_pkt);
+static uint8_t get_from_buffer(AODV_state_t *s, uint16_t dest_addr, AODV_pkt_t ** data_pkt);
 static void remove_expired_buffer_entries(AODV_state_t *s);
 
 static uint8_t check_neighbors( AODV_state_t *s, uint16_t addr );
@@ -159,10 +159,12 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 				{
 					// not going to happen -- just a sanity check
 					DEBUG("[AODV] node %d ERROR: msg->dest_seq_no(%d) > seq(%d)\n", sys_id(), hdr->dest_seq_no, s->seq_no);
-					return SOS_OK;
-	    	}
+					// HACK fix:
+					s->seq_no = hdr->dest_seq_no;
+					//return SOS_OK;
+				}
 	    	
-	    	update_cache(s, hdr, msg->saddr);
+				update_cache(s, hdr, msg->saddr);
 				sys_post_value(AODV_PID, MSG_AODV_SEND_RREP, hdr->source_addr, 0); 
 				return SOS_OK;
 			}
@@ -381,6 +383,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 				//
 				uint16_t next_hop;
 				next_hop = get_next_hop(s, data_pkt->hdr.dest_addr);
+				DEBUG("[AODV] next hop is %d\n", next_hop);
 				if( next_hop != msg->saddr ) { 	
 					uint8_t l = msg->len;
 					void* d   = sys_msg_take_data(msg);
@@ -528,9 +531,11 @@ static int8_t routing_msg_alloc(func_cb_ptr p, Message *msg)
 	DEBUG("[AODV] node %d SEND_DATA: dest=%d length=%d\n",
 		  sys_id(), msg->daddr, msg->len);
 	ret = check_neighbors(s, msg->daddr);
+	/*
 	if( ret == NO_NEIGHBOR ) {
 		return -EAGAIN;
 	}
+	*/
 	if( ret == FOUND ) {
 		// If we found the neighbor, send directly to the node
 		msg->flag |= (SOS_MSG_LINK_AUTO | SOS_MSG_RAW);
@@ -871,10 +876,19 @@ static uint16_t get_next_hop(AODV_state_t *s, uint16_t dest_addr)
 	
 	if (AODV_route_ptr == NULL)
 		return INVALID_NODE_ID; // this should never happen
+
+#ifdef AODV_DEBUG
+	while(AODV_route_ptr != NULL) {
+		DEBUG("[AODV] node %d next hop %d\n", AODV_route_ptr->dest_addr,
+				AODV_route_ptr->next_hop);
+		AODV_route_ptr = AODV_route_ptr->next;
+	}
+	AODV_route_ptr = s->AODV_route_ptr;
+#endif
 		
 	while(1)
 	{
-		if(AODV_route_ptr->dest_addr == AODV_route_ptr->dest_addr)
+		if(AODV_route_ptr->dest_addr == dest_addr)
 			return AODV_route_ptr->next_hop;
 
 		if (AODV_route_ptr->next != NULL)
@@ -1056,16 +1070,6 @@ static uint16_t get_dest_addr(AODV_state_t *s, uint16_t next_hop)
 	return 0;
 }
 
-/*
-cmn_packet_t *aodv_get_buffer(uint16_t length)
-{
-   if(length > AODV_PAYLOAD_SIZE)
-      return NULL;
-        
-   return (cmn_packet_t *)sys_malloc(sizeof(cmn_packet_hdr_t) + length);
-}
-*/
-
 static void add_to_buffer(AODV_state_t *s, AODV_pkt_t *pkt)
 {
 	AODV_buf_pkt_entry_t *AODV_buf_ptr = s->AODV_buf_ptr;
@@ -1110,7 +1114,7 @@ static void add_to_buffer(AODV_state_t *s, AODV_pkt_t *pkt)
 }
 
 
-static uint8_t get_from_buffer(AODV_state_t *s, uint8_t dest_addr, AODV_pkt_t ** data_pkt)
+static uint8_t get_from_buffer(AODV_state_t *s, uint16_t dest_addr, AODV_pkt_t ** data_pkt)
 {
 	//DEBUG("[AODV2] get_from_buffer started\n");
 		
@@ -1121,7 +1125,7 @@ static uint8_t get_from_buffer(AODV_state_t *s, uint8_t dest_addr, AODV_pkt_t **
 	/* Loop until we've reached the end of the list */
 	while( AODV_buf_ptr != NULL )
 	{
-//		DEBUG("BUFFER: AODV_dest_addr = %d dest_addr=%d\n" , AODV_buf_ptr->buf_packet->hdr.dest_addr,dest_addr);
+		DEBUG("BUFFER: AODV_dest_addr = %d dest_addr=%d\n" , AODV_buf_ptr->buf_packet->hdr.dest_addr,dest_addr);
 		if(AODV_buf_ptr->buf_packet->hdr.dest_addr == dest_addr)
 		{
 			/* Found the item to be returned, 
