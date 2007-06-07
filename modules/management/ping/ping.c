@@ -3,21 +3,18 @@
 /* LICENSE: See $(SOSROOT)/LICENSE.ucla                        */
 
 #include <sys_module.h>
+#include "ping.h"
 
 // 
 // This is for randomly pinging node 2-5 at node 1
 //#define TEST_PING
 
-enum {
-	MSG_SEND_PING      =    ( MOD_MSG_START + 0 ),
-	MSG_PING      =    ( MOD_MSG_START + 1 ),
-	MSG_PING_REPLY      =    ( MOD_MSG_START + 2 ),
-	MAX_PING_REPEAT  = 6,
-};
-
 typedef struct _sos_state_t {
 	uint16_t node_pinged;
-	uint8_t repeated;
+	uint16_t count;
+	uint16_t repeated;
+	uint32_t ping_timestamp;  // the timestamp
+	bool succ;
 } _sos_state_t;
 
 static int8_t _sos_handler(void *state, Message *msg);
@@ -42,23 +39,32 @@ static int8_t _sos_handler ( void *state, Message *msg )
 	switch ( msg->type ) {
 		case MSG_TIMER_TIMEOUT: {
 			if( sys_timer_tid(msg) == 0 ) {
-				DEBUG("Ping to %d failed!\n", s->node_pinged);
-				if( s->repeated < MAX_PING_REPEAT) {
-					DEBUG("Send Ping to %d\n", s->node_pinged);
-					sys_post_net( sys_pid(), MSG_PING, 0, NULL, 0, s->node_pinged);
-					s->repeated++;
-				} else {
-					// Ping failed
-					sys_timer_stop(0);
-					s->node_pinged = BCAST_ADDRESS;
+				if( s->succ == false ) {
+					DEBUG("Ping to %d failed!\n", s->node_pinged);
 				}
+				if( s->count != 0 ) {
+					s->repeated++;
+					if( s->repeated == s->count ) {
+						sys_timer_stop(0);
+						s->node_pinged = BCAST_ADDRESS;	
+#ifdef SOS_EMU
+						exit(0);
+#endif
+						return SOS_OK;
+					}
+				}
+				s->succ = false;
+				s->ping_timestamp = sys_time32();
+				sys_post_net( sys_pid(), MSG_PING, 0, NULL, 0, s->node_pinged);
 			} 
 #ifdef TEST_PING
 			else {
 				if( s->node_pinged == BCAST_ADDRESS ) {
-				uint16_t *dest = sys_malloc(2);
-				*dest = sys_rand() % 20 + 2;
-				sys_post(sys_pid(), MSG_SEND_PING, 2, dest, SOS_MSG_RELEASE);
+					ping_req_t *req = sys_malloc(sizeof(ping_req_t));
+					req->addr = sys_rand() % 20 + 2;
+					req->count = MAX_PING_REPEAT;
+					sys_post(sys_pid(), MSG_SEND_PING, sizeof(ping_req_t), 
+							req, SOS_MSG_RELEASE);
 				}
 			}
 #endif
@@ -66,9 +72,19 @@ static int8_t _sos_handler ( void *state, Message *msg )
 		}
 		case MSG_PING_REPLY: {
 			if( s->node_pinged == msg->saddr ) {
-				DEBUG("Ping to %d successful!\n", s->node_pinged);
-				sys_timer_stop(0);
-				s->node_pinged = BCAST_ADDRESS;	
+				DEBUG("Ping to %d RTT = %d\n", s->node_pinged, (int32_t)sys_time32() - (int32_t)s->ping_timestamp);
+				if( s->count != 0 ) {
+					s->repeated++;
+					if( s->repeated == s->count ) {
+						sys_timer_stop(0);
+						s->node_pinged = BCAST_ADDRESS;	
+#ifdef SOS_EMU
+						exit(0);
+#endif
+						return SOS_OK;
+					}
+				}
+				s->succ = true;
 			} else {
 				DEBUG("Receive reply from %d\n", msg->saddr );
 			}
@@ -78,7 +94,7 @@ static int8_t _sos_handler ( void *state, Message *msg )
 		   s->node_pinged = BCAST_ADDRESS;
 #ifdef TEST_PING
 		   if( sys_id() == 1 ) {
-			   sys_timer_start ( 1, 5 * 1024L, TIMER_REPEAT );
+			   sys_timer_start ( 1, PING_REPEAT_TIME, TIMER_REPEAT );
 		   }
 #endif
 			return SOS_OK;
@@ -88,10 +104,13 @@ static int8_t _sos_handler ( void *state, Message *msg )
 		}
 		case MSG_SEND_PING:
 		{
+			ping_req_t *r = (ping_req_t*) msg->data;
 			s->repeated = 0;
-			s->node_pinged = *(uint16_t*)msg->data;
+			s->node_pinged = r->addr;
+			s->count = r->count;
+			s->succ = false;
 			DEBUG("Send Ping to %d\n", s->node_pinged);
-			sys_timer_start ( 0, 5 * 1024L, TIMER_REPEAT );
+			sys_timer_start ( 0, PING_REPEAT_TIME, TIMER_REPEAT );
 			sys_post_net( sys_pid(), MSG_PING, 0, NULL, 0, s->node_pinged);
 			return SOS_OK;
 		}
