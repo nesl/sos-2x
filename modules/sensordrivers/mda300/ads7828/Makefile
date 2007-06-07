@@ -2,7 +2,7 @@
 PROJ = ads7828
 SB = mda300
 ROOTDIR = ../../../..
-INCDIR += -I$(ROOTDIR)/drivers/adc/ads7828/include/
+INCDIR += -I$(ROOTDIR)/modules/sensordrivers/mda300/include
 
 include $(ROOTDIR)/modules/Makerules
 

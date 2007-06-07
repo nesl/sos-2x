@@ -9,8 +9,8 @@
 /**
  * Refer to Texas Instruments ADS7828 Datasheet
  */
-#ifndef _ADS7828_H_
-#define _ADS7828_H_
+#ifndef _ADS7828_INTERNAL_H_
+#define _ADS7828_INTERNAL_H_
 
 /**
  * COMMAND BYTE
@@ -83,4 +83,26 @@
 #define ADS7828_CH6 	0xB0
 #define ADS7828_CH7 	0xF0
 
-#endif // _ADS7828_H_
+////
+// Local enums and defines
+////
+
+#define ADS7828_I2C_ADDR 0x4a
+
+#define ADS7828_NUM_SENSORS 8
+
+// Array of the channel identifiers of all the sensors we expose.
+// The (SID - 1)s are indices into this.
+static uint8_t ADS7828_SENSOR_CHANNELS[] = {
+		ADS7828_CH0, ADS7828_CH1, ADS7828_CH2, ADS7828_CH3,
+		ADS7828_CH4, ADS7828_CH5, ADS7828_CH6, ADS7828_CH7
+};
+
+////
+// Hardware specific defines
+////
+
+#define ADS7828_PORT PORTC
+#define ADS7828_DIRECTION DDRC
+
+#endif // _ADS7828_INTERNAL_H_

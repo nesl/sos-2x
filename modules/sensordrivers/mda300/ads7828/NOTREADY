@@ -1,4 +1,2 @@
-This module isn't ready for real use yet. It still does a lot of things the
-sos-1x way, and has a header file over in drivers/adc/ads7828/include that
-needs to move over here, possibly merged with the local header file.
-It compiles, though!
+This won't work, because it doesn't some power pins (the commented
+ADS_POWER_ON code). It compiles, though!
