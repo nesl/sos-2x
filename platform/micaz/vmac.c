@@ -201,6 +201,7 @@ HAS_CRITICAL_SECTION;
 	   {
 		ENTER_CRITICAL_SECTION();
 		if( vmac_msg == NULL ) {
+			retry_count = 0;
 			vmac_msg = mq_dequeue(&vmac_pq);
 			if( vmac_msg != NULL ) {
 				radio_msg_send(vmac_msg);
@@ -330,7 +331,9 @@ static void radio_msg_send(Message *msg)
 	vhal_data vd;
 
 	if( Radio_Check_CCA() ) {
-		incSeq();
+		if( retry_count == 0 ) {
+			incSeq();
+		}
 		if(msg->type == MSG_TIMESTAMP){
 			uint32_t timestp = ker_systime32();
 			memcpy(msg->data, (uint8_t*)(&timestp),sizeof(uint32_t));
