@@ -9,6 +9,11 @@
 // This is for randomly pinging node 2-5 at node 1
 //#define TEST_PING
 
+#ifdef TEST_PING
+// this memory is used by Avrora to collect ping statistic
+static uint8_t ping_succ;
+#endif
+
 typedef struct _sos_state_t {
 	uint16_t node_pinged;
 	uint16_t count;
@@ -40,6 +45,9 @@ static int8_t _sos_handler ( void *state, Message *msg )
 		case MSG_TIMER_TIMEOUT: {
 			if( sys_timer_tid(msg) == 0 ) {
 				if( s->succ == false ) {
+#ifdef TEST_PING
+					ping_succ = 0;
+#endif
 					DEBUG("Ping to %d failed!\n", s->node_pinged);
 				}
 				if( s->count != 0 ) {
@@ -61,8 +69,8 @@ static int8_t _sos_handler ( void *state, Message *msg )
 			else {
 				if( s->node_pinged == BCAST_ADDRESS ) {
 					ping_req_t *req = sys_malloc(sizeof(ping_req_t));
-					req->addr = sys_rand() % 20 + 2;
-					req->count = MAX_PING_REPEAT;
+					req->addr = sys_rand() % 25;
+					req->count = 1;
 					sys_post(sys_pid(), MSG_SEND_PING, sizeof(ping_req_t), 
 							req, SOS_MSG_RELEASE);
 				}
@@ -72,6 +80,9 @@ static int8_t _sos_handler ( void *state, Message *msg )
 		}
 		case MSG_PING_REPLY: {
 			if( s->node_pinged == msg->saddr ) {
+#ifdef TEST_PING
+				ping_succ = 1;
+#endif
 				DEBUG("Ping to %d RTT = %d\n", s->node_pinged, (int32_t)sys_time32() - (int32_t)s->ping_timestamp);
 				if( s->count != 0 ) {
 					s->repeated++;
