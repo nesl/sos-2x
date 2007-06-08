@@ -518,15 +518,9 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 			remove_expired_buffer_entries(s);
 						
 			// Check my own leak
-			/*
-			if( malloc_gc_module(sys_pid() ) ) {
-				led_red_toggle();
-				led_red_toggle();
-				led_red_toggle();
-				led_red_toggle();
-				led_red_toggle();
-			}
-			*/
+#ifdef TEST_TR_GC
+			malloc_gc_module(sys_pid() );
+#endif
 			return SOS_OK;
 		}
 		
@@ -697,8 +691,13 @@ static void update_cache(AODV_state_t *s, AODV_rreq_pkt_t *hdr, uint16_t saddr)
 	}
 	else
 	{
+		// WTF...
+		/*
 		AODV_tmp_cache_ptr->next = s->AODV_cache_ptr->next;
 		s->AODV_cache_ptr->next = AODV_tmp_cache_ptr;
+		*/
+		AODV_tmp_cache_ptr->next = s->AODV_cache_ptr;
+		s->AODV_cache_ptr = AODV_tmp_cache_ptr;
 	}
 	
 	s->num_of_cache_entries++;
