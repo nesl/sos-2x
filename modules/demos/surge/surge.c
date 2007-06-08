@@ -52,7 +52,10 @@
 #define DEBUG(...)
 #endif
 
-
+#ifdef TEST_SURGE
+// This memory is used by Avrora to collect Surge statistic
+static uint16_t data_node_id;
+#endif
 
 
 //-------------------------------------------------------------
@@ -194,6 +197,9 @@ int8_t surge_module_handler(void *state, Message *msg)
 		uint8_t msg_len;
 		msg_len = msg->len;
 		payload = sys_msg_take_data(msg); 
+#ifdef TEST_SURGE
+		data_node_id = entohs(smsg->originaddr);
+#endif
 		sys_post_uart(SURGE_MOD_PID,
 					  msg->type,
 					  msg_len,
