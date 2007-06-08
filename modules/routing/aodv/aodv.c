@@ -518,6 +518,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 			remove_expired_buffer_entries(s);
 						
 			// Check my own leak
+			/*
 			if( malloc_gc_module(sys_pid() ) ) {
 				led_red_toggle();
 				led_red_toggle();
@@ -525,6 +526,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 				led_red_toggle();
 				led_red_toggle();
 			}
+			*/
 			return SOS_OK;
 		}
 		
