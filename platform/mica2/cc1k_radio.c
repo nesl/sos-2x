@@ -153,7 +153,8 @@ enum {
   SYNC_WORD    =  0x33cc,
   NSYNC_WORD   =  0xcc33,
   ACK_LENGTH   =  16,
-  MAX_ACK_WAIT =  18
+  MAX_ACK_WAIT =  18,
+  MAX_TX_RETRY =  3,
 };
 
 
@@ -205,6 +206,7 @@ static int16_t sMacDelay;       //!< MAC delay for the next transmission
 static uint16_t RecvPktCRC;
 static mq_t pq;
 
+static uint8_t retryCount;
 //! timestamp of both outgoing and incoming messages.
 static uint32_t current_timestamp;
 static uint32_t prev_timestamp;
@@ -344,6 +346,7 @@ int8_t cc1k_radio_init(){
   RadioRxState = RXSTATE_HEADER;
   RSSIInitState = NULL_STATE;
   rxmsg = NULL; 
+  retryCount = 0;
   RxBitOffset = 0;
   iSquelchCount = 0;
   PreambleCount = 0;
@@ -352,7 +355,8 @@ int8_t cc1k_radio_init(){
   iRSSIcount = 0;
   bFlag.bTxPending = FALSE;
   bFlag.bTxBusy = FALSE;
-  bFlag.bAckEnable = FALSE;
+  //bFlag.bAckEnable = FALSE;
+  bFlag.bAckEnable = TRUE;
   bFlag.bTimeStampEnable = 0;
   sMacDelay = -1;
   usRSSIVal = -1;
@@ -702,8 +706,13 @@ int8_t cc1k_radio_spi_interrupt(uint8_t data_in){
 		  if(bFlag.bTimeStampEnable) {
 			  timestamp_outgoing(txmsgptr, current_timestamp);
 		  }
-		  msg_send_senddone(txmsgptr, txbufptr_ack, RADIO_PID);
-		  txmsgptr = mq_dequeue(&pq);
+		  if( txbufptr_ack == 0 && txmsgptr->daddr != BCAST_ADDRESS && retryCount < MAX_TX_RETRY ) {
+			  retryCount++;		
+		  } else {
+			  msg_send_senddone(txmsgptr, txbufptr_ack, RADIO_PID);
+			  retryCount = 0;		
+			  txmsgptr = mq_dequeue(&pq);
+		  }
 		  // Check the packet queue
 		  if(txmsgptr) {
 			// Check if packet queue has elements to send
@@ -1067,12 +1076,12 @@ void RSSIADC_dataReady(uint16_t data) {
 // MAC BACKOFF
 static inline int16_t MacBackoff_initialBackoff()
 {
-  return ((ker_rand() & 0x1F) + TIMER_MIN_INTERVAL);
+  return ((ker_rand() & 0x1F) << 2);
 }
 
 static inline int16_t MacBackoff_congestionBackoff()
 {
-  return ((ker_rand() & 0xF) + TIMER_MIN_INTERVAL);
+  return ((ker_rand() & 0xF) << 2);
 }
 
 
@@ -1080,12 +1089,12 @@ static inline int16_t MacBackoff_congestionBackoff()
 // RADIO LINK LAYER ACK
 void ker_radio_ack_enable()
 {
-  bFlag.bAckEnable = TRUE;
+	bFlag.bAckEnable = TRUE;
 }
 
 void ker_radio_ack_disable()
 {
- bFlag.bAckEnable = FALSE;
+	bFlag.bAckEnable = FALSE;
 }
 
 int8_t radio_set_timestamp(bool on)
