@@ -69,26 +69,26 @@ enum {
 };
 
 typedef struct AODV_rreq_pkt_str {
-  uint16_t source_addr;
-  uint16_t source_seq_no; 
-  uint16_t broadcast_id;
-  uint16_t dest_addr;
-  uint16_t dest_seq_no;
-  uint8_t hop_count; 
+	uint16_t source_addr;
+	uint16_t source_seq_no; 
+	uint16_t broadcast_id;
+	uint16_t dest_addr;
+	uint16_t dest_seq_no;
+	uint8_t hop_count; 
 } __attribute__ ((packed))
 AODV_rreq_pkt_t;
 
 typedef struct AODV_rrep_pkt_str{
-  uint16_t source_addr;
-  uint16_t dest_addr;
-  uint16_t dest_seq_no;
-  uint8_t hop_count; 
+	uint16_t source_addr;
+	uint16_t dest_addr;
+	uint16_t dest_seq_no;
+	uint8_t hop_count; 
 } __attribute__ ((packed))
 AODV_rrep_pkt_t;
 
 typedef struct AODV_rerr_pkt_str{
-  uint16_t addr;
-  uint16_t seq_no;
+	uint16_t addr;
+	uint16_t seq_no;
 } __attribute__ ((packed))
 AODV_rerr_pkt_t;
 
@@ -110,26 +110,24 @@ typedef struct AODV_pkt_str{
 AODV_pkt_t;
 
 typedef struct AODV_cache_entry_str {
-  uint16_t dest_addr;
-  uint16_t source_addr;
-  uint16_t broadcast_id;
-  uint16_t lifetime;
-  uint16_t next_hop;
-  uint16_t source_seq_no;
-  uint8_t hop_count;
+	uint16_t dest_addr;
+	uint16_t source_addr;
+	uint16_t broadcast_id;
+	uint16_t lifetime;
+	uint16_t next_hop;
+	uint16_t source_seq_no;
+	uint8_t hop_count;
 	struct AODV_cache_entry_str *next;
-} 
-AODV_cache_entry_t;
+} AODV_cache_entry_t;
 
 typedef struct AODV_route_entry_str{
-  uint16_t dest_addr;
-  uint16_t next_hop;
-  uint8_t hop_count;
-  uint16_t dest_seq_no;
-  uint8_t lifetime;
-  struct AODV_route_entry_str *next;
-} 
-AODV_route_entry_t;
+	uint16_t dest_addr;
+	uint16_t next_hop;
+	uint8_t hop_count;
+	uint16_t dest_seq_no;
+	uint8_t lifetime;
+	struct AODV_route_entry_str *next;
+} AODV_route_entry_t;
 
 typedef struct AODV_buf_pkt_entry_str{
 	uint8_t lifetime;	
@@ -150,30 +148,29 @@ typedef struct AODV_rreq_entry_str{
 } AODV_rreq_entry_t;
 
 typedef struct AODV_state_str{
-    uint16_t seq_no;
-    uint16_t broadcast_id;
+	uint16_t seq_no;
+	uint16_t broadcast_id;
 
-    AODV_route_entry_t * AODV_route_ptr;
-    AODV_cache_entry_t * AODV_cache_ptr;
+	AODV_route_entry_t * AODV_route_ptr;
+	AODV_cache_entry_t * AODV_cache_ptr;
 
-    uint8_t num_of_route_entries;
-    uint8_t num_of_cache_entries;
-    
-    uint8_t max_route_entries;
-    uint8_t max_cache_entries;
-    
+	uint8_t num_of_route_entries;
+	uint8_t num_of_cache_entries;
+
+	uint8_t max_route_entries;
+	uint8_t max_cache_entries;
+
 	AODV_buf_pkt_entry_t * AODV_buf_ptr;
 	AODV_rreq_entry_t * AODV_rreq_ptr;
 	AODV_node_entry_t * AODV_node_ptr;
 
 	uint8_t num_of_buf_packets;
-    uint8_t num_of_rreq;
-    uint8_t num_of_nodes;
-    	 
+	uint8_t num_of_rreq;
+	uint8_t num_of_nodes;
+
 	uint8_t max_buf_packets;
-    uint8_t max_rreq;	
-    uint8_t max_nodes;
-} 
-AODV_state_t;
+	uint8_t max_rreq;	
+	uint8_t max_nodes;
+} AODV_state_t;
 
 #endif

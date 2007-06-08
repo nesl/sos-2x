@@ -43,6 +43,11 @@ static void remove_expired_buffer_entries(AODV_state_t *s);
 
 static uint8_t check_neighbors( AODV_state_t *s, uint16_t addr );
 
+static void aodv_fix_rreq_endian( AODV_rreq_pkt_t *p );
+static void aodv_fix_rrep_endian( AODV_rrep_pkt_t *p );
+static void aodv_fix_rerr_endian( AODV_rerr_pkt_t *p );
+static void aodv_fix_hdr_endian( AODV_hdr_t *p );
+
 static int8_t aodv_module_handler(void *state, Message *msg);
 
 static int8_t aodv_module_handler(void *state, Message *msg);
@@ -124,6 +129,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 			hdr->dest_seq_no = get_seq_no(s, (uint16_t)*p);
 			hdr->hop_count = 1;
 
+			aodv_fix_rreq_endian(hdr);
 			sys_post_net(AODV_PID, MSG_AODV_RECV_RREQ,
 				sizeof(AODV_rreq_pkt_t), hdr, SOS_MSG_RELEASE | SOS_MSG_ALL_LINK_IO | SOS_MSG_RAW, BCAST_ADDRESS);
 
@@ -134,6 +140,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 		{
 			AODV_rreq_pkt_t *hdr = (AODV_rreq_pkt_t *)msg->data;
 			
+			aodv_fix_rreq_endian(hdr);
 			//if I am the sender, then discard
 			if(hdr->source_addr == sys_id())
 			{
@@ -217,6 +224,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 				
 			hdr->hop_count++;
 			
+			aodv_fix_rreq_endian(hdr);
 			sys_post_net(AODV_PID, MSG_AODV_RECV_RREQ,
 				l, d, SOS_MSG_RELEASE | SOS_MSG_ALL_LINK_IO | SOS_MSG_RAW, BCAST_ADDRESS);
 				
@@ -243,6 +251,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 				DEBUG("[AODV] node %d SEND_RREP: dest=%d next_hop=%d\n",
 					sys_id(), p, next_hop);
 				
+				aodv_fix_rrep_endian(hdr_rrep);
 				sys_post_net(AODV_PID, MSG_AODV_RECV_RREP,
 					sizeof(AODV_rrep_pkt_t), hdr_rrep, SOS_MSG_RELEASE | SOS_MSG_RAW | SOS_MSG_LINK_AUTO, next_hop);			
 			}
@@ -261,6 +270,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 			AODV_pkt_t * data_pkt = NULL;
 			AODV_rrep_pkt_t *hdr = (AODV_rrep_pkt_t *)msg->data;
 			
+			aodv_fix_rrep_endian( hdr );
 			DEBUG("[AODV] node %d RECV_RREP: src=%d dest=%d previous_hop=%d hop_count=%d\n",
 				sys_id(), hdr->source_addr, hdr->dest_addr, msg->saddr, hdr->hop_count);
 			
@@ -288,6 +298,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 						data_pkt->data[3],
 						data_pkt->data[4]); 
 			
+					aodv_fix_hdr_endian(&(data_pkt->hdr));
 					sys_post_net(AODV_PID, MSG_AODV_RECV_DATA,
 						sizeof(AODV_hdr_t) + data_pkt->hdr.length, data_pkt, 
 						SOS_MSG_RELEASE | SOS_MSG_LINK_AUTO | SOS_MSG_RAW, msg->saddr);		
@@ -335,6 +346,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 					
 				hdr->hop_count++;
 				remove_cache_entry(s, hdr->source_addr, hdr->dest_addr);
+				aodv_fix_rrep_endian( hdr );
 				sys_post_net(AODV_PID, MSG_AODV_RECV_RREP,
 					l, d, SOS_MSG_RELEASE | SOS_MSG_LINK_AUTO | SOS_MSG_RAW, next_hop);			
 					
@@ -347,6 +359,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 			AODV_pkt_t *data_pkt = (AODV_pkt_t *)msg->data;
 			//cmn_packet_t *cmn_pkt;
 			
+			aodv_fix_hdr_endian( &( data_pkt->hdr ) );
 			DEBUG("[AODV] node %d RECV_DATA: src=%d dest=%d previous_hop=%d seq_no=%d\n",
 				sys_id(), data_pkt->hdr.source_addr, data_pkt->hdr.dest_addr, msg->saddr, data_pkt->hdr.seq_no);
 
@@ -406,12 +419,14 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 			//if destination is a neighbor, then send directly
 			if(check_neighbors(s, data_pkt->hdr.dest_addr) == FOUND)
 			{
+				uint16_t dest_addr = data_pkt->hdr.dest_addr;
 				DEBUG("[AODV] node %d FWD_DATA: src:%d dest:%d next_hop=%d seq_no=%d\n",
 					sys_id(), data_pkt->hdr.source_addr, data_pkt->hdr.dest_addr, data_pkt->hdr.dest_addr,
 					data_pkt->hdr.seq_no);
 				
+				aodv_fix_hdr_endian( &(data_pkt->hdr) );
 				sys_post_net(AODV_PID, MSG_AODV_RECV_DATA,
-					l, data_pkt, SOS_MSG_RELEASE | SOS_MSG_LINK_AUTO | SOS_MSG_RAW, data_pkt->hdr.dest_addr);		
+					l, data_pkt, SOS_MSG_RELEASE | SOS_MSG_LINK_AUTO | SOS_MSG_RAW, dest_addr);		
 				return SOS_OK;	
 			}
 			else 
@@ -425,6 +440,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 					DEBUG("[AODV] node %d FWD_DATA: src:%d dest:%d next_hop=%d seq_no=%d\n",
 						sys_id(), data_pkt->hdr.source_addr, data_pkt->hdr.dest_addr, next_hop,
 						data_pkt->hdr.seq_no);
+					aodv_fix_hdr_endian( &(data_pkt->hdr) );
 					sys_post_net(AODV_PID, MSG_AODV_RECV_DATA,
 						l, data_pkt, SOS_MSG_RELEASE | SOS_MSG_LINK_AUTO | SOS_MSG_RAW, next_hop);			
 					return SOS_OK;
@@ -465,6 +481,7 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 				hdr->addr = dest_addr;
 				hdr->seq_no = get_seq_no(s, dest_addr);
 			
+				aodv_fix_rerr_endian( hdr );
 				sys_post_net(AODV_PID, MSG_AODV_RECV_RERR,
 					sizeof(AODV_rerr_pkt_t), hdr, SOS_MSG_RELEASE | SOS_MSG_ALL_LINK_IO | SOS_MSG_RAW, BCAST_ADDRESS);			
 
@@ -477,12 +494,14 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 		{
 			AODV_rerr_pkt_t *hdr = (AODV_rerr_pkt_t *)msg->data;
 			
+			aodv_fix_rerr_endian( hdr );
 			DEBUG("[AODV] node %d RECV_RRER: addr=%d seq_no=%d\n",
 				sys_id(), hdr->addr, hdr->seq_no);			
 
 			if(check_dest_addr(s, hdr) == FOUND)
 			{
 				void* d = sys_msg_take_data(msg);
+				aodv_fix_rerr_endian( hdr );
 				sys_post_net(AODV_PID, MSG_AODV_RECV_RERR,
 						sizeof(AODV_rerr_pkt_t), d, SOS_MSG_RELEASE | SOS_MSG_ALL_LINK_IO | SOS_MSG_RAW, BCAST_ADDRESS);			
 			} 
@@ -566,11 +585,12 @@ static int8_t routing_msg_alloc(func_cb_ptr p, Message *msg)
 	//if the route is known, then forward to next hop
 	if((next_hop = get_next_hop(s, data_pkt->hdr.dest_addr)) != INVALID_NODE_ID)
 	{
-		DEBUG("[AODV] node %d: forwarding packet to node %d", sys_id(), next_hop);
+		DEBUG("[AODV] node %d: forwarding packet to node %d\n", sys_id(), next_hop);
 		s->seq_no++;
 		data_pkt->hdr.seq_no = s->seq_no;
 		//sys_led(LED_RED_TOGGLE);	
 		use_route(s, data_pkt->hdr.dest_addr);			
+		aodv_fix_hdr_endian( &(data_pkt->hdr) );
 		sys_post_net(AODV_PID, MSG_AODV_RECV_DATA,
 					 sizeof(AODV_hdr_t) + data_pkt->hdr.length, data_pkt, 
 					 SOS_MSG_RELEASE | SOS_MSG_LINK_AUTO | SOS_MSG_RAW, next_hop);
@@ -1442,6 +1462,34 @@ static uint8_t check_neighbors( AODV_state_t *s, uint16_t addr )
 	}
 	
 	return NOT_FOUND;
+}
+
+static void aodv_fix_rreq_endian( AODV_rreq_pkt_t *p )
+{
+	p->source_addr = ehtons(p->source_addr);
+	p->source_seq_no = ehtons(p->source_seq_no);
+	p->broadcast_id = ehtons(p->broadcast_id);
+	p->dest_addr = ehtons(p->dest_addr);
+	p->dest_seq_no = ehtons(p->dest_seq_no);
+}
+
+static void aodv_fix_rrep_endian( AODV_rrep_pkt_t *p )
+{
+	p->source_addr = ehtons(p->source_addr);
+	p->dest_addr = ehtons(p->dest_addr);
+	p->dest_seq_no = ehtons(p->dest_seq_no);
+}
+
+static void aodv_fix_rerr_endian( AODV_rerr_pkt_t *p )
+{
+	p->addr = ehtons(p->addr);
+	p->seq_no = ehtons(p->seq_no);
+}
+
+static void aodv_fix_hdr_endian( AODV_hdr_t *p )
+{
+	p->dest_addr = ehtons(p->dest_addr);
+	p->source_addr = ehtons(p->source_addr);
 }
 
 #ifndef _MODULE_
