@@ -684,21 +684,8 @@ static void update_cache(AODV_state_t *s, AODV_rreq_pkt_t *hdr, uint16_t saddr)
 	AODV_tmp_cache_ptr->hop_count = hdr->hop_count;
 
 	//the entry will always be placed at the head of the list	
-	if(s->AODV_cache_ptr == NULL)
-	{
-		s->AODV_cache_ptr = AODV_tmp_cache_ptr;
-		AODV_tmp_cache_ptr->next = NULL;
-	}
-	else
-	{
-		// WTF...
-		/*
-		AODV_tmp_cache_ptr->next = s->AODV_cache_ptr->next;
-		s->AODV_cache_ptr->next = AODV_tmp_cache_ptr;
-		*/
-		AODV_tmp_cache_ptr->next = s->AODV_cache_ptr;
-		s->AODV_cache_ptr = AODV_tmp_cache_ptr;
-	}
+	AODV_tmp_cache_ptr->next = s->AODV_cache_ptr;
+	s->AODV_cache_ptr = AODV_tmp_cache_ptr;
 	
 	s->num_of_cache_entries++;
 }
