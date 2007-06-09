@@ -59,7 +59,9 @@ public class HeapPrintMonitor extends MonitorFactory {
         public final IntegerMemPrint memprofile4;
         public final IntegerMemPrint memprofile5;
         public final IntegerMemPrint memprofile6;
-        private static final int BASE = 415;
+        public final IntegerMemPrint memprofile7;
+        public final IntegerMemPrint memprofile8;
+        private static final int BASE = 418;
 		public final Simulator sim;
 		
         Monitor(Simulator s) {
@@ -86,6 +88,10 @@ public class HeapPrintMonitor extends MonitorFactory {
 
 			memprofile6 = new IntegerMemPrint(b+12, 1, new String("alloc_pid"), true);
             s.insertWatch(memprofile6, b+12);
+			memprofile7 = new IntegerMemPrint(358, 1, new String("ping_succ"), true);
+            s.insertWatch(memprofile7, 358);
+			memprofile8 = new IntegerMemPrint(359, 2, new String("data_node_id"), true);
+            s.insertWatch(memprofile8, 359);
 			sim = s;
         }
 
