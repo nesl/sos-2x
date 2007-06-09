@@ -153,14 +153,16 @@ typedef struct malloc_frag_t {
 	uint16_t num_outstanding;   // number of outstanding memory
 	uint16_t gc_bytes;          // number of bytes GC sweep
 	uint8_t alloc_pid;          // the ID that allocates the memory
+	uint16_t ptr_alloc;         // memory allocated
+	uint16_t ptr_free;          // memory freed
 } PACK_STRUCT 
 malloc_frag_t;
 
 static malloc_frag_t mf;
-static void malloc_record_efrag(uint16_t b);
-static void malloc_record_ifrag(Block *b, uint16_t size, sos_pid_t id);
-static void malloc_record_blocks(int16_t blks);
-static void malloc_record_outstanding(int8_t alloc);
+static inline void malloc_record_efrag(uint16_t b);
+static inline void malloc_record_ifrag(Block *b, uint16_t size, sos_pid_t id);
+static inline void malloc_record_blocks(int16_t blks);
+static inline void malloc_record_outstanding(int8_t alloc);
 #endif
 
 #define NUM_HEAP_BLOCKS  ((MALLOC_HEAP_SIZE + (BLOCK_SIZE - 1))/BLOCK_SIZE)
@@ -271,6 +273,9 @@ void* sos_blk_mem_longterm_alloc(uint16_t size, sos_pid_t id, bool bCallFromModu
 	printMem("malloc_longterm end: ");
 	LEAVE_CRITICAL_SECTION();
 	ker_log( SOS_LOG_MALLOC, id, reqBlocks );
+#ifdef SOS_PROFILE_FRAGMENTATION
+	mf.ptr_alloc = (uint16_t)newBlock->userPart;
+#endif
 	return newBlock->userPart;
 }
 
@@ -371,6 +376,9 @@ void* sos_blk_mem_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule)
   LEAVE_CRITICAL_SECTION();
 
   ker_log( SOS_LOG_MALLOC, id, reqBlocks );
+#ifdef SOS_PROFILE_FRAGMENTATION
+	mf.ptr_alloc = (uint16_t)block->userPart;
+#endif
   return block->userPart;
 }
 
@@ -457,6 +465,7 @@ void sos_blk_mem_free(void* pntr, bool bCallFromModule)
   printMem("free_end: ");
   LEAVE_CRITICAL_SECTION();
 #ifdef SOS_PROFILE_FRAGMENTATION
+	mf.ptr_free = (uint16_t)pntr;
 	malloc_record_blocks(-1*(int16_t)freed_blocks);
 	malloc_record_outstanding(0);
 #endif
@@ -1114,6 +1123,7 @@ uint8_t malloc_gc_module( sos_pid_t pid )
 #endif
 		}
 	}
+	LEAVE_CRITICAL_SECTION();
 #ifdef SOS_PROFILE_FRAGMENTATION
 	mf.gc_bytes = num_bytes_gc;
 #endif
@@ -1191,11 +1201,10 @@ uint8_t malloc_gc_module( sos_pid_t pid )
 	//
 	// Clean up
 	//
-	if( mod_memmap_cnt < MEM_MOD_GC_STACK_SIZE ) {
+	if( mod_memmap_cnt >= MEM_MOD_GC_STACK_SIZE ) {
 		ker_free( mod_memmap );
 		ker_free( mod_gc_stack );
 	}
-	LEAVE_CRITICAL_SECTION();
 	return num_leaks;
 #else
 	return 0;
