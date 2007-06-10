@@ -255,6 +255,7 @@ void* sos_blk_mem_longterm_alloc(uint16_t size, sos_pid_t id, bool bCallFromModu
 	malloc_record_ifrag(newBlock, size, id);
 	malloc_record_blocks(newBlock->blockhdr.blocks);
 	malloc_record_outstanding(1);
+	mf.ptr_alloc = (uint16_t)newBlock->userPart;
 #endif
 
 	// Mark newBlock as reserved
@@ -273,9 +274,6 @@ void* sos_blk_mem_longterm_alloc(uint16_t size, sos_pid_t id, bool bCallFromModu
 	printMem("malloc_longterm end: ");
 	LEAVE_CRITICAL_SECTION();
 	ker_log( SOS_LOG_MALLOC, id, reqBlocks );
-#ifdef SOS_PROFILE_FRAGMENTATION
-	mf.ptr_alloc = (uint16_t)newBlock->userPart;
-#endif
 	return newBlock->userPart;
 }
 
@@ -359,6 +357,7 @@ void* sos_blk_mem_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule)
 	malloc_record_ifrag(block, size, id);
 	malloc_record_blocks(block->blockhdr.blocks);
 	malloc_record_outstanding(1);
+	mf.ptr_alloc = (uint16_t)block->userPart;
 #endif
   
   block->blockhdr.blocks |= RESERVED;
@@ -376,9 +375,6 @@ void* sos_blk_mem_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule)
   LEAVE_CRITICAL_SECTION();
 
   ker_log( SOS_LOG_MALLOC, id, reqBlocks );
-#ifdef SOS_PROFILE_FRAGMENTATION
-	mf.ptr_alloc = (uint16_t)block->userPart;
-#endif
   return block->userPart;
 }
 
@@ -463,12 +459,12 @@ void sos_blk_mem_free(void* pntr, bool bCallFromModule)
 #endif
   InsertAfter(baseArea);
   printMem("free_end: ");
-  LEAVE_CRITICAL_SECTION();
 #ifdef SOS_PROFILE_FRAGMENTATION
 	mf.ptr_free = (uint16_t)pntr;
 	malloc_record_blocks(-1*(int16_t)freed_blocks);
 	malloc_record_outstanding(0);
 #endif
+  LEAVE_CRITICAL_SECTION();
   ker_log( SOS_LOG_FREE, owner, freed_blocks );
   return;
 }
@@ -738,7 +734,8 @@ void mem_init(void)
   mPool = malloc_heap;
   mSentinel = &(malloc_heap[NUM_HEAP_BLOCKS-1]);
 
-  mSentinel->blockhdr.blocks = RESERVED;           // now cannot be used
+  mSentinel->blockhdr.blocks = 1;
+  mSentinel->blockhdr.blocks |= RESERVED;           // now cannot be used
   mSentinel->prev = mSentinel;
   mSentinel->next = mSentinel;
 
@@ -814,6 +811,7 @@ static void SplitBlock(Block* block, uint16_t reqBlocks)
   Block* newBlock = block + reqBlocks;            // create a remainder area
   newBlock->blockhdr.blocks = block->blockhdr.blocks - reqBlocks;   // set its size and mark as free
   block->blockhdr.blocks = reqBlocks;                      // set us to requested size
+  newBlock->blockhdr.blocks &= ~MEM_MASK;
   InsertAfter(newBlock);                          // stitch remainder into free list
 }
     
@@ -872,7 +870,7 @@ static int8_t mem_handler(void *state, Message *msg)
     {
       //mem_defrag();
 	  //led_yellow_toggle();
-	  malloc_gc_kernel();
+	  //malloc_gc_kernel();
 	  //led_yellow_toggle();
       break;
     }
@@ -938,7 +936,8 @@ int8_t ker_gc_mark( sos_pid_t pid, void *pntr )
 	itr = (Block*)malloc_heap;
 	while(itr != mSentinel && itr >= malloc_heap && itr < &(malloc_heap[NUM_HEAP_BLOCKS])) {
 		if( itr == baseArea ) {
-			if( itr->blockhdr.owner == pid ) {
+			if( (itr->blockhdr.owner == pid) && 
+					((itr->blockhdr.blocks & RESERVED) != 0)) {
 				DEBUG_GC("Mark memory: %d\n", (int) itr->userPart);
 				itr->blockhdr.blocks |= GC_MARK;
 				return SOS_OK;
@@ -972,6 +971,7 @@ void malloc_gc(sos_pid_t pid)
 		((block->blockhdr.blocks & RESERVED) != 0) ) { 
 			if( ((block->blockhdr.blocks & GC_MARK) == 0) ){
 				DEBUG_GC("Found memory leak: %d\n", (int) block->userPart);
+				led_red_toggle();
 				ker_free(block->userPart);
 			} else {
 				block->blockhdr.blocks &= ~GC_MARK;
