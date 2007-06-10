@@ -9,11 +9,11 @@
 enum {
 	//algorithm parameters
 	UNLIMITED_ENTRIES 						= 0,
-	AODV_MAX_ROUTE_ENTRIES   				= 5,
-	AODV_MAX_CACHE_ENTRIES					= 5,
-	AODV_MAX_BUFFER_ENTRIES					= 5,
-	AODV_MAX_NODE_ENTRIES					= 5,
-	AODV_MAX_RREQ							= 5,
+	AODV_MAX_ROUTE_ENTRIES   				= 0,
+	AODV_MAX_CACHE_ENTRIES					= 0,
+	AODV_MAX_BUFFER_ENTRIES					= 0,
+	AODV_MAX_NODE_ENTRIES					= 0,
+	AODV_MAX_RREQ							= 0,
 	
 	//Timing constants  
 	AODV_TIMER = 0, // Timer id

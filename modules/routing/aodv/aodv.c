@@ -512,15 +512,15 @@ static int8_t aodv_module_handler(void *state, Message *msg)
 	
 		case MSG_TIMER_TIMEOUT:
 		{
+			// Check my own leak
+#ifdef TEST_TR_GC
+			malloc_gc_module(sys_pid() );
+#endif
 			remove_inactive_routes(s); //check for inactive routes
 			remove_inactive_cache_entries(s); //check for inactive cache entries
 			
 			remove_expired_buffer_entries(s);
 						
-			// Check my own leak
-#ifdef TEST_TR_GC
-			malloc_gc_module(sys_pid() );
-#endif
 			return SOS_OK;
 		}
 		
@@ -649,7 +649,8 @@ static void update_cache(AODV_state_t *s, AODV_rreq_pkt_t *hdr, uint16_t saddr)
 	{
 		while(1)
 		{
-			if((AODV_cache_ptr->dest_addr == hdr->dest_addr) && (AODV_cache_ptr->dest_addr == hdr->dest_addr))
+			if((AODV_cache_ptr->dest_addr == hdr->dest_addr) && 
+			   (AODV_cache_ptr->source_addr == hdr->source_addr))
 			{
 				DEBUG("[AODV] node %d updating cache entry: src=%d dest=%d bcast_id=%d hop_count=%d next_hop=%d\n",
 					sys_id(), hdr->source_addr, hdr->dest_addr, hdr->broadcast_id, hdr->hop_count, saddr);
@@ -658,7 +659,7 @@ static void update_cache(AODV_state_t *s, AODV_rreq_pkt_t *hdr, uint16_t saddr)
 				AODV_cache_ptr->lifetime = REVERSE_ROUTE_LIFE;
 				AODV_cache_ptr->next_hop = saddr;
 				AODV_cache_ptr->source_seq_no = hdr->source_seq_no;
-  			AODV_cache_ptr->hop_count = hdr->hop_count;
+				AODV_cache_ptr->hop_count = hdr->hop_count;
 					
 				return;
 			}
