@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: latin-1 -*-
 #module for serial IO for POSIX compatible systems, like Linux
 #see __init__.py
 #
