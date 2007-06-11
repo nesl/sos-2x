@@ -27,6 +27,7 @@
 typedef struct {
   uint8_t pid;
   uint8_t state;
+  uint16_t seq;
 } app_state_t;
 
 typedef struct {
@@ -88,6 +89,7 @@ static int8_t pingpong_msg_handler(void *state, Message *msg)
   {
       s->pid = msg->did;
       s->state = 0;
+      s->seq = 0;
       sys_led(LED_RED_TOGGLE);
       /**
        * The timer API takes the following parameters:
@@ -96,8 +98,8 @@ static int8_t pingpong_msg_handler(void *state, Message *msg)
        * - Timer delay in
        * - Type of timer
        */
-      DEBUG("Blink Start\n");
-      if(ker_id()%2){
+      DEBUG("PingPong Start\n");
+      if(sys_id()%2){
         sys_timer_start(PINGPONG_TID, PINGPONG_TIMER_INTERVAL, TIMER_REPEAT);
       }
       break;
@@ -114,10 +116,10 @@ static int8_t pingpong_msg_handler(void *state, Message *msg)
       /**
        * Stop the timer
        */
-      if(ker_id()%2){
+      if(sys_id()%2){
         sys_timer_stop(PINGPONG_TID);
       }
-      DEBUG("Blink Stop\n");
+      DEBUG("PingPong Stop\n");
       break;
     }
 
@@ -130,16 +132,36 @@ static int8_t pingpong_msg_handler(void *state, Message *msg)
      */
   case MSG_TIMER_TIMEOUT:
     {
-        pingpong_msg_t m;
+        pingpong_msg_t *m;
+        m = (pingpong_msg_t*)sys_malloc(sizeof(pingpong_msg_t));
+        m->seq = s->seq++;
         sys_led(LED_GREEN_TOGGLE);
-        sys_post_net(DFLT_APP_ID0, MSG_PINGPONG, sizeof(pingpong_msg_t), &m, 0, 0); 
+        DEBUG("Ping seq %d\n", s->seq);
+        sys_post_net(DFLT_APP_ID0, MSG_PINGPONG, sizeof(pingpong_msg_t), m, SOS_MSG_RELEASE, 0); 
       break;
     }
   case MSG_PINGPONG:
-    pingpong_msg_t m;
-    sys_led(LED_YELLOW_TOGGLE);
-    sys_post_net(DFLT_APP_ID0, MSG_PINGPONG, sizeof(pingpong_msg_t), &m, 0, 1); 
-    break;
+    {
+        if(!sys_id()%2){
+            pingpong_msg_t* m, *tmsg;
+            m = (pingpong_msg_t*)sys_malloc(sizeof(pingpong_msg_t));
+            tmsg = (pingpong_msg_t*)(msg->data);
+            m->seq = tmsg->seq;
+            sys_led(LED_YELLOW_TOGGLE);
+            DEBUG("Pong seq %d\n", m->seq);
+            sys_post_net(DFLT_APP_ID0, MSG_PINGPONG, sizeof(pingpong_msg_t), m, 0, 1); 
+            sys_post_uart(DFLT_APP_ID0, MSG_PINGPONG, sizeof(pingpong_msg_t), m, SOS_MSG_RELEASE, BCAST_ADDRESS);
+        } else {
+            pingpong_msg_t* m, *tmsg;
+            m = (pingpong_msg_t*)sys_malloc(sizeof(pingpong_msg_t));
+            tmsg = (pingpong_msg_t*)(msg->data);
+            m->seq = tmsg->seq;
+            DEBUG("RX Pong seq %d\n", m->seq);
+            sys_led(LED_YELLOW_TOGGLE);
+            sys_post_uart(DFLT_APP_ID0, MSG_PINGPONG, sizeof(pingpong_msg_t), m, SOS_MSG_RELEASE, BCAST_ADDRESS);
+        }
+        break;
+    }
     /**
      * The default handler is used to catch any messages that the module
      * does no know how to handle.
