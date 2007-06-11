@@ -179,6 +179,11 @@ cd $SOSROOT/tools/src/
 sh sostools.sh
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Troubleshooting
+~~~~~~~~~~~~~~~
+
+If you program a TMote and msp430-bsl reports that it can't access the device, look at the output of 'dmesg'. If you can see there that brltty took over the serial port, then remove it by executing 'apt-get remove brltty'.
+
 
 [[mac]]
 
