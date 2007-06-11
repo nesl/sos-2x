@@ -22,9 +22,11 @@ INCDIR += -I$(LIBCDIR)/msp430/include/sys
 
 VPATH += $(ROOTDIR)/platform/$(PLATFORM)
 VPATH += $(ROOTDIR)/drivers/uart
+VPATH += $(ROOTDIR)/drivers/cc2420
 
 INCDIR += -I$(ROOTDIR)/platform/$(PLATFORM)/include
 INCDIR += -I$(ROOTDIR)/drivers/uart/include
+INCDIR += -I$(ROOTDIR)/drivers/cc2420/include
 
 ifeq ($(BUILD),_SOS_KERNEL_)
 # TODO: build source list dynamicly based on defines/flags

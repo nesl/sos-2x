@@ -22,10 +22,12 @@ PROCESSOR = avr
 VPATH += $(ROOTDIR)/platform/$(PLATFORM)
 VPATH += $(ROOTDIR)/drivers/uart
 VPATH += $(ROOTDIR)/drivers/i2c
+VPATH += $(ROOTDIR)/drivers/cc2420
 
 INCDIR += -I$(ROOTDIR)/platform/$(PLATFORM)/include
 INCDIR += -I$(ROOTDIR)/drivers/uart/include
 INCDIR += -I$(ROOTDIR)/drivers/i2c/include
+INCDIR += -I$(ROOTDIR)/drivers/cc2420/include
 
 ifeq ($(BUILD),_SOS_KERNEL_)
 #SRCS_FIRST += cc2420_radio.c
