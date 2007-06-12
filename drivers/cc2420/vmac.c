@@ -237,6 +237,10 @@ HAS_CRITICAL_SECTION;
 void radio_gc( void )
 {
 	mq_gc_mark_payload( &vmac_pq, RADIO_PID );  
+	if( vmac_msg != NULL && vmac_msg->data != NULL 
+			&& flag_msg_release(vmac_msg->flag) ) {
+		ker_gc_mark( RADIO_PID, vmac_msg->data );
+	}
 	malloc_gc( RADIO_PID );
 }
 

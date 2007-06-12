@@ -125,7 +125,7 @@ void uart_gc( void )
 {
 	mq_gc_mark_payload( &uartpq, KER_UART_PID );
 	if( s.msg_ptr != NULL && flag_msg_release(s.msg_ptr->flag)) {
-		ker_gc_mark( KER_UART_PID, s.msg_ptr );
+		ker_gc_mark( KER_UART_PID, s.msg_ptr->data );
 	}
 	malloc_gc( KER_UART_PID );
 }
