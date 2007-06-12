@@ -193,7 +193,7 @@ void* ker_sys_msg_take_data(Message *msg)
 }
 
 
-int8_t ker_sys_post_value_do(sos_pid_t dst_mod_id,                
+int8_t ker_sys_post_value(sos_pid_t dst_mod_id,                
 		                uint8_t type, uint32_t data, uint16_t flag)
 {
 	Message *m = msg_create();
@@ -213,13 +213,6 @@ int8_t ker_sys_post_value_do(sos_pid_t dst_mod_id,
 
 	return SOS_OK;
 }
-
-int8_t ker_sys_post_value(sos_pid_t dst_mod_id,
-		        uint8_t type, uint32_t data, uint16_t flag)
-{
-	return ker_sys_post_value_do(dst_mod_id, type, data, flag);
-}
-
 
 #ifdef PC_PLATFORM
 char ker_msg_name[][256] = {

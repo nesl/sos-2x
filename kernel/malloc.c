@@ -155,10 +155,12 @@ typedef struct malloc_frag_t {
 	uint8_t alloc_pid;          // the ID that allocates the memory
 	uint16_t ptr_alloc;         // memory allocated
 	uint16_t ptr_free;          // memory freed
+	uint16_t ker_gc_bytes;      // kernel memory GCed
 } PACK_STRUCT 
 malloc_frag_t;
 
 static malloc_frag_t mf;
+static uint16_t ker_gc_bytes_temp;
 static inline void malloc_record_efrag(uint16_t b);
 static inline void malloc_record_ifrag(Block *b, uint16_t size, sos_pid_t id);
 static inline void malloc_record_blocks(int16_t blks);
@@ -870,7 +872,7 @@ static int8_t mem_handler(void *state, Message *msg)
     {
       //mem_defrag();
 	  //led_yellow_toggle();
-	  //malloc_gc_kernel();
+	  malloc_gc_kernel();
 	  //led_yellow_toggle();
       break;
     }
@@ -939,6 +941,9 @@ int8_t ker_gc_mark( sos_pid_t pid, void *pntr )
 			if( (itr->blockhdr.owner == pid) && 
 					((itr->blockhdr.blocks & RESERVED) != 0)) {
 				DEBUG_GC("Mark memory: %d\n", (int) itr->userPart);
+#ifdef SOS_PROFILE_FRAGMENTATION
+				ker_gc_bytes_temp += BLOCKS_TO_BYTES(itr->blockhdr.blocks);
+#endif
 				itr->blockhdr.blocks |= GC_MARK;
 				return SOS_OK;
 			}
@@ -1003,6 +1008,9 @@ void malloc_gc_kernel( void )
 #ifdef SOS_USE_GC
 	HAS_CRITICAL_SECTION;
 	ENTER_CRITICAL_SECTION();
+#ifdef SOS_PROFILE_FRAGMENTATION
+	ker_gc_bytes_temp = 0;
+#endif
 	shm_gc();
 	LEAVE_CRITICAL_SECTION();
 
@@ -1027,6 +1035,9 @@ void malloc_gc_kernel( void )
 
 	ENTER_CRITICAL_SECTION();
 	mq_gc();
+#ifdef SOS_PROFILE_FRAGMENTATION
+	mf.ker_gc_bytes = ker_gc_bytes_temp;
+#endif
 	LEAVE_CRITICAL_SECTION();
 #endif
 }

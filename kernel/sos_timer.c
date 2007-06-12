@@ -664,6 +664,7 @@ int8_t ker_timer_restart(sos_pid_t pid, uint8_t tid, int32_t interval)
   return SOS_OK;
 }
 
+
 int8_t ker_sys_timer_start(uint8_t tid, int32_t interval, uint8_t type)
 {                                                             
 	sos_pid_t my_id = ker_get_current_pid();                  
