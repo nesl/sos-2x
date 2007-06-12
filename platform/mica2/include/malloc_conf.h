@@ -10,8 +10,11 @@
 // NOTE: minimal blcok size is 8
 #define BLOCK_SIZE           8               // A block size (must be power of 2) (Platform specific)
 #define SHIFT_VALUE          3               // Must equal log(BLOCK_SIZE)/log(2)
+#ifdef AVRORA_PLATFORM
+#define MALLOC_HEAP_SIZE   (2304)         // 512 * 5 bytes
+#else
 #define MALLOC_HEAP_SIZE   2048              // 512 * 4 bytes
-
+#endif
 //-----------------------------------------------------------------------------
 // HEAP LAYOUT
 //-----------------------------------------------------------------------------
