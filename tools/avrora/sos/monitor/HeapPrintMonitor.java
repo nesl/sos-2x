@@ -63,6 +63,7 @@ public class HeapPrintMonitor extends MonitorFactory {
         public final IntegerMemPrint memprofile8;
         public final IntegerMemPrint memprofile9;
         public final IntegerMemPrint memprofile10;
+        public final IntegerMemPrint memprofile11;
         private static final int BASE = 418;
 		public final Simulator sim;
 		
@@ -98,6 +99,8 @@ public class HeapPrintMonitor extends MonitorFactory {
             s.insertWatch(memprofile9, b+13);
 			memprofile10 = new IntegerMemPrint(b+15, 2, new String("ptr_free"), true);
             s.insertWatch(memprofile10, b+15);
+			memprofile11 = new IntegerMemPrint(b+17, 2, new String("ker_gc_bytes"), false);
+            s.insertWatch(memprofile11, b+17);
 			sim = s;
         }
 
@@ -113,6 +116,7 @@ public class HeapPrintMonitor extends MonitorFactory {
 				memprofile1.report();
 				memprofile3.report();
 				memprofile5.report();
+				memprofile11.report();
 			}
         }
     }
