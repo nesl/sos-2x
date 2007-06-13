@@ -563,7 +563,7 @@ void radio_msg_alloc(Message *m)
 void radio_gc( void )
 {
 	mq_gc_mark_payload( &pq, RADIO_PID );
-	if( txmsgptr != NULL && rxmsg->data != NULL && flag_msg_release(txmsgptr->flag) ) {
+	if( txmsgptr != NULL && txmsgptr->data != NULL && flag_msg_release(txmsgptr->flag) ) {
 		ker_gc_mark( RADIO_PID, txmsgptr->data );
 	}
 	if( rxmsg != NULL && rxmsg->data != NULL && flag_msg_release(rxmsg->flag) ) {
