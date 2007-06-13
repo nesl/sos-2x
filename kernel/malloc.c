@@ -156,6 +156,7 @@ typedef struct malloc_frag_t {
 	uint16_t ptr_alloc;         // memory allocated
 	uint16_t ptr_free;          // memory freed
 	uint16_t ker_gc_bytes;      // kernel memory GCed
+	uint8_t leak_pid;           // the module that leaks memory
 } PACK_STRUCT 
 malloc_frag_t;
 
@@ -976,7 +977,12 @@ void malloc_gc(sos_pid_t pid)
 		((block->blockhdr.blocks & RESERVED) != 0) ) { 
 			if( ((block->blockhdr.blocks & GC_MARK) == 0) ){
 				DEBUG_GC("Found memory leak: %d\n", (int) block->userPart);
+#ifdef SOS_PROFILE_FRAGMENTATION
+				mf.leak_pid = pid;
+#else
 				led_red_toggle();
+#endif
+
 				ker_free(block->userPart);
 			} else {
 				block->blockhdr.blocks &= ~GC_MARK;
