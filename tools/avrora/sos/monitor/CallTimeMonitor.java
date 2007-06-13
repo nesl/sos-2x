@@ -53,7 +53,7 @@ public class CallTimeMonitor extends MonitorFactory {
 
     final Option.List METHODS = newOptionList("methods", "",
             "This option specifies the name of the methods to profile.");
-    final Option.Bool IGNR_INTRS = newOption("ignore-interrupts", false,
+    final Option.Bool IGNR_INTRS = newOption("ignore-interrupts", true,
             "This option selects whether this monitor will consider time spent in nested interrupts to " +
             "be part of a method's execution time.");
 
