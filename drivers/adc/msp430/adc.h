@@ -1,3 +1,13 @@
+/* -*- Mode: C; tab-width:4 -*- */
+/* ex: set ts=4 shiftwidth=4 softtabstop=4 cindent: */
+/**
+ * @brief This module uses the msp430 DMA to transfer data from ADC12 port 0 to a memory location.
+ *
+ * Use adc_start to initiate a adc/dma transfer. Once the transfer 
+ * is done, you will receive a ADC_DATA_READY_MSG.
+ */
+
+
 #ifndef __ADC_H__
 #define __ADC_H__
 // we source SMCLK which is set to 1MHz in SOS

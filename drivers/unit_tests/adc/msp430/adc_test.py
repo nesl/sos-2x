@@ -1,6 +1,7 @@
 import socket
 import struct
-import sys
+import sys, math
+import time
 
 ACCELEROMETER_MODULE = 0x80
 
@@ -33,22 +34,28 @@ class accel_test:
     dice and shows which side of the dice is up.
     """
     def __init__(self):
-        sys.stdout.write( "[")
 
         self.sc = SocketClient("127.0.0.1", 7915)
         state = -1
         oldstate = -1
+        minutes = time.gmtime()[4]
+        self.data = []
         while 1:
             data = ord(self.sc.s.recv(1))
             if data == ACCELEROMETER_MODULE:
                 s = self.sc.s.recv(7)
                 (src_mod, dst_addr, src_addr, msg_type, msg_length) = struct.unpack("<BHHBB", s)
-                s = self.sc.s.recv(msg_length)
-                data = struct.unpack("<"+msg_length/2*"H", s)
-                for d in data:
-                    sys.stdout.write("%d, "%(d,))            
-    
-                sys.stdout.flush()
+                if src_addr == 2:
+                    s = self.sc.s.recv(msg_length)
+                    try:
+                        self.data += list(struct.unpack("<"+msg_length/2*"H", s))
+                    except:
+                        pass
+                    if len(self.data) > 1060:
+                        mean = sum(self.data) / float(len(self.data))
+                        sys.stdout.write("%d, %d\n"%(time.time(), sum(map(lambda x: abs(x-mean), self.data))/len(self.data),))
+                        self.data = []
+                        sys.stdout.flush()
 
 if __name__ == "__main__":
     at = accel_test()
