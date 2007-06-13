@@ -51,5 +51,6 @@ endif
 INSTALLER = msp430-bsl --tmote -c $(INSTALLER_PORT) -r -e -p 
 
 tmote_install: $(PROJ).elf
-	$(INSTALLER) $(PROJ).elf
-	rm -f $(PROJ).srec.out.$(ADDRESS)
+	$(ROOTDIR)/tools/utils/set-mote-id.msp $(PROJ).elf $(PROJ).elf.out.$(ADDRESS) $(ADDRESS)
+	$(INSTALLER) $(PROJ).elf.out.$(ADDRESS)
+	rm -f $(PROJ).elf.out.$(ADDRESS)
