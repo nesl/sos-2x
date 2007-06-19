@@ -22,23 +22,24 @@ mkdir surgeSim
 cd surgeSim/
 CFLAGS="-DSOS_TREE_ROUTING_DEBUG" \
 INCDIR="-I$SOSROOT/modules/sensordrivers/mts310/include/" \
-../wrap_module.pl tree_routing surge
+../wrap_module.pl neighbor tree_routing surge
 
+    found neighbor at ../../modules/routing/neighbor/neighbor.c
     found tree_routing at ../../modules/routing/tree_routing/tree_routing.c
     found surge at ../../modules/demos/surge/surge.c
     Makefile and module_test_app.c generated
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The simulation configuration wrapping script takes as input the modules that
-should be started by the configuration.  The module name is simply the name
-of the .c file implementing the module with the .c removed.  The script will
-attempt to locate these modules, insert them into a configuration, and
-generate a Makefile.  Note that the configuration will start the modules in
-the order in which they are specified to the tool.  In this example the
-`tree_routing` and `surge` modules are used. The script notes what file it
-is using for each module so that the user can look for potential mismatches
-that may require editing of the generated Makefile by hand.  Finally,
-build-specific defines can be included by setting them as environment
+should be started by the configuration.  The module name is simply the name of
+the .c file implementing the module with the .c removed.  The script will
+attempt to locate these modules, insert them into a configuration, and generate
+a Makefile.  Note that the configuration will start the modules in the order in
+which they are specified to the tool.  In this example the
+`neighbor`,`tree_routing` and `surge` modules are used. The script notes what
+file it is using for each module so that the user can look for potential
+mismatches that may require editing of the generated Makefile by hand.
+Finally, build-specific defines can be included by setting them as environment
 variables.  In this situation the CFLAGS variable is set to enable debugging
 output in the tree routing module and INCDIR variable includes the required
 sensor board driver header files.
