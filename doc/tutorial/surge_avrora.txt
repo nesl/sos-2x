@@ -152,8 +152,7 @@ java -server avrora/Main -banner=false -colors=true -platform=mica2 \
     -report-seconds -seconds-precision=1 -seconds=3000.0 \
     -nodecount=5 -update-node-id=true -sections=.data,.text,.sos_bls \
     -topology=topo.def \
-    -sensor-data="light":2:light2.dat,"light":3:light3.dat,"light":4:light4.dat,"light":5:light5.dat
-\
+    -sensor-data="light":2:light2.dat,"light":3:light3.dat,"light":4:light4.dat,"light":5:light5.dat \
     $SOSROOT/config/blank/blank.od
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
