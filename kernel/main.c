@@ -66,9 +66,7 @@
  * 
  * Application will define this function
  */
-#ifndef QUALNET_PLATFORM
 extern void sos_start();
-#endif //QUALNET_PLATFORM
 
 
 /**
@@ -132,15 +130,17 @@ int sos_main(uint8_t cond){
     //! enable interrupt
 	ENABLE_GLOBAL_INTERRUPTS();
 
+#ifdef SOS_USE_PREEMPTION
+	// Enable preemption
+	preemption_status = ENABLED;	
+#endif
 	DEBUG("SOS booted\n");
     //! start application
     sos_start();
 
     //! enter main sched loop
     //! should never return from this call
-#ifndef QUALNET_PLATFORM
 	sched();
-#endif
     return 0;
 }
 

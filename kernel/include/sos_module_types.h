@@ -35,7 +35,10 @@ typedef struct mod_header {
   sos_code_id_t code_id;   //!< module image identifier
   uint8_t processor_type;  //!< processor type of this module
   uint8_t platform_type;   //!< platform type of this module
-  //  uint8_t padding;
+#ifdef SOS_USE_PREEMPTION
+  pri_t init_priority;     //!< initial module priority
+  uint8_t padding;
+#endif
   uint8_t num_out_port;     //!< Number of output ports exposed by the module in ViRe framework.
   uint8_t padding;			//!< Extra padding to make it word aligned.
   msg_handler_t module_handler;
@@ -56,6 +59,14 @@ typedef struct Module {
   sos_ker_flag_t flag;
   //! per handler state
   void *handler_state;
+#ifdef SOS_USE_PREEMPTION
+  //! dynamic module priority
+  pri_t priority;
+  //! list of unique mod ids of the subscribed functions
+  sos_pid_t *sub_list;
+  uint8_t max_sub;
+  uint8_t num_sub;
+#endif
 } sos_module_t;
 
 /** 

@@ -40,6 +40,8 @@
  * @author   Simon Han (simonhan@ee.ucla.edu)
  * @brief    Fault tolerant features
  * @author   Ram Kumar (ram@ee.ucla.edu)
+ * @brief    Preemption Features
+ * @author   Akhilesh Singhania (akhi@ee.ucla.edu)
  *
  */
 #include <sos_types.h>
@@ -63,6 +65,9 @@
 #ifdef SOS_SFI
 #include <cross_domain_cf.h>
 #include <sfi_jumptable.h>
+#endif
+#ifdef SOS_USE_PREEMPTION
+#include <priority.h>
 #endif
 
 #define LED_DEBUG
@@ -92,11 +97,13 @@ enum
 static inline bool sched_message_filtered(sos_module_t *h, Message *m);
 static int8_t sched_handler(void *state, Message *msg);
 static int8_t sched_register_module(sos_module_t *h, mod_header_ptr p,
-		void *init, uint8_t init_size);
-static int8_t do_register_module(mod_header_ptr h,
-		sos_module_t *handle, void *init, uint8_t init_size,
-		uint8_t flag);
+																		void *init, uint8_t init_size);
+static int8_t do_register_module(mod_header_ptr h, sos_module_t *handle, 
+																 void *init, uint8_t init_size, uint8_t flag);
 static sos_pid_t sched_get_pid_from_pool();
+#ifdef SOS_USE_PREEMPTION
+static uint8_t preemption_point (Message *msg);
+#endif
 
 
 //----------------------------------------------------------------------------
@@ -104,18 +111,23 @@ static sos_pid_t sched_get_pid_from_pool();
 //----------------------------------------------------------------------------
 static mod_header_t mod_header SOS_MODULE_HEADER =
   {
-	.mod_id = KER_SCHED_PID,
-	.state_size = 0,
-	.num_sub_func = 0,
-	.num_prov_func = 0,
+	.mod_id         = KER_SCHED_PID,
+	.state_size     = 0,
+	.num_sub_func   = 0,
+	.num_prov_func  = 0,
 	.module_handler = sched_handler, 	
+#ifdef SOS_USE_PREEMPTION
+	.init_priority  = 1
+#endif
   };
 
-//! priority queue
+//! message queue
 static mq_t schedpq NOINIT_VAR;
 
+#ifndef SOS_USE_PREEMPTION
 //! module data structure
 static sos_module_t sched_module;
+#endif
 
 //! slab 
 static slab_t sched_slab;
@@ -129,12 +141,15 @@ sos_pid_t    curr_pid;                      //!< current executing pid
 static sos_pid_t    pid_stack[SOS_PID_STACK_SIZE]; //!< pid stack
 sos_pid_t*   pid_sp;                        //!< pid stack pointer
 
-
+#ifndef SOS_USE_PREEMPTION
 static uint8_t int_ready = 0;
 static sched_int_t  int_array[SCHED_NUM_INTS];
 
 // this is for dispatch short message directly
 static Message short_msg;
+
+uint8_t sched_stalled = false;
+#endif
 
 /**
  * @brief module bins
@@ -142,8 +157,6 @@ static Message short_msg;
  * the handle is defined as the array index to module_list
  */
 static sos_module_t* mod_bin[SCHED_NUMBER_BINS] NOINIT_VAR;
-
-uint8_t sched_stalled = false;
 
 /**
  * @brief pid pool
@@ -158,14 +171,13 @@ static uint8_t pid_pool[SCHED_PID_SLOTS];
 static jmp_buf sched_jbuf;
 static volatile sos_pid_t fault_pid;
 #endif
+
 //----------------------------------------------------------------------------
 //  FUNCTION IMPLEMENTATIONS
 //----------------------------------------------------------------------------
 static int8_t sched_handler(void *state, Message *msg)
 {
-  if(msg->type == MSG_INIT) {
-	return SOS_OK;
-  }
+  if(msg->type == MSG_INIT) return SOS_OK;
   return -EINVAL;
 }
 
@@ -174,8 +186,10 @@ void sched_init(uint8_t cond)
 {
   register uint8_t i = 0;
   if(cond != SOS_BOOT_NORMAL) {
-	//! iterate through module_list and check for memory bug
+		//! iterate through module_list and check for memory bug
   }
+
+	// initialize the message queue
   mq_init(&schedpq);
   //! initialize all bins to be empty
   for(i = 0; i < SCHED_NUMBER_BINS; i++) {
@@ -184,6 +198,15 @@ void sched_init(uint8_t cond)
   for(i = 0; i < SCHED_PID_SLOTS; i++) {
 		pid_pool[i] = 0;
   }
+
+#ifdef SOS_USE_PREEMPTION
+	// Initialize PID stack
+	pid_sp = pid_stack;  
+	// Initialize slab
+	ker_slab_init( KER_SCHED_PID, &sched_slab, sizeof(sos_module_t), 4);	
+	// register the module
+	ker_register_module(sos_get_header_address(mod_header));
+#else
   sched_register_kernel_module(&sched_module, sos_get_header_address(mod_header), mod_bin);
 	sched_stalled = false;
 
@@ -205,9 +228,10 @@ void sched_init(uint8_t cond)
 	// Initialize slab
 	//
 	ker_slab_init( KER_SCHED_PID, &sched_slab, sizeof(sos_module_t), 4, SLAB_LONGTERM );
-	
+#endif	
 }
 
+#ifndef SOS_USE_PREEMPTION
 void sched_add_interrupt(uint8_t id, sched_int_t f)
 {
 	if( id >= SCHED_NUM_INTS ) return;
@@ -228,7 +252,7 @@ static void handle_callback( void )
 		}
 	}
 }
-
+#endif
 
 /**
  * @brief get handle from pid
@@ -368,10 +392,10 @@ static int8_t sched_register_module(sos_module_t *h, mod_header_ptr p,
   //! Read the number of timers to be pre-allocated
   num_timers = sos_read_header_byte(p, offsetof(mod_header_t, num_timers));
   if (num_timers > 0){
-	//! If there is no memory to pre-allocate the requested timers
-	if (timer_preallocate(h->pid, num_timers) < 0){
-		return -ENOMEM;
-	}
+		//! If there is no memory to pre-allocate the requested timers
+		if (timer_preallocate(h->pid, num_timers) < 0){
+			return -ENOMEM;
+		}
   }
 
   // link the functions
@@ -388,13 +412,6 @@ static int8_t sched_register_module(sos_module_t *h, mod_header_ptr p,
   DEBUG("Register %d, Code ID %d,  Handle = %x\n", h->pid,
 		  sos_read_header_byte(h, offsetof(mod_header_t, mod_id)),
 		  (unsigned int)h);
-
-#ifdef FAULT_TOLERANT_SOS
-  //! Set the checksum of the state of the module before invoking its init method
-  if ((((h->flag) & SOS_KER_STATIC_MODULE) == 0) &&
-      (h->handler_state != NULL))
-	mem_block_set_checksum(h->handler_state);
-#endif
 
   // send an init message to application
   // XXX : need to check the failure
@@ -440,12 +457,84 @@ int8_t ker_register_module(mod_header_ptr h)
 		return -ENOMEM;
 	}
 	ret = do_register_module(h, handle, NULL, 0, 0);
+#ifdef SOS_USE_PREEMPTION
+	if(ret != SOS_OK) {
+		ker_slab_free( &sched_slab, handle);
+		return ret;
+	}
+
+	/**
+	 *  The following block of code is used to get the dependencies due to
+	 *  function calls
+	 */
+	handle->max_sub = 0;
+	handle->num_sub = 0;
+	// num of subscribed funcs
+	num_sub_func = sos_read_header_byte(h, offsetof(mod_header_t, num_sub_func));
+
+	if (num_sub_func > 0) {
+		uint8_t i;
+		uint8_t sub_list_index = 0;
+		for(i = 0; i < num_sub_func; i++) {
+			uint8_t j;
+			uint8_t to_add = 0;
+			uint8_t pub_pid = 
+				sos_read_header_byte(h, offsetof(mod_header_t, funct[i].pid));
+
+			// if its RUNTIME_PID just add it
+			// only to max because num_sub is taken care of when the registration
+			// with the actual function occurs
+			if(pub_pid == RUNTIME_PID) {
+				handle->max_sub++;
+				continue;
+			}
+			// Find all unique pids
+			for(j = 0; j < i; j++) {
+				if (pub_pid == 
+						sos_read_header_byte(h, offsetof(mod_header_t, funct[j].pid))) {
+
+					to_add = 1;
+					break;
+				}
+			}
+			// Add it to max and num subscribed functions
+			if (to_add == 0) { 
+				handle->max_sub++;
+				handle->num_sub++;
+			}
+		}
+
+		// malloc enough space for all pids
+		handle->sub_list = malloc(handle->max_sub * sizeof(sos_pid_t));
+		// now iterate again, adding the unique pids to the list
+		for(i = 0; i < num_sub_func; i++) {
+			uint8_t j;
+			uint8_t to_add = 0;
+			uint8_t pub_pid = 
+				sos_read_header_byte(h, offsetof(mod_header_t, funct[i].pid));
+
+			// do not add RUNTIME_PID to the list
+			if(pub_pid == RUNTIME_PID) continue;
+			// add the other unique pids to the list
+			for(j = 0; j < i; j++) {
+				if (pub_pid == 
+						sos_read_header_byte(h, offsetof(mod_header_t, funct[j].pid))) {
+					to_add = 1;
+					break;
+				}
+			}
+			if (to_add == 0) handle->sub_list[sub_list_index++] = pub_pid;
+		}
+	}
+#else
 	if(ret != SOS_OK) {
 		ker_slab_free( &sched_slab, handle);
 	}
+#endif
 	return ret;
 }
 
+#ifndef SOS_USE_PREEMPTION
 int8_t sched_register_kernel_module(sos_module_t *handle, mod_header_ptr h, void *state_ptr)
 {
   sos_pid_t pid;
@@ -468,7 +557,7 @@ int8_t sched_register_kernel_module(sos_module_t *handle, mod_header_ptr h, void
 
   return sched_register_module(handle, h, NULL, 0);
 }
-
+#endif
 
 static int8_t do_register_module(mod_header_ptr h,
 		sos_module_t *handle, void *init, uint8_t init_size,
@@ -566,6 +655,11 @@ int8_t ker_deregister_module(sos_pid_t pid)
 		msg.len = 0;
 		msg.data = NULL;
 		msg.flag = 0;
+#ifdef SOS_USE_PREEMPTION
+		// assign priority based on priority of id
+		msg.priority = get_module_priority(msg.did);
+#endif
+
 		// Ram - If the handler does not write to the message, all is fine
 #ifdef SOS_SFI
 		ker_cross_domain_call_mod_handler(handler_state, &msg, handler);
@@ -622,6 +716,7 @@ static uint8_t do_setjmp( void )
 }
 #endif
 
+#ifndef SOS_USE_PREEMPTION
 /**
  * @brief dispatch short message
  * This is used by the callback that was register by interrupt handler
@@ -673,7 +768,7 @@ void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
 	ker_log( SOS_LOG_HANDLE_MSG_END, curr_pid, type );
 
 }
-
+#endif
 
 /**
  * @brief    real dispatch function
@@ -734,6 +829,13 @@ static void do_dispatch()
 
 
 			DEBUG("RUNNING HANDLER OF MODULE %d \n", handle->pid);
+
+#ifdef SOS_USE_PREEMPTION
+			// push the curr_pid on to the stack
+			*pid_sp = curr_pid;
+			pid_sp++;
+#endif
+
 			curr_pid = handle->pid;
 #ifdef SOS_USE_EXCEPTION_HANDLING
 			if( do_setjmp() == 0 ) 
@@ -745,15 +847,19 @@ static void do_dispatch()
 #else
 				ret = handler(handler_state, e);
 #endif
+#ifdef SOS_USE_PREEMPTION
+				// pop the pid from the stack
+				pid_sp--;
+				curr_pid = *pid_sp;
+#endif
 				ker_log( SOS_LOG_HANDLE_MSG_END, curr_pid, e->type );
 				DEBUG("FINISHED HANDLER OF MODULE %d \n", handle->pid);
 			
-				if (ret == SOS_OK) {
-					senddone_flag = 0;
-				}
+				if (ret == SOS_OK) senddone_flag = 0;
 			}
 		}
-	} else {
+	} 
+	else {
 #if 0
 		// TODO...
 		//! take care MSG_FETCHER_DONE
@@ -804,32 +910,95 @@ int8_t ker_query_task(uint8_t pid)
 
 void sched_msg_alloc(Message *m)
 {
-  if(flag_msg_release(m->flag)){
-#ifdef FAULT_TOLERANT_SOS
-	// Set the checksum before ownership transfer
-	// Checksum will be checked only if the
-	// destination module is dynamic
-	if (m->did >= APP_MOD_MIN_PID){
-	  DEBUG("Setting the CRC prior to posting message\n");
-	  mem_block_set_checksum(m->data);
-	}
-#endif
-	ker_change_own(m->data, KER_SCHED_PID);
-  }	
 	DEBUG("sched_msg_alloc\n");
-  mq_enqueue(&schedpq, m);	
+#ifdef SOS_USE_PREEMPTION
+	pri_t cur_pri;
+
+  if((m != NULL) && (flag_msg_release(m->flag))){
+		ker_change_own(m->data, KER_SCHED_PID);
+  }
+
+	// If preemption is disabled, simply queue the msg
+	if (GET_PREEMPTION_STATUS() == DISABLED) {
+		if (m != NULL) mq_enqueue(&schedpq, m);
+		return;
+	}
+
+	// Get current priority
+	cur_pri = get_module_priority(curr_pid);
+
+	// This case is only valid when preemption is reenabled
+	if(m == NULL) {
+		// Preempt current module if msg of higher priority and no preemption issues
+		while((schedpq.head != NULL) && (schedpq.head->priority > cur_pri) &&
+					preemption_point(schedpq.head)) {
+			do_dispatch(mq_dequeue(&schedpq));
+		}
+		return;
+	}
+
+	// Check for priority of msg against msgs on queue 
+	// and currently executing module and also for preemption issues
+	if (((schedpq.head == NULL) || (m->priority > schedpq.head->priority))
+			&& (m->priority > cur_pri) && preemption_point(m)) {
+		// dispatch this msg now
+		do_dispatch(m);
+	}
+	else {
+		// queue it up for later
+		mq_enqueue(&schedpq, m);
+		// Check to continue with cur module or dispatch another msg
+		if((schedpq.head != NULL) && (schedpq.head->priority > cur_pri) && 
+			 preemption_point(schedpq.head)) {
+			Message *msg = mq_dequeue(&schedpq);
+			do_dispatch(msg);
+		}
+	}	
+#else
+  if(flag_msg_release(m->flag)){
+		ker_change_own(m->data, KER_SCHED_PID);
+  }	
+  mq_enqueue(&schedpq, m);
+#endif
 }
+
+#ifdef SOS_USE_PREEMPTION
+/**
+ * Checks if the msg can preempt current module
+ * based on conflicts due to function_calls.
+ * Returns 1 if can preempt or else returns 0
+ */
+static uint8_t preemption_point (Message *msg)
+{
+	uint8_t i;
+	sos_module_t *module = ker_get_module(msg->did);
+
+	if((module == NULL) || (module->num_sub == 0)) return 1;
+
+	// iterate through the subscribed funcs checking for conflict
+	for(i = 0; i < module->num_sub; i++) {
+		sos_pid_t* j;
+		// check against curr_pid
+		if(module->sub_list[i] == curr_pid) return 0;
+		// check against pid_stack
+		for(j = pid_stack; j < pid_sp; j++) {
+			if(module->sub_list[i] == *j) return 0;
+		}
+	}
+	return 1;
+}
+#endif
 
 void sched_msg_remove(Message *m)
 {
   Message *tmp;
   while(1) {
-	tmp = mq_get(&schedpq, m);
-	if(tmp) {
-	  msg_dispose(tmp);
-	} else {
-	  break;
-	}
+		tmp = mq_get(&schedpq, m);
+		if(tmp) {
+			msg_dispose(tmp);
+		} else {
+			break;
+		}
   }
 }
 
@@ -941,6 +1110,26 @@ static inline bool sched_message_filtered(sos_module_t *h, Message *m)
 
 void sched(void)
 {
+#ifdef SOS_USE_PREEMPTION
+	ENABLE_GLOBAL_INTERRUPTS();
+
+	ker_log_start();
+	for(;;) {
+		SOS_MEASUREMENT_IDLE_END();
+
+		// Send the msgs on the queue
+		if(schedpq.head != NULL) {
+			do_dispatch(mq_dequeue(&schedpq));
+		}
+		else {
+			SOS_MEASUREMENT_IDLE_START();
+			// ENABLE_INTERRUPT() is done inside atomic_hardware_sleep()
+			ker_log_flush();
+			atomic_hardware_sleep();
+		}
+		watchdog_reset();
+	}
+#else
 	ENABLE_GLOBAL_INTERRUPTS();
 
 	ker_log_start();
@@ -966,6 +1155,7 @@ void sched(void)
 		}
 		watchdog_reset();
 	}
+#endif
 }
 
 

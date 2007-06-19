@@ -51,6 +51,10 @@
  * @brief data structure for priority message queue
  */
 typedef struct {
+#ifdef SOS_USE_PREEMPTION
+  //! msg queue
+  Message *head;
+#else
   //! number of messages in the queue.
   //! this is used to reduce dequeue overhead
   uint8_t msg_cnt;
@@ -66,9 +70,9 @@ typedef struct {
   //! low priority queue
   Message *lq_head;
   Message *lq_tail;
+#endif
 } mq_t;
 
-#ifndef QUALNET_PLATFORM
 extern int8_t msg_queue_init(void);
 
 /**
@@ -121,13 +125,4 @@ extern void mq_gc_mark_hdr( mq_t *q, sos_pid_t pid );
 extern void mq_gc_mark_one_hdr( Message *msg );
 
 extern void mq_gc( void );
-#ifdef FAULT_TOLERANT_SOS
-/**
- * @brief Move a message (header and payload) to the module domain
- * @param msg_ker_domain Message that needs to be duplicated
- * @return Pointer to the moved message or NULL
- */
-Message *msg_move_to_module_domain(Message *msg_ker_domain);
-#endif//FAULT_TOLERANT_SOS
-#endif //QUALNET_PLATFORM
 #endif //_MESSAGE_QUEUE_H

@@ -68,6 +68,10 @@ typedef struct Message{
 	uint8_t  *data;                          //!< actual payload
 	uint16_t flag;                           //!< flag to indicate the status of message, see below
 	uint8_t payload[SOS_MSG_PAYLOAD_LENGTH]; //!< statically allocated payload
+#ifdef SOS_USE_PREEMPTION
+  	pri_t priority;                          //!< msg priority
+    uint8_t padding;
+#endif
 	struct Message *next;                    //!< link list for the Message
 } PACK_STRUCT  
 Message;

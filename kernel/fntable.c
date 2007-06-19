@@ -69,7 +69,6 @@
 //----------------------------------------------------------------------------
 
 
-#ifndef QUALNET_PLATFORM
 //! Local Functions
 static bool check_proto(uint8_t *proto1, uint8_t *proto2);
 static func_cb_ptr fntable_get_prov_cb(func_cb_ptr funct, uint8_t fid,
@@ -80,9 +79,6 @@ static void fntable_link_provided_functions(func_cb_ptr funct,
 // Function exposed to wiring engine for ViRe
 func_cb_ptr fntable_real_subscribe(mod_header_ptr sub_h,
 		sos_pid_t pub_pid, uint8_t fid, uint8_t table_index);
-
-#endif
-
 
 /**
  * @brief Initializes the function pointer list to NULL
@@ -101,7 +97,8 @@ int8_t fntable_init()
  * @return errno
  *
  */
-int8_t ker_fntable_subscribe(sos_pid_t sub_pid, sos_pid_t pub_pid, uint8_t fid, uint8_t table_index)
+int8_t ker_fntable_subscribe(sos_pid_t sub_pid, sos_pid_t pub_pid,
+							 uint8_t fid, uint8_t table_index)
 {
 	sos_module_t *mod;
 	mod_header_ptr sub_h;
@@ -124,6 +121,16 @@ int8_t ker_fntable_subscribe(sos_pid_t sub_pid, sos_pid_t pub_pid, uint8_t fid, 
 		cb_in_ram[table_index] = sos_get_header_member(sub_h,
 				offsetof(mod_header_t, funct[table_index]));
 	}
+#ifdef SOS_USE_PREEMPTION
+  // Add this pid to the subscribtion list
+  if(mod->num_sub >= mod->max_sub) {
+	ker_panic();
+	return -EINVAL;
+  }
+  // ?? double check num_sub - 1 ??
+  mod->sub_list[(mod->num_sub - 1)] = pub_pid;
+  mod->num_sub++;
+#endif
 	return SOS_OK;
 }
 

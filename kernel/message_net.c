@@ -53,6 +53,10 @@
 #include <hardware.h>
 #include <sos_logging.h>
 
+#ifdef SOS_USE_PREEMPTION
+#include <priority.h>
+#endif
+
 #if defined (SOS_UART_CHANNEL)
 #include <sos_uart.h>
 #include <sos_uart_mgr.h>
@@ -187,6 +191,10 @@ int8_t post_link(sos_pid_t did, sos_pid_t sid,
   m->len = len;
   m->data = (uint8_t*)data;
   m->flag = flag;
+#ifdef SOS_USE_PREEMPTION
+  // assign priority based on did
+  m->priority = get_module_priority(did);
+#endif
 
   // Dispatch Message
   return sos_msg_dispatch(m);

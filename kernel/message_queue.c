@@ -85,6 +85,9 @@ int8_t msg_queue_init()
  */
 void mq_init(mq_t *q)
 {
+#ifdef SOS_USE_PREEMPTION
+  q->head = NULL;
+#else 
   q->msg_cnt = 0;
   q->hm_cnt = 0;
   q->sm_cnt = 0;
@@ -95,6 +98,7 @@ void mq_init(mq_t *q)
   q->sq_tail = NULL;
   q->lq_head = NULL;
   q->lq_tail = NULL;
+#endif
 }
 
 /**
@@ -105,6 +109,46 @@ void mq_enqueue(mq_t *q, Message *m)
 {
   HAS_CRITICAL_SECTION;
 
+#ifdef SOS_USE_PREEMPTION
+  Message *cur;
+  Message *prev;
+  ENTER_CRITICAL_SECTION();
+
+  // If head is empty, insert here
+  if(q->head == NULL) {
+	q->head = m;
+	m->next = NULL;
+	LEAVE_CRITICAL_SECTION();
+	return;
+  }
+
+  // Insertion at the head of the list
+  if(q->head->priority < m->priority) {
+	m->next = q->head;
+	q->head = m;
+	LEAVE_CRITICAL_SECTION();
+	return;
+  }
+
+  // Traverse through the list looking for the 
+  // right insertion point based on priority
+  cur = q->head->next;
+  prev = q->head;
+  while(cur != NULL) {
+	if(cur->priority < m->priority) {
+	  m->next = cur;
+	  prev->next = m;
+	  LEAVE_CRITICAL_SECTION();
+	  return;
+	}
+	prev = cur;
+	cur = cur->next;
+  }
+  // End of list, insert at last point
+  m->next = NULL;
+  prev->next = m;
+
+#else
   ENTER_CRITICAL_SECTION();
   
   m->next = NULL;
@@ -147,6 +191,7 @@ void mq_enqueue(mq_t *q, Message *m)
 	  q->lm_cnt++;
   }
   q->msg_cnt++;
+#endif
   LEAVE_CRITICAL_SECTION();
 }
 
@@ -162,6 +207,12 @@ Message *mq_dequeue(mq_t *q)
 	Message *tmp = NULL;
 
 	ENTER_CRITICAL_SECTION();
+#ifdef SOS_USE_PREEMPTION
+	if((tmp = q->head) != NULL) {
+	  q->head = tmp->next;
+	}
+	LEAVE_CRITICAL_SECTION();
+#else
 	if ((tmp = q->hq_head) != NULL) { 
 	//! high priority message
 		q->hq_head = tmp->next;
@@ -179,11 +230,16 @@ Message *mq_dequeue(mq_t *q)
 		return NULL;
 	}
 	q->msg_cnt--;
+#endif
 	LEAVE_CRITICAL_SECTION();
 	return tmp;
 }
 
+#ifdef SOS_USE_PREEMPTION
+static Message *mq_real_get(Message **head, Message *m)
+#else
 static Message *mq_real_get(Message **head, Message **tail, Message *m)
+#endif
 {
   Message *prev;
   Message *curr;
@@ -191,7 +247,9 @@ static Message *mq_real_get(Message **head, Message **tail, Message *m)
   prev = *head;
   curr = *head;
 
+  // Traverse through the queue
   while(curr != NULL) {
+	// Try to match the header
 	if(m->did == curr->did &&
 	   m->sid == curr->sid &&
 	   m->daddr == curr->daddr &&
@@ -201,27 +259,34 @@ static Message *mq_real_get(Message **head, Message **tail, Message *m)
 	  uint8_t i = 0;
 	  Message *ret = curr;
 	  bool msg_matched = true;
+	  // Try to match the data
 	  for(i = 0; i < m->len; i++) {
 		if(m->data[i] != curr->data[i]) {
 		  msg_matched = false;
 		  break;
 		}	
 	  }
+	  // A match is found
 	  if(msg_matched == true) {
+		// The match is at the head
 		if(ret == (*head)) {
 		  *head = curr->next;
+#ifndef SOS_USE_PREEMPTION
 		  if( (*head) == NULL ) {
 			*tail = NULL;
 		  } 
 		} else if(ret == (*tail)) {
 		  prev->next = NULL;
 		  *tail = prev;
+#endif
 		} else {
+		  // The match is not at the head
 		  prev->next = curr->next;
 		}
 		return ret;
 	  }
 	}
+	// increment the pointers
 	prev = curr;
 	curr = curr->next;
   }
@@ -239,6 +304,10 @@ Message *mq_get(mq_t *q, Message *m)
   HAS_CRITICAL_SECTION;
   Message *ret;
 
+#ifdef SOS_USE_PREEMPTION
+  if(q->head == NULL) return NULL;
+  ENTER_CRITICAL_SECTION();
+#else
   if(q->msg_cnt == 0) return NULL;
   ENTER_CRITICAL_SECTION();
 	
@@ -255,6 +324,7 @@ Message *mq_get(mq_t *q, Message *m)
   if(ret) {
 	q->msg_cnt--;
   }
+#endif
   LEAVE_CRITICAL_SECTION();
   return ret;
 }
@@ -265,7 +335,14 @@ Message *mq_get(mq_t *q, Message *m)
 void mq_gc_mark_payload( mq_t *q, sos_pid_t pid )
 {
 	Message *m;
-	
+
+#ifdef SOS_USE_PREEMPTION
+	for( m = q->head; m != NULL; m = m->next ) {
+	  if( flag_msg_release( m->flag ) ) {
+		ker_gc_mark( pid, m->data );
+	  }
+	}
+#else
 	for( m = q->hq_head; m != NULL; m = m->next ) {
 		if( flag_msg_release( m->flag ) ) {
 			ker_gc_mark( pid, m->data );
@@ -283,6 +360,7 @@ void mq_gc_mark_payload( mq_t *q, sos_pid_t pid )
 			ker_gc_mark( pid, m->data );
 		}
 	}
+#endif
 }
 
 //
@@ -291,7 +369,12 @@ void mq_gc_mark_payload( mq_t *q, sos_pid_t pid )
 void mq_gc_mark_hdr( mq_t *q, sos_pid_t pid )
 {
 	Message *m;
-	
+
+#ifdef SOS_USE_PREEMPTION
+	for( m = q->head; m != NULL; m = m->next ) {
+		slab_gc_mark( &msg_slab, m );
+	}
+#else
 	for( m = q->hq_head; m != NULL; m = m->next ) {
 		slab_gc_mark( &msg_slab, m );
 	}
@@ -303,6 +386,7 @@ void mq_gc_mark_hdr( mq_t *q, sos_pid_t pid )
 	for( m = q->lq_head; m != NULL; m = m->next ) {
 		slab_gc_mark( &msg_slab, m );
 	}
+#endif
 }
 
 void mq_gc_mark_one_hdr( Message *msg )

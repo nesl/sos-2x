@@ -67,8 +67,7 @@
 //  Funcation declarations
 //----------------------------------------------------------------------------
 // Post a message with no payload
-int8_t post_short(sos_pid_t did, sos_pid_t sid,
-				  uint8_t type, uint8_t byte,
+int8_t post_short(sos_pid_t did, sos_pid_t sid, uint8_t type, uint8_t byte,
 				  uint16_t word, uint16_t flag)
 {
   Message *m = msg_create();
@@ -82,6 +81,10 @@ int8_t post_short(sos_pid_t did, sos_pid_t sid,
   m->saddr = node_address;
   m->sid = sid;
   m->len = 3;
+#ifdef SOS_USE_PREEMPTION
+  // assign priority based on did
+  m->priority = get_module_priority(did);
+#endif
   p = (MsgParam*)(m->payload);
   p->byte = byte;
   p->word = word;
@@ -92,10 +95,8 @@ int8_t post_short(sos_pid_t did, sos_pid_t sid,
 }
 
 // Post a message with payload and source address
-int8_t post_longer(sos_pid_t did, sos_pid_t sid,
-				   uint8_t type, uint8_t len,
-				   void *data, uint16_t flag,
-				   uint16_t saddr)
+int8_t post_longer(sos_pid_t did, sos_pid_t sid, uint8_t type, uint8_t len,
+				   void *data, uint16_t flag, uint16_t saddr)
 {
   Message *m = msg_create();
   if(m == NULL){
@@ -111,6 +112,10 @@ int8_t post_longer(sos_pid_t did, sos_pid_t sid,
   m->sid = sid;
   m->len = len;
   m->data = (uint8_t*)data;
+#ifdef SOS_USE_PREEMPTION
+  // assign priority based on priority of id
+  m->priority = get_module_priority(did);
+#endif
   m->flag = flag;
   sched_msg_alloc(m);
   ker_log( SOS_LOG_POST_LONG, sid, did ); 
@@ -118,14 +123,13 @@ int8_t post_longer(sos_pid_t did, sos_pid_t sid,
 }
 
 // Post a message with payload
-int8_t post_long(sos_pid_t did, sos_pid_t sid,
-				 uint8_t type, uint8_t len,
+int8_t post_long(sos_pid_t did, sos_pid_t sid, uint8_t type, uint8_t len,
 				 void *data, uint16_t flag)
 {
     return post_longer(did, sid,
-                      type, len,
-                      data, flag,
-                      node_address);
+					   type, len,
+					   data, flag,
+					   node_address);
 }
 
 int8_t ker_sys_post(sos_pid_t did, uint8_t type, uint8_t size, void *data, 
@@ -151,22 +155,6 @@ uint8_t *ker_msg_take_data(sos_pid_t pid, Message *msg_in)
 	msg = msg_in;
   }
   if(flag_msg_release(msg->flag)) {
-#ifdef FAULT_TOLERANT_SOS
-	if (pid >= APP_MOD_MIN_PID){
-	  if (mem_check_module_domain(msg->data) == false){
-		DEBUG("Copying payload of message to the module domain\n");
-		ret = (uint8_t*)module_domain_alloc(msg->len, pid);
-		if (NULL == ret) return NULL;
-		memcpy(ret, msg->data, msg->len);
-		msg->len = 0;
-		ker_free(msg->data);
-		msg->data = NULL;
-		msg->flag &= ~(SOS_MSG_RELEASE);
-		return ret;
-	  }
-	}
-#endif // FAULT_TOLERANT_SOS
-
 	ker_change_own((void*)msg->data, pid);
 	ret = msg->data;
 	msg->len = 0;
@@ -207,7 +195,11 @@ int8_t ker_sys_post_value(sos_pid_t dst_mod_id,
 	m->saddr = node_address;
 	m->sid = my_id;
 	m->len = 4;
-	*((uint32_t*)(m->data)) = data; 	
+	*((uint32_t*)(m->data)) = data;
+#ifdef SOS_USE_PREEMPTION
+	// assign priority based on did
+	m->priority = get_module_priority(dst_mod_id);
+#endif
 	m->flag = flag & ((sos_ker_flag_t)(~SOS_MSG_RELEASE));
 	sched_msg_alloc(m);
 
