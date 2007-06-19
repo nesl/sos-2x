@@ -6,7 +6,7 @@ Building the Parts
 
 Building the Modules
 ~~~~~~~~~~~~~~~~~~~~
-The `surge` application uses three modules.  Each of these needs to be
+The `surge` application uses four modules.  Each of these needs to be
 built for the simulation. Further, two of these modules will require minor
 code modifications.  The Avrora simulator begins the node count at 0, while
 SOS typically begins node IDs with 1.  The `tree routing` module and `surge`
@@ -20,6 +20,8 @@ the value 0.
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/modules/demos/surge/
+make mica2
+cd $SOSROOT/modules/routing/neighbor/
 make mica2
 cd $SOSROOT/modules/routing/tree_routing/
 make mica2
@@ -178,10 +180,11 @@ is accomplished using the SOS tool:
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/sos_tool/
-./sos_tool.exe --insmod
+./sos_tool.exe --insmod \
 ../../modules/sensordrivers/mts310/photo_temp/phototemp_sensor.mlf
+./sos_tool.exe --insmod ../../modules/routing/neighbor/neighbor.mlf
 ./sos_tool.exe --insmod ../../modules/routing/tree_routing/tree_routing.mlf
-./sos_tool.exe --insmod ../../modules/demo/surge/surge.mlf
+./sos_tool.exe --insmod ../../modules/demos/surge/surge.mlf
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After these modules load, the routing tree should form and sensor data
