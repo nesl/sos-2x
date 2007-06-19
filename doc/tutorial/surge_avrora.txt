@@ -177,7 +177,7 @@ is accomplished using the SOS tool:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-cd $SOSROOT/config/sos_tool/
+cd $SOSROOT/tools/sos_tool/
 ./sos_tool.exe --insmod
 ../../modules/sensordrivers/mts310/photo_temp/phototemp_sensor.mlf
 ./sos_tool.exe --insmod ../../modules/routing/tree_routing/tree_routing.mlf
