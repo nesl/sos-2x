@@ -47,6 +47,10 @@
 // for struct packing
 #include <sos_info.h>
 
+#ifdef SOS_USE_PREEMPTION
+#include <priority.h>
+#endif
+
 #define SOS_MSG_PAYLOAD_LENGTH 4
 /**
  * @brief message 

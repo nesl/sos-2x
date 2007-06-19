@@ -307,6 +307,9 @@ Message *mq_get(mq_t *q, Message *m)
 #ifdef SOS_USE_PREEMPTION
   if(q->head == NULL) return NULL;
   ENTER_CRITICAL_SECTION();
+  
+  // Search the queue
+  ret = mq_real_get(&(q->head), m);
 #else
   if(q->msg_cnt == 0) return NULL;
   ENTER_CRITICAL_SECTION();

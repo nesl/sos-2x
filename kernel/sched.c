@@ -116,9 +116,6 @@ static mod_header_t mod_header SOS_MODULE_HEADER =
 	.num_sub_func   = 0,
 	.num_prov_func  = 0,
 	.module_handler = sched_handler, 	
-#ifdef SOS_USE_PREEMPTION
-	.init_priority  = 1
-#endif
   };
 
 //! message queue
@@ -203,7 +200,7 @@ void sched_init(uint8_t cond)
 	// Initialize PID stack
 	pid_sp = pid_stack;  
 	// Initialize slab
-	ker_slab_init( KER_SCHED_PID, &sched_slab, sizeof(sos_module_t), 4);	
+	ker_slab_init( KER_SCHED_PID, &sched_slab, sizeof(sos_module_t), 4, SLAB_LONGTERM);
 	// register the module
 	ker_register_module(sos_get_header_address(mod_header));
 #else
@@ -451,6 +448,10 @@ int8_t ker_register_module(mod_header_ptr h)
 {
 	sos_module_t *handle;
 	int8_t ret;
+#ifdef SOS_USE_PREEMPTION
+	uint8_t num_sub_func;
+#endif
+
 	if(h == 0) return -EINVAL;
 	handle = (sos_module_t*)ker_slab_alloc( &sched_slab, KER_SCHED_PID);
 	if (handle == NULL) {

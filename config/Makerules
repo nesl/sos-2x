@@ -70,6 +70,14 @@ SRCS += malloc.c
 endif
 #################################################
 
+##################################################
+# Preemption On or off
+#################################################
+ifeq ($(MODE), preemption)
+DEFS += -DSOS_USE_PREEMPTION
+endif
+
+
 SRCS += $(PROJ).c
 SRCS += sched.c message.c message_queue.c message_net.c
 SRCS += codemem.c sos_module_fetcher.c fntable.c

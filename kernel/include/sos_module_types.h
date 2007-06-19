@@ -36,11 +36,13 @@ typedef struct mod_header {
   uint8_t processor_type;  //!< processor type of this module
   uint8_t platform_type;   //!< platform type of this module
 #ifdef SOS_USE_PREEMPTION
+  // Be careful about padding and using preemption here...
   pri_t init_priority;     //!< initial module priority
-  uint8_t padding;
 #endif
   uint8_t num_out_port;     //!< Number of output ports exposed by the module in ViRe framework.
+#ifndef SOS_USE_PREEMPTION
   uint8_t padding;			//!< Extra padding to make it word aligned.
+#endif
   msg_handler_t module_handler;
   func_cb_t funct[];
 } mod_header_t;

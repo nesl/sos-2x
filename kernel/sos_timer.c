@@ -872,9 +872,8 @@ timer_interrupt()
   HAS_PREEMPTION_SECTION;
   // disable preemption
   DISABLE_PREEMPTION();
-  uint8_t cnt = timer_getInterval();
 
-  timer_update_delta(cnt);
+  timer_update_delta();
   while(list_empty(&deltaq) == false) {
 	sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);         
 	if(h->delta <= 0) {
@@ -936,13 +935,13 @@ timer_interrupt()
 	hw_cnt = -(timer_hardware_get_counter());
 	if( h->delta - hw_cnt > 0) {
 	  LEAVE_CRITICAL_SECTION();
-	  timer_set_hw_top(h->delta - hw_cnt);	
+	  timer_set_hw_top(h->delta - hw_cnt, true);
 	} else {
 	  LEAVE_CRITICAL_SECTION();
 	}
   } else {
 	ENTER_CRITICAL_SECTION();
-	timer_set_hw_top(MAX_SLEEP_INTERVAL);
+	timer_set_hw_top(MAX_SLEEP_INTERVAL, false);
 	LEAVE_CRITICAL_SECTION();
   }
 
@@ -951,9 +950,6 @@ timer_interrupt()
   ENABLE_GLOBAL_INTERRUPTS();
   // enable preemption
   ENABLE_PREEMPTION();
-  if( num_realtime_clock > 0 ) {
-	timer_set_hw_interval(	timer_update_realtime_clock(cnt) );
-  }
 #else
 	uint8_t cnt = timer_getInterval();
 	outstanding_ticks += cnt;
