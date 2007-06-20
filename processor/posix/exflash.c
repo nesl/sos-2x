@@ -16,7 +16,10 @@ num_sub_func : 0,
 num_prov_func : 0,
 module_handler: exflash_handler,
 };  
+
+#ifndef SOS_USE_PREEMPTION
 static sos_module_t exflash_module;
+#endif
 
 int8_t ker_exflash_read(sos_pid_t pid,
 		exflashpage_t page, exflashoffset_t offset,
@@ -58,6 +61,10 @@ static int8_t exflash_handler(void *state, Message *e)
 
 int8_t exflash_init()
 {
+#ifdef SOS_USE_PREEMPTION
+	ker_register_module(sos_get_header_address(mod_header));
+#else
 	sched_register_kernel_module(&exflash_module, sos_get_header_address(mod_header), NULL);
+#endif
 	return SOS_OK;
 }

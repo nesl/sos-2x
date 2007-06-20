@@ -176,7 +176,9 @@ static Block            malloc_heap[NUM_HEAP_BLOCKS] SOS_HEAP_SECTION;
 
 #ifdef SOS_USE_GC
 static int8_t mem_handler(void *state, Message *msg);
+#ifndef SOS_USE_PREEMPTION
 static sos_module_t malloc_module;
+#endif // SOS_USE_PREEMPTION
 static mod_header_t mod_header SOS_MODULE_HEADER ={
   mod_id : KER_MEM_PID,
   state_size : 0,
@@ -185,7 +187,7 @@ static mod_header_t mod_header SOS_MODULE_HEADER ={
   num_prov_func : 0,
   module_handler: mem_handler,
 };
-#endif
+#endif // SOS_USE_GC
 
 #ifdef AVRORA_PLATFORM
 //static uint8_t avrora_buf[100];
@@ -562,8 +564,12 @@ int8_t sos_blk_mem_change_own(void* ptr, sos_pid_t id, bool bCallFromModule)
 void mem_start() 
 {
 #ifdef SOS_USE_GC
+#ifdef SOS_USE_PREEMPTION
+	ker_register_module(sos_get_header_address(mod_header));
+#else
   sched_register_kernel_module(&malloc_module, sos_get_header_address(mod_header), NULL);
-#endif
+#endif // SOS_USE_PREEMPTION
+#endif // SOS_USE_GC
 }
 
 int8_t mem_remove_all(sos_pid_t id)

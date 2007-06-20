@@ -75,7 +75,9 @@ num_prov_func : 0,
 module_handler: cc1k_radio_handler,    
 };
 
+#ifndef SOS_USE_PREEMPTION
 static sos_module_t cc1k_module;
+#endif
 //-----------------------------------------------------------------------------
 // RSSI ADC CALLBACK
 //static inline void RSSIADC_dataReady(uint16_t data);
@@ -367,7 +369,11 @@ int8_t cc1k_radio_init(){
   cc1k_cnt_SelectLock(0x9);		// Select MANCHESTER VIOLATION
   bFlag.bInvertRxData = cc1k_cnt_GetLOStatus();
   ker_adc_proc_bindPort(TOS_ADC_CC_RSSI_PORT, TOSH_ACTUAL_CC_RSSI_PORT, RADIO_PID);
+#ifdef SOS_USE_PREEMPTION
+	ker_register_module(sos_get_header_address(mod_header));
+#else
   sched_register_kernel_module(&cc1k_module, sos_get_header_address(mod_header), NULL);
+#endif
   // Timer needs to be done after reigsteration
   ker_permanent_timer_init(&ubmac_timer, RADIO_PID, UBMAC_TIMER_TID, TIMER_ONE_SHOT);
   ker_permanent_timer_init(&squelch_timer, RADIO_PID, SQUELCH_TIMER_TID, TIMER_REPEAT);

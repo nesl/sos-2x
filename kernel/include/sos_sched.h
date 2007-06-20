@@ -164,7 +164,9 @@ extern void sched_msg_gc( void );
  * @param h pointer to module header, must use sos_get_header_address macro
  * @param state_ptr pointer to module state
  */
+#ifndef SOS_USE_PREEMPTION
 extern int8_t sched_register_kernel_module(sos_module_t *handle, mod_header_ptr h, void *state_ptr);
+#endif
 
 extern uint8_t sched_stalled;
 

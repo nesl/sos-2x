@@ -78,7 +78,9 @@ static mod_header_t mod_header SOS_MODULE_HEADER ={
 	module_handler: adc_handler,
 };
 
+#ifndef SOS_USE_PREEMPTION
 static sos_module_t adc_module;
+#endif
 
 static int8_t adc_handler(void *state, Message *e){
   switch (e->type){
@@ -284,7 +286,11 @@ void ADCControl_init() {
   }
   LEAVE_CRITICAL_SECTION();
   adc_proc_init();
+#ifdef SOS_USE_PREEMPTION
+  ker_register_module(sos_get_header_address(mod_header));
+#else
   sched_register_kernel_module(&adc_module, sos_get_header_address(mod_header), NULL);
+#endif
 }
 
 int8_t ker_adc_proc_getData(uint8_t port) {

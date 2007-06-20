@@ -169,7 +169,9 @@ module_handler: vmac_handler,
 /*************************************************************************
  * declare the MAC module                                                *
  *************************************************************************/
+#ifndef SOS_USE_PREEMPTION
 static sos_module_t vmac_module;
+#endif
 
 /*************************************************************************
  * declare the queue used for MAC                                        *
@@ -729,7 +731,11 @@ void mac_init()
 //	Radio_Enable_Address_Check();
 	Radio_Set_Channel(13);
 
+#ifdef SOS_USE_PREEMPTION
+	ker_register_module(sos_get_header_address(mod_header));
+#else
 	sched_register_kernel_module(&vmac_module, sos_get_header_address(mod_header), NULL);
+#endif
 	
 	// Timer needs to be done after reigsteration
 	ker_permanent_timer_init(&send_wakeup_timer, RADIO_PID, SEND_WAKEUP_TIMER_TID, TIMER_ONE_SHOT);
