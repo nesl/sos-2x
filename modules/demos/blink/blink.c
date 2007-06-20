@@ -69,9 +69,6 @@ static int8_t blink_msg_handler(void *state, Message *msg)
    */
   app_state_t *s = (app_state_t*)state;
 
-  if (msg->next == NULL) sys_led(LED_YELLOW_TOGGLE);
-  else sys_led(LED_RED_TOGGLE);
-
   /**
    * Switch to the correct message handler
    */
@@ -85,7 +82,7 @@ static int8_t blink_msg_handler(void *state, Message *msg)
   {
 	  s->pid = msg->did;
 	  s->state = 0;
-	  //sys_led(LED_RED_TOGGLE);
+	  sys_led(LED_RED_TOGGLE);
 	  /**
 	   * The timer API takes the following parameters:
 	   * - Timer ID (used to distinguish multiple timers of different
