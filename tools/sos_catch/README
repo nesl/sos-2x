@@ -1,0 +1,48 @@
+README
+-------
+SOS Catch is a tool for connecting custom message handlers to an SOS server.
+
+AUTHOR
+-------
+Written by Peter Mawhorter (code largely copied from test_sossrv_client.c).
+
+USAGE
+-------
+./sos_catch.exe [-h] [-cPORT] [-rADDRESS]
+
+Flag summary:
+  -cPORT      Connect  Connect to sossrv on port PORT. Default is 7915.
+  -h          Help     Display this message and quit.
+  -rADDRESS   Remote   Connect to sossrv at ADDRESS (a dotted-decimal IP
+                       address). Default is localhost.
+
+ABOUT
+-------
+This code is a simplification of the sos_server API. At the moment, it is
+configured to subscribe to messages from a running sossrv.exe and print the
+data contained within Surge messages recieved. Running it while you have a
+newtork of motes sending Surge data to the base station should allow you to see
+the actual Surge data. The tool's purpose is to simplify the writing of C code
+for handling SOS messages: just write a function called "catch" that has the
+same specs as the catch function in the catch_surge.c file. Then change the
+include statement in sos_catch.c to include your custom code instead of
+catch_surge.c. You may have to alter the makefile so that your code will be
+able to find the headers it needs. Finally, recompile sos_catch. Then new
+executable should subscribe your function to all SOS messages. If you only want
+to process a certain type of message, use conditionals in your catch function.
+
+TESTING
+-------
+Run the SOS Surge tutorial at:
+
+https://projects.nesl.ucla.edu/public/sos-2x/doc/tutorial/surge_mica2.html
+
+Once you're getting messages at the base station (you'll see them appear in the
+sos_server terminal), run sos_catch.exe in another terminal. For each message
+printed to the sos_server screen, a message should be printed to the sos_catch
+screen. The sos_catch printout should look similar, and if the message is a
+Surge message (type 34), the sos_catch window should display a detailed listing
+of the entire message contents, including a line for Reading which contains the
+sensor reading. Now cover up the photosensor on the MTS310 and watch the
+reading number change in the Surge packets.
+
