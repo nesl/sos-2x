@@ -128,7 +128,7 @@ messages from the tree routing module with PID 141 and type 34.  The surge
 packet is embedded in the data payload of these packets.
 
 One Step Further: Looking at Packets
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Now you should have packets coming in, but all you get to see is some
 nigh-incomprehensible hex. To see the actual data, you'll need to use the
