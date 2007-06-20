@@ -62,7 +62,11 @@ static sos_timer_t *find_timer_in_periodic_pool(sos_pid_t pid, uint8_t tid);
 static sos_timer_t* alloc_from_timer_pool(sos_pid_t pid, uint8_t tid);
 static sos_timer_t* alloc_from_preallocated_timer_pool(sos_pid_t pid);
 static int8_t timer_remove_timer(sos_timer_t *tt);
+#ifdef SOS_USE_PREEMPTION
+static void timer_update_delta(int32_t delta);
+#else
 static void timer_update_delta(void);
+#endif
 static void timer_pre_alloc_block_init(sos_timer_t *h, sos_pid_t pid);
 static uint16_t timer_update_realtime_clock(uint8_t cnt);
 
@@ -424,6 +428,30 @@ static int8_t timer_remove_timer(sos_timer_t *tt)
  * traverse each item in the queue until no more delta left
  * NOTE: this is executed in interrupt handler, so NO lock necessary
  */
+#ifdef SOS_USE_PREEMPTION
+static void timer_update_delta(int32_t delta)
+{
+	list_link_t *link;
+
+	if(list_empty(&deltaq) == true) {
+		return;
+	}
+	DEBUG("update delta = %d\n", delta);
+	for(link = deltaq.l_next;
+			link != (&deltaq); link = link->l_next) {
+		sos_timer_t *h = (sos_timer_t*)link;         
+		if(h->delta >= delta) {
+			// if we use all ticks...
+			h->delta -= delta;
+			return;
+		} else {
+			int32_t tmp = h->delta;
+			h->delta -= delta;
+			delta -= tmp;
+		}
+	}
+}
+#else
 static void timer_update_delta(void)
 {
 	list_link_t *link;
@@ -453,6 +481,7 @@ static void timer_update_delta(void)
 		}
 	}
 }
+#endif
 
 /**
  * @brief Post the timeout messages
@@ -698,86 +727,86 @@ int8_t ker_sys_timer_stop(uint8_t tid)
 // called from scheduler
 static void soft_interrupt( void )
 {
-	HAS_CRITICAL_SECTION;
+  HAS_CRITICAL_SECTION;
 
-	timer_update_delta();
-	while(list_empty(&deltaq) == false) {
-		sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);         
-		if(h->delta <= 0) {
-			sos_pid_t pid = h->pid;
-			uint8_t tid = h->tid;
-			uint8_t flag;
-			list_remove_head(&deltaq);
-
-			if(((h->type) & SLOW_TIMER_MASK) == 0){
-				flag = SOS_MSG_HIGH_PRIORITY;
-			} else {
-				flag = 0;
-			}
-
-			if (((h->type) & ONE_SHOT_TIMER_MASK) == 0){
-				//! periocic timer
-				while(h->delta <= 0) {
-					// make sure it is positive
-					h->delta += h->ticks;
-				}
-				list_insert_tail(&periodic_pool, (list_t*) h);
-
-			} else {
-				list_insert_tail(&timer_pool, (list_link_t*)h);
-			}
-			sched_dispatch_short_message(pid, TIMER_PID,
-					MSG_TIMER_TIMEOUT, 
-					tid, 0,
-					flag);
-
-		} else {
-			break;
+  timer_update_delta();
+  while(list_empty(&deltaq) == false) {
+	sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);         
+	if(h->delta <= 0) {
+	  sos_pid_t pid = h->pid;
+	  uint8_t tid = h->tid;
+	  uint8_t flag;
+	  list_remove_head(&deltaq);
+	  
+	  if(((h->type) & SLOW_TIMER_MASK) == 0){
+		flag = SOS_MSG_HIGH_PRIORITY;
+	  } else {
+		flag = 0;
+	  }
+	  
+	  if (((h->type) & ONE_SHOT_TIMER_MASK) == 0){
+		//! periocic timer
+		while(h->delta <= 0) {
+		  // make sure it is positive
+		  h->delta += h->ticks;
 		}
-	}
-
-	while(list_empty(&periodic_pool) == false) {
-		list_link_t *link = periodic_pool.l_next;
-		list_remove_head(&periodic_pool);
-		timer_delta_q_insert((sos_timer_t*)link, false);
-	}
-
-	if(list_empty(&deltaq) == false) {
-		sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);
-		int32_t hw_cnt;
-		ENTER_CRITICAL_SECTION();
-		hw_cnt = outstanding_ticks - timer_hardware_get_counter();
-		if( h->delta - hw_cnt > 0) {
-			LEAVE_CRITICAL_SECTION();
-			timer_set_hw_top(h->delta - hw_cnt, true);	
-		} else {
-			LEAVE_CRITICAL_SECTION();
-			sched_add_interrupt(SCHED_TIMER_INT, soft_interrupt);
-		}
+		list_insert_tail(&periodic_pool, (list_t*) h);
+		
+	  } else {
+		list_insert_tail(&timer_pool, (list_link_t*)h);
+	  }
+	  sched_dispatch_short_message(pid, TIMER_PID,
+								   MSG_TIMER_TIMEOUT, 
+								   tid, 0,
+								   flag);
+	  
 	} else {
-		ENTER_CRITICAL_SECTION();
-		timer_set_hw_top(MAX_SLEEP_INTERVAL, false);
-		LEAVE_CRITICAL_SECTION();
+	  break;
 	}
+  }
+  
+  while(list_empty(&periodic_pool) == false) {
+	list_link_t *link = periodic_pool.l_next;
+	list_remove_head(&periodic_pool);
+	timer_delta_q_insert((sos_timer_t*)link, false);
+  }
+  
+  if(list_empty(&deltaq) == false) {
+	sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);
+	int32_t hw_cnt;
+	ENTER_CRITICAL_SECTION();
+	hw_cnt = outstanding_ticks - timer_hardware_get_counter();
+	if( h->delta - hw_cnt > 0) {
+	  LEAVE_CRITICAL_SECTION();
+	  timer_set_hw_top(h->delta - hw_cnt, true);	
+	} else {
+	  LEAVE_CRITICAL_SECTION();
+	  sched_add_interrupt(SCHED_TIMER_INT, soft_interrupt);
+	}
+  } else {
+	ENTER_CRITICAL_SECTION();
+	timer_set_hw_top(MAX_SLEEP_INTERVAL, false);
+	LEAVE_CRITICAL_SECTION();
+  }
 }
 #endif
 
 static void timer_realtime_set_hw_top(uint16_t value)
 {
-	// compute the time it takes to have next interrupt
-	if(list_empty(&deltaq) == true) {
+  // compute the time it takes to have next interrupt
+  if(list_empty(&deltaq) == true) {
+	timer_set_hw_top(value, false);
+  } else {
+	uint8_t hw_interval = timer_getInterval();
+	uint8_t hw_cnt = timer_hardware_get_counter();
+	if( (hw_interval - hw_cnt) >= value ) {
+	  if(list_empty(&deltaq) == true) {
 		timer_set_hw_top(value, false);
-	} else {
-		uint8_t hw_interval = timer_getInterval();
-		uint8_t hw_cnt = timer_hardware_get_counter();
-		if( (hw_interval - hw_cnt) >= value ) {
-			if(list_empty(&deltaq) == true) {
-				timer_set_hw_top(value, false);
-			} else {
-				timer_set_hw_top(value, true);
-			}
-		}
+	  } else {
+		timer_set_hw_top(value, true);
+	  }
 	}
+  }
 }
 
 
@@ -872,9 +901,11 @@ timer_interrupt()
   HAS_PREEMPTION_SECTION;
   // disable preemption
   DISABLE_PREEMPTION();
+  uint8_t cnt = timer_getInterval();
 
-  timer_update_delta();
+  timer_update_delta(cnt);
   while(list_empty(&deltaq) == false) {
+
 	sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);         
 	if(h->delta <= 0) {
 	  sos_pid_t pid = h->pid;
@@ -882,6 +913,7 @@ timer_interrupt()
 	  uint8_t flag;
 	  Message *msg;
 	  MsgParam *p;
+
 	  list_remove_head(&deltaq);
 	  
 	  if(((h->type) & SLOW_TIMER_MASK) == 0){
