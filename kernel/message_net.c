@@ -76,12 +76,25 @@ static int8_t sos_msg_dispatch(Message* m);
 static inline void msg_change_endian(Message* e);
 static bool sos_msg_find_right_link(Message *m);
 static int8_t routing_handler(void *state, Message *msg);
+
+#ifndef SOS_USE_PREEMPTION
 static sos_module_t routing_module;
+#endif
+
+#ifdef SOS_USE_PREEMPTION
+static func_cb_ptr *routing_func_ptr;
+#else
 static func_cb_ptr routing_func_ptr[1];
+#endif
+
 static mod_header_t mod_header SOS_MODULE_HEADER =
 {
   mod_id : KER_ROUTING_PID,
+#ifdef SOS_USE_PREEMPTION
+	state_size : sizeof(func_cb_ptr),
+#else
   state_size : 0,
+#endif
   num_prov_func : 0,
   num_sub_func : 1,
   module_handler: routing_handler,
@@ -415,8 +428,12 @@ int8_t ker_sys_routing_register( uint8_t fid )
 
 void routing_init( void )
 {
+#ifdef SOS_USE_PREEMPTION
+	ker_register_module(sos_get_header_address(mod_header));
+	routing_func_ptr = ker_get_module_state(KER_SENSOR_PID);
+#else
 	sched_register_kernel_module( &routing_module, sos_get_header_address(mod_header), routing_func_ptr);
-
+#endif
 }
 
 

@@ -74,7 +74,11 @@ enum {
 //-----------------------------------------------------------------------------
 // LOCAL VARIABLES
 typedef struct adc_proc_state {
-	func_cb_ptr cb[ADC_PROC_EXTENDED_PORTMAPSIZE];	
+#ifdef SOS_USE_PREEMPTION
+	func_cb_ptr *cb;
+#else
+	func_cb_ptr cb[ADC_PROC_EXTENDED_PORTMAPSIZE];
+#endif
 	uint8_t state;
 
 	uint8_t portmap[ADC_PROC_EXTENDED_PORTMAPSIZE];
@@ -95,11 +99,17 @@ static adc_proc_state_t s;
 
 static int8_t adc_proc_msg_handler(void *state, Message *msg);
 
+#ifndef SOS_USE_PREEMPTION
 static sos_module_t adc_proc_module;
+#endif
 static mod_header_t mod_header SOS_MODULE_HEADER =
 {
   .mod_id = ADC_PROC_PID,
+#ifdef SOS_USE_PREEMPTION
+	.state_size = sizeof(func_cb_ptr) * ADC_PROC_PORTMAPSIZE,
+#else
 	.state_size = 0,
+#endif
 	.num_prov_func = 0,
 	.num_sub_func = ADC_PROC_EXTENDED_PORTMAPSIZE,
 	.module_handler= adc_proc_msg_handler,
@@ -147,7 +157,12 @@ int8_t adc_proc_init() {
 		s.portmap[i] = ADC_PROC_HW_NULL_PORT;
 		s.calling_pid[i] = NULL_PID;
 	}
+#ifdef SOS_USE_PREEMPTION
+	ker_register_module(sos_get_header_address(mod_header));
+	s.cb = ker_get_module_state(KER_SENSOR_PID);
+#else
 	sched_register_kernel_module(&adc_proc_module, sos_get_header_address(mod_header), &s.cb);
+#endif
 	
 	s.portMask = 0;
 	s.reqMask = 0;

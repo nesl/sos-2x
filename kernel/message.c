@@ -54,6 +54,9 @@
 #include <sos_info.h>
 #include <message.h>
 #include <sos_logging.h>
+#ifdef SOS_USE_PREEMPTION
+#include <priority.h>
+#endif
 
 //----------------------------------------------------------------------------
 //  Typedefs

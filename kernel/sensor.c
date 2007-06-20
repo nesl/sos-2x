@@ -59,16 +59,26 @@ typedef struct sensor_state {
 static sensor_state_t st[MAX_SENSOR_ID];
 
 // need to be declared seperatly because of how SOS does function mapping
+#ifdef SOS_USE_PREEMPTION
+static func_cb_ptr *sensor_func_ptr;
+#else
 static func_cb_ptr sensor_func_ptr[MAX_SENSOR_ID];
+#endif
 
 static int8_t sensor_handler(void *state, Message *msg);
 
+#ifndef SOS_USE_PREEMPTION
 static sos_module_t sensor_module;
+#endif
 
 static mod_header_t mod_header SOS_MODULE_HEADER =
 {
 	mod_id : KER_SENSOR_PID,
+#ifdef SOS_USE_PREEMPTION
+	state_size : sizeof(func_cb_ptr) * MAX_SENSOR_ID,
+#else
 	state_size : 0,
+#endif
 	num_prov_func : 0,
 	num_sub_func : MAX_SENSOR_ID,
 	module_handler: sensor_handler,
@@ -114,7 +124,12 @@ int8_t sensor_init() {
 		st[i].client_pid = NULL_PID;
 		st[i].ctx = NULL;
 	}
+#ifdef SOS_USE_PREEMPTION
+	ker_register_module(sos_get_header_address(mod_header));
+	sensor_func_ptr = ker_get_module_state(KER_SENSOR_PID);
+#else
 	sched_register_kernel_module(&sensor_module, sos_get_header_address(mod_header), sensor_func_ptr);
+#endif
 	return SOS_OK;
 }
 
@@ -122,7 +137,8 @@ int8_t sensor_init() {
 /**
  * @brief Register a new sensor driver
  */
-int8_t ker_sensor_register(sos_pid_t calling_id, uint8_t sensor_id, uint8_t sensor_fid, void *ctx) {
+int8_t ker_sensor_register(sos_pid_t calling_id, uint8_t sensor_id, 
+													 uint8_t sensor_fid, void *ctx) {
 
 	if (sensor_id > MAX_SENSOR_ID) {
 		return -EINVAL;

@@ -560,9 +560,8 @@ int8_t sched_register_kernel_module(sos_module_t *handle, mod_header_ptr h, void
 }
 #endif
 
-static int8_t do_register_module(mod_header_ptr h,
-		sos_module_t *handle, void *init, uint8_t init_size,
-		uint8_t flag)
+static int8_t do_register_module(mod_header_ptr h, sos_module_t *handle, 
+																 void *init, uint8_t init_size, uint8_t flag)
 {
   sos_pid_t pid;
   uint16_t st_size;
@@ -574,12 +573,9 @@ static int8_t do_register_module(mod_header_ptr h,
 	  if(pid == NULL_PID) return -ENOMEM;
   } else {
 	  pid = sos_read_header_byte(h, offsetof(mod_header_t, mod_id));
-	  /*
-	   * Disallow the usage of thread ID
-	   */
+	  // Disallow the usage of thread ID
 	  if(pid > APP_MOD_MAX_PID) return -EINVAL;
   }
-
 
   // Read the state size and allocate a separate memory block for it
   st_size = sos_read_header_word(h, offsetof(mod_header_t, state_size));
@@ -599,6 +595,10 @@ static int8_t do_register_module(mod_header_ptr h,
 	handle->pid = pid;
   handle->flag = 0;
 	handle->next = NULL;
+#ifdef SOS_USE_PREEMPTION
+	// set the priority
+	handle->priority = sos_read_header_byte(h, offsetof(mod_header_t, init_priority));
+#endif
 
   // add to the bin
   ret = sched_register_module(handle, h, init, init_size);
@@ -777,16 +777,24 @@ void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
  * In SENDDONE message, msg->data is pointing to the message just sent.
  */
 
+#ifdef SOS_USE_PREEMPTION
+static void do_dispatch(Message *e)
+#else 
 static void do_dispatch()
+#endif
 {
+#ifndef SOS_USE_PREEMPTION
 	Message *e;                                // Current message being dispatched
+#endif
 	sos_module_t *handle;                      // Pointer to the control block of the destination module
 	Message *inner_msg = NULL;                 // Message sent as a payload in MSG_PKT_SENDDONE
 	sos_pid_t senddone_dst_pid = NULL_PID;     // Destination module ID for the MSG_PKT_SENDDONE
 	uint8_t senddone_flag = SOS_MSG_SEND_FAIL; // Status information for the MSG_PKT_SENDDONE
 
 	SOS_MEASUREMENT_DEQUEUE_START();
+#ifndef SOS_USE_PREEMPTION
 	e = mq_dequeue(&schedpq);
+#endif
 	SOS_MEASUREMENT_DEQUEUE_END();
 	handle = ker_get_module(e->did);
 	// Destination module might muck around with the

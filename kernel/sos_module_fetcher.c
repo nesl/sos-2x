@@ -36,7 +36,9 @@
  * This means that the components that use fetcher will have to handle the
  * failure
  */
+#ifndef SOS_USE_PREEMPTION
 static sos_module_t fetcher_module;
+#endif
 
 static inline void handle_overheard_fragment(Message *msg);
 static int8_t handle_request(Message *msg);
@@ -697,7 +699,11 @@ static void print_bitmap(fetcher_bitmap_t *m)
 
 int8_t fetcher_init()
 {
+#ifdef SOS_USE_PREEMPTION
+	ker_register_module(sos_get_header_address(mod_header));
+#else
 	sched_register_kernel_module(&fetcher_module, sos_get_header_address(mod_header), NULL);
+#endif
 	return SOS_OK;
 }
 
