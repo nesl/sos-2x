@@ -9,11 +9,13 @@ Building the Modules
 ~~~~~~~~~~~~~~~~~~~~
 The surge application uses three modules.  These can be built directly
 for the mica2 target.  
-NOTE: This tutorial assumes that the base station IDs in `$SOSROOT/modules/routing/tree_routing/tree_routing.h` and `$SOSROOT/modules/test_modules/surge/surge.h` are set to 1.
+NOTE: This tutorial assumes that the base station IDs in `$SOSROOT/modules/routing/tree_routing/tree_routing.h` and `$SOSROOT/modules/demos/surge/surge.h` are set to 1.
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/modules/demos/surge/
+make mica2
+cd $SOSROOT/modules/routing/neighbor/
 make mica2
 cd $SOSROOT/modules/routing/tree_routing/
 make mica2
@@ -113,8 +115,9 @@ is accomplished using the SOS tool:
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/config/sos_tool/
-./sos_tool.exe --insmod
+./sos_tool.exe --insmod \
 ../../modules/sensordrivers/mts310/photo_temp/phototemp_sensor.mlf
+./sos_tool.exe --insmod ../../modules/routing/neighbor/neighbor.mlf
 ./sos_tool.exe --insmod ../../modules/routing/tree_routing/tree_routing.mlf
 ./sos_tool.exe --insmod ../../modules/demos/surge/surge.mlf
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
