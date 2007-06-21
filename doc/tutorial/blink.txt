@@ -58,7 +58,7 @@ Here is the header used within the blink module:
 
 [c]
 source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-static mod_header_t mod_header SOS_MODULE_HEADER = {
+static const mod_header_t mod_header SOS_MODULE_HEADER = {
     .mod_id         = DFLT_APP_ID0,
     .state_size     = sizeof(app_state_t),
     .num_timers     = 1,
