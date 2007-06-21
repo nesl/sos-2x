@@ -87,6 +87,7 @@ void mq_init(mq_t *q)
 {
 #ifdef SOS_USE_PREEMPTION
   q->head = NULL;
+  q->msg_cnt = 0;
 #else 
   q->msg_cnt = 0;
   q->hm_cnt = 0;
@@ -118,6 +119,7 @@ void mq_enqueue(mq_t *q, Message *m)
   if(q->head == NULL) {
 	q->head = m;
 	m->next = NULL;
+	q->msg_cnt++;
 	LEAVE_CRITICAL_SECTION();
 	return;
   }
@@ -126,6 +128,7 @@ void mq_enqueue(mq_t *q, Message *m)
   if(q->head->priority < m->priority) {
 	m->next = q->head;
 	q->head = m;
+	q->msg_cnt++;
 	LEAVE_CRITICAL_SECTION();
 	return;
   }
@@ -138,6 +141,7 @@ void mq_enqueue(mq_t *q, Message *m)
 	if(cur->priority < m->priority) {
 	  m->next = cur;
 	  prev->next = m;
+	  q->msg_cnt++;
 	  LEAVE_CRITICAL_SECTION();
 	  return;
 	}
@@ -147,6 +151,7 @@ void mq_enqueue(mq_t *q, Message *m)
   // End of list, insert at last point
   m->next = NULL;
   prev->next = m;
+  q->msg_cnt++;
 
 #else
   ENTER_CRITICAL_SECTION();
@@ -207,9 +212,11 @@ Message *mq_dequeue(mq_t *q)
 	Message *tmp = NULL;
 
 	ENTER_CRITICAL_SECTION();
+
 #ifdef SOS_USE_PREEMPTION
 	if((tmp = q->head) != NULL) {
 	  q->head = tmp->next;
+	  q->msg_cnt--;	  
 	}
 	LEAVE_CRITICAL_SECTION();
 #else
@@ -307,7 +314,7 @@ Message *mq_get(mq_t *q, Message *m)
 #ifdef SOS_USE_PREEMPTION
   if(q->head == NULL) return NULL;
   ENTER_CRITICAL_SECTION();
-  
+
   // Search the queue
   ret = mq_real_get(&(q->head), m);
 #else

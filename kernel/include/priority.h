@@ -14,6 +14,9 @@ enum {
   ENABLED,
 };
 
+//----------------------------------------------------------------------------------
+// Global to maintain if preemption is enabled or disabled
+//
 uint8_t preemption_status;
 
 //----------------------------------------------------------------------------------
@@ -22,7 +25,9 @@ uint8_t preemption_status;
 
 /**
  * The following group of preemption macros can
- * only be used for SIGNALS
+ * only be used for SIGNALS. Please notice that 
+ * SIGNALS and INTERRUPTS are different. SIGNALS
+ * disable interrupts
  */
 
 #define HAS_PREEMPTION_SECTION register uint8_t _prem_prev_
@@ -54,7 +59,6 @@ uint8_t preemption_status;
     _prem_prev_ = preemption_status;		\
     preemption_status = DISABLED;		\
     LEAVE_CRITICAL_SECTION();} while(0)
-
 
 #define ATOMIC_ENABLE_PREEMPTION()		\
   do {                                          \

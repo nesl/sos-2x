@@ -54,6 +54,9 @@ typedef struct {
 #ifdef SOS_USE_PREEMPTION
   //! msg queue
   Message *head;
+  //! number of messages in the queue.
+  //! this is for use by different apps.
+  uint8_t msg_cnt;  
 #else
   //! number of messages in the queue.
   //! this is used to reduce dequeue overhead

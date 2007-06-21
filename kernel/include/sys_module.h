@@ -361,12 +361,28 @@ typedef int8_t (* sys_post_ker_func_t)( sos_pid_t dst_mod_id, uint8_t type, uint
  *
  */
 static inline int8_t sys_post( sos_pid_t dst_mod_id, uint8_t type, uint8_t size, void *  data, uint16_t flag )
-{                 
+{
+  /*
+#ifdef SOS_USE_PREEMPTION
+  int8_t val;
+  ATOMIC_DISABLE_PREEMPTION();
 #ifdef SYS_JUMP_TBL_START                                              
-	return ((sys_post_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*8))( dst_mod_id, type, size, data, flag );          
-#else
-	return ker_sys_post( dst_mod_id, type, size, data, flag );
-#endif
+  val = ((sys_post_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*8))( dst_mod_id, type, size, data, flag );          
+#else  // SYS_JUMP_TBL_START
+  val = ker_sys_post( dst_mod_id, type, size, data, flag );
+#endif // SYS_JUMP_TBL_START
+  ATOMIC_ENABLE_PREEMPTION();
+  return val;
+#else  // SOS_USE_PREEMPTION
+  */
+#ifdef SYS_JUMP_TBL_START                                              
+  return ((sys_post_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*8))( dst_mod_id, type, size, data, flag );          
+#else  //SYS_JUMP_TBL_START
+  return ker_sys_post( dst_mod_id, type, size, data, flag );
+#endif  //SYS_JUMP_TBL_START
+  /*
+#endif  // SOS_USE_PREEMPTION
+  */
 }             
 
 /// \cond NOTYPEDEF
