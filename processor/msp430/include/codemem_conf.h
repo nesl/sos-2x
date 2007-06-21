@@ -25,7 +25,9 @@ enum {
 	MAX_RANGE_REL_ADDRESSING = FLASH_PAGE_SIZE * MAX_RANGE_REL_ADDRESSING_PAGES,
 	//! code space addressing moode
 	CODEMEM_ADDRESSING_BYTES = 1L,
-	FLASHMEM_SIZE            = (47L * 1024L),
+	//This should represent the end of contiguous address space.
+	//FLASHMEM_SIZE            = (47L * 1024L),
+	FLASHMEM_SIZE            = (57L * 1024L),
 	FLASHMEM_PAGE_SIZE       = 512L,
 	NUM_COMPILED_MODULES     = 16,
 	CODEMEM_MAX_LOADABLE_MODULES = 16,
