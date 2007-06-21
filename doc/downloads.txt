@@ -3,7 +3,7 @@ SOS Downloads
 
 Releases
 --------
-- link:../files/sos-2.0.0.tar.gz[SOS 2.0.0]
+- link:../files/sos-2.0.1.tar.gz[SOS 2.0.1]
 - link:../files/SOSage-2.0.0.tar.gz[SOSage 2.0.0]
 
 

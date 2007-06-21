@@ -3,11 +3,8 @@ SOS 2.x Home Page
 
 .{date}: SOS Release {revision} is here 
 *************************************************************************
-We finally released SOS Release {revision}. Visit the
-link:downloads.html[download page] for the latest files. Additionally, we
-announce the new SOSage {revision}, a VMWare Appliance running all the
-necessary libraries and utilities to compile and run SOS. For more details
-on SOSage see link:sosage.html[sosage.html].
+We have released SOS Release {revision}. Visit the
+link:downloads.html[download page] for the latest files.
 *************************************************************************
 
 Introduction to SOS
