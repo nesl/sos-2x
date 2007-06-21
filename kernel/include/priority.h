@@ -44,14 +44,13 @@ uint8_t preemption_status;
 
 /**
  * The following group of preemption macros are
- * more general and can be used for INTERRUPTS 
+ * more general and should be used in INTERRUPTS 
  * and in modules
  */
 
 #define HAS_ATOMIC_PREEMPTION_SECTION           \
-  do {                                          \
-    HAS_CRITICAL_SECTION;			\
-    register uint8_t _prem_prev_;} while(0)
+  HAS_CRITICAL_SECTION;				\
+  register uint8_t _prem_prev_
 
 #define ATOMIC_DISABLE_PREEMPTION()             \
   do {                                          \

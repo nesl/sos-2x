@@ -585,9 +585,21 @@ void codemem_init(void)
 	flash_cache_addr = 0;
 }
 
-
+#ifdef SOS_USE_PREEMPTION
+int8_t ker_sys_codemem_read(codemem_t h, void *buf, uint16_t nbytes, uint16_t offset)
+{
+  HAS_ATOMIC_PREEMPTION_SECTION;
+  sos_pid_t my_pid = ker_get_current_pid();
+  int8_t ret;
+  ATOMIC_DISABLE_PREEMPTION();
+  ret = ker_codemem_read(h, my_pid, buf, nbytes, offset);
+  ATOMIC_ENABLE_PREEMPTION();
+return ret;
+}
+#else
 int8_t ker_sys_codemem_read(codemem_t h, void *buf, uint16_t nbytes, uint16_t offset)
 {
   sos_pid_t my_pid = ker_get_current_pid();
   return ker_codemem_read(h, my_pid, buf, nbytes, offset);
 }
+#endif

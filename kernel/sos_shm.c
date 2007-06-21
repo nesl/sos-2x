@@ -182,6 +182,84 @@ int8_t ker_shm_stopwait( sos_pid_t pid, sos_shm_t name )
 	return -EINVAL;
 }
 
+#ifdef SOS_USE_PREEMPTION
+int8_t ker_sys_shm_open( sos_shm_t name, void *shm )
+{
+  HAS_ATOMIC_PREEMPTION_SECTION;
+  sos_pid_t my_id = ker_get_current_pid();
+  ATOMIC_DISABLE_PREEMPTION();
+  if( ker_shm_open( my_id, name, shm ) != SOS_OK ) {
+    ATOMIC_ENABLE_PREEMPTION();
+    return ker_mod_panic( my_id );
+  }
+  ATOMIC_ENABLE_PREEMPTION();
+  return SOS_OK;
+}
+
+int8_t ker_sys_shm_update( sos_shm_t name, void *shm )
+{
+  HAS_ATOMIC_PREEMPTION_SECTION;
+  sos_pid_t my_id = ker_get_current_pid();
+  ATOMIC_DISABLE_PREEMPTION();
+  if( ker_shm_update( my_id, name, shm ) != SOS_OK ) {
+    ATOMIC_ENABLE_PREEMPTION();
+    return ker_mod_panic( my_id );
+  }
+  ATOMIC_ENABLE_PREEMPTION();
+  return SOS_OK;
+}
+
+int8_t ker_sys_shm_close( sos_shm_t name )
+{
+  HAS_ATOMIC_PREEMPTION_SECTION;
+  sos_pid_t my_id = ker_get_current_pid();
+  ATOMIC_DISABLE_PREEMPTION();
+  if( ker_shm_close( my_id, name ) != SOS_OK ) {
+    ATOMIC_ENABLE_PREEMPTION();
+    return ker_mod_panic( my_id );
+  }
+  ATOMIC_ENABLE_PREEMPTION();
+  return SOS_OK;
+}
+
+void* ker_sys_shm_get( sos_shm_t name )
+{
+  HAS_ATOMIC_PREEMPTION_SECTION;
+  sos_pid_t my_id = ker_get_current_pid();
+  void* ret;
+  ATOMIC_DISABLE_PREEMPTION();
+  ret = ker_shm_get( my_id, name );
+  ATOMIC_ENABLE_PREEMPTION();
+  return ret;
+}
+
+int8_t ker_sys_shm_wait( sos_shm_t name )
+{
+  HAS_ATOMIC_PREEMPTION_SECTION;
+  sos_pid_t my_id = ker_get_current_pid();
+  ATOMIC_DISABLE_PREEMPTION();
+  if( ker_shm_wait( my_id, name ) != SOS_OK ) {
+    ATOMIC_ENABLE_PREEMPTION();
+    return ker_mod_panic( my_id );
+  }
+  ATOMIC_ENABLE_PREEMPTION();
+  return SOS_OK;
+}
+
+int8_t ker_sys_shm_stopwait( sos_shm_t name )
+{
+  HAS_ATOMIC_PREEMPTION_SECTION;
+  sos_pid_t my_id = ker_get_current_pid();
+  ATOMIC_DISABLE_PREEMPTION();
+  if( ker_shm_stopwait( my_id, name ) != SOS_OK ) {
+    ATOMIC_ENABLE_PREEMPTION();
+    return ker_mod_panic( my_id );
+  }
+  ATOMIC_ENABLE_PREEMPTION();
+  return SOS_OK;
+}
+
+#else
 int8_t ker_sys_shm_open( sos_shm_t name, void *shm )
 {
 	sos_pid_t my_id = ker_get_current_pid();
@@ -238,7 +316,7 @@ int8_t ker_sys_shm_stopwait( sos_shm_t name )
 	}
 	return SOS_OK;
 }
-
+#endif
 //
 // Remove all data associated with the pid
 //

@@ -185,6 +185,30 @@ int8_t ker_sensor_deregister(sos_pid_t calling_id, uint8_t sensor_id) {
 /**
  * @brief Get the sensor data
  */
+#ifdef SOS_USE_PREEMPTION
+int8_t ker_sensor_get_data(sos_pid_t calling_id, uint8_t sensor_id) 
+{
+	HAS_ATOMIC_PREEMPTION_SECTION;
+	int8_t ret;
+	if ((sensor_id > MAX_SENSOR_ID) || (st[sensor_id].pid == NULL_PID) || (st[sensor_id].client_pid != NULL_PID)) {
+		return -EINVAL;
+	}
+
+	st[sensor_id].client_pid = calling_id;  //changed
+
+	ATOMIC_DISABLE_PREEMPTION();
+	ret = SOS_CALL(sensor_func_ptr[sensor_id], sensor_func_t, SENSOR_GET_DATA_CMD, st[sensor_id].ctx);
+	ATOMIC_ENABLE_PREEMPTION();
+	if (SOS_OK != ret) {
+		//! XXX ????
+		st[sensor_id].client_pid = NULL_PID; //changed
+		return -EINVAL;
+	}
+	
+
+  return SOS_OK;
+}
+#else
 int8_t ker_sensor_get_data(sos_pid_t calling_id, uint8_t sensor_id) 
 {
 	int8_t ret;
@@ -204,6 +228,7 @@ int8_t ker_sensor_get_data(sos_pid_t calling_id, uint8_t sensor_id)
 
   return SOS_OK;
 }
+#endif
 
 int8_t ker_sys_sensor_get_data( uint8_t sensor_id )
 {

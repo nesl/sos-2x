@@ -328,6 +328,10 @@ int8_t ker_adc_proc_stopPerodicData(uint8_t port) {
 #include <led.h>
 
 adc_proc_interrupt() {
+#ifdef SOS_USE_PREEMPTION
+	HAS_PREEMPTION_SECTION;
+	DISABLE_PREEMPTION();
+#endif
 	uint16_t adcValue;
 
 	if (s.state != ADC_PROC_BUSY) {
@@ -369,5 +373,8 @@ adc_proc_interrupt() {
 			}
 		}
 	}
+#ifdef SOS_USE_PREEMPTION
+	ENABLE_GLOBAL_INTERRUPTS();
+	ENABLE_PREEMPTION();
+#endif
 }
-

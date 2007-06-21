@@ -4,6 +4,7 @@
 #include <fntable_types.h>
 #include <message_types.h>
 #include <hardware_types.h>
+#include <priority.h>
 
 typedef uint16_t sos_code_id_t;
 /**
@@ -35,14 +36,12 @@ typedef struct mod_header {
   sos_code_id_t code_id;   //!< module image identifier
   uint8_t processor_type;  //!< processor type of this module
   uint8_t platform_type;   //!< platform type of this module
-#ifdef SOS_USE_PREEMPTION
-  // Be careful about padding and using preemption here...
+  /**
+   * Adding init_priority as a permanent field so that a mixed deployment of 
+   * preemptable and non-preemptable kernels is possible
+   */
   pri_t init_priority;     //!< initial module priority
-#endif
   uint8_t num_out_port;     //!< Number of output ports exposed by the module in ViRe framework.
-#ifndef SOS_USE_PREEMPTION
-  uint8_t padding;			//!< Extra padding to make it word aligned.
-#endif
   msg_handler_t module_handler;
   func_cb_t funct[];
 } mod_header_t;

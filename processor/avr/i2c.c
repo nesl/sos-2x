@@ -347,94 +347,98 @@ int8_t i2c_startTransceiverRx(uint8_t addr,
  */
 #define MAX_ADDR_FAIL 3
 
-i2c_interrupt() {
-
+i2c_interrupt() 
+{
+#ifdef SOS_USE_PREEMPTION
+  HAS_PREEMPTION_SECTION;
+  DISABLE_PREEMPTION();
+#endif
 	static uint8_t addrFailCnt;
-
-    SOS_MEASUREMENT_IDLE_END();
-
-		// TWSR & TW_STATUS_MASK
-		switch (TWSR) {
-			/*************************
-			 * Master General States *
-			 *************************/
-			case TWI_START: /* 0x08 */
-				addrFailCnt = 0;
-				i2c.idx = 0;
-        // Fall through!
-
-			case TWI_REP_START: /* 0x10 */
-				i2c_setByte(i2c.addr|((i2c.flags & I2C_TX_FLAG)?0:1));  // only set R/W bit if reading
-				i2c_setCtrlReg((1<<TWINT)|(1<<TWEN)|(1<<TWIE));
-				break;
-
-			case TWI_ARB_LOST: /* 0x38 */
-				i2c_setCtrlReg((1<<TWINT)|(1<<TWSTA)|(1<<TWEN)|(1<<TWIE)); // Initate a (RE)START condition
-				// TWI hardware will resend start when bus is free and signal TWI_RESTART
-				break;
-
-
+	
+	SOS_MEASUREMENT_IDLE_END();
+	
+	// TWSR & TW_STATUS_MASK
+	switch (TWSR) {
+		/*************************
+		 * Master General States *
+		 *************************/
+	case TWI_START: /* 0x08 */
+		addrFailCnt = 0;
+		i2c.idx = 0;
+		// Fall through!
 		
-				/*****************************
-				 * Master Transmitter States *
-				 *****************************/
-			case TWI_MTX_ADR_ACK: /* 0x18 */
-				i2c.state = I2C_MASTER_TX;
-				if (i2c.flags & I2C_SOS_MSG_FLAG) {
-					// this is a difference between the i2c and uart
-					// uart uses a protocol byte for BOTH raw and sos_msgs
-					// i2c ONLY sends a protocol byte in the case of a sos_msg
-					i2c_setByte(HDLC_SOS_MSG);
-					i2c.msg_state = SOS_MSG_TX_HDR;
-					// this is a sos_msg so a crc is required
-					i2c.crc = crcByte(0, HDLC_SOS_MSG);
-					i2c_setCtrlReg((1<<TWINT)|(1<<TWEN)|(1<<TWIE));
-					break;
+	case TWI_REP_START: /* 0x10 */
+		i2c_setByte(i2c.addr|((i2c.flags & I2C_TX_FLAG)?0:1));  // only set R/W bit if reading
+		i2c_setCtrlReg((1<<TWINT)|(1<<TWEN)|(1<<TWIE));
+		break;
+		
+	case TWI_ARB_LOST: /* 0x38 */
+		i2c_setCtrlReg((1<<TWINT)|(1<<TWSTA)|(1<<TWEN)|(1<<TWIE)); // Initate a (RE)START condition
+		// TWI hardware will resend start when bus is free and signal TWI_RESTART
+		break;
+		
+		
+		
+		/*****************************
+		 * Master Transmitter States *
+		 *****************************/
+	case TWI_MTX_ADR_ACK: /* 0x18 */
+		i2c.state = I2C_MASTER_TX;
+		if (i2c.flags & I2C_SOS_MSG_FLAG) {
+			// this is a difference between the i2c and uart
+			// uart uses a protocol byte for BOTH raw and sos_msgs
+			// i2c ONLY sends a protocol byte in the case of a sos_msg
+			i2c_setByte(HDLC_SOS_MSG);
+			i2c.msg_state = SOS_MSG_TX_HDR;
+			// this is a sos_msg so a crc is required
+			i2c.crc = crcByte(0, HDLC_SOS_MSG);
+			i2c_setCtrlReg((1<<TWINT)|(1<<TWEN)|(1<<TWIE));
+			break;
+		} else {
+			i2c.msg_state = SOS_MSG_TX_RAW;
+		} // fall through
+		
+	case TWI_MTX_DATA_ACK: /* 0x28 */
+		switch (i2c.msg_state) {
+		case SOS_MSG_TX_HDR:
+			i2c_setByte(((uint8_t*)(i2c.msgBuf))[i2c.idx]);
+			// this is a sos_msg so a crc is required
+			i2c.crc = crcByte(i2c.crc, ((uint8_t*)(i2c.msgBuf))[i2c.idx]);
+			i2c.idx++;
+			if (i2c.idx == SOS_MSG_HEADER_SIZE) {
+				i2c.idx = 0;
+				i2c.txPending = i2c.msgLen + SOS_MSG_CRC_SIZE;
+				i2c.msg_state = SOS_MSG_TX_DATA;
+			}
+			break;
+			
+		case SOS_MSG_TX_RAW:
+		case SOS_MSG_TX_DATA:
+			i2c_setByte(i2c.dataBuf[i2c.idx]);
+			if (i2c.flags & I2C_CRC_FLAG) {
+				i2c.crc = crcByte(i2c.crc, i2c.dataBuf[i2c.idx]);
+			}
+			i2c.idx++;
+			if (i2c.idx == i2c.msgLen) {
+				if (!(i2c.flags & I2C_CRC_FLAG)) {
+					// send stop bit and reset interface to ready state
+					i2c.txPending = 0;
+					i2c.msg_state = SOS_MSG_TX_END;
 				} else {
-					i2c.msg_state = SOS_MSG_TX_RAW;
-				} // fall through
-
-			case TWI_MTX_DATA_ACK: /* 0x28 */
-				switch (i2c.msg_state) {
-					case SOS_MSG_TX_HDR:
-						i2c_setByte(((uint8_t*)(i2c.msgBuf))[i2c.idx]);
-						// this is a sos_msg so a crc is required
-						i2c.crc = crcByte(i2c.crc, ((uint8_t*)(i2c.msgBuf))[i2c.idx]);
-						i2c.idx++;
-						if (i2c.idx == SOS_MSG_HEADER_SIZE) {
-							i2c.idx = 0;
-							i2c.txPending = i2c.msgLen + SOS_MSG_CRC_SIZE;
-							i2c.msg_state = SOS_MSG_TX_DATA;
-						}
-						break;
-
-					case SOS_MSG_TX_RAW:
-					case SOS_MSG_TX_DATA:
-						i2c_setByte(i2c.dataBuf[i2c.idx]);
-						if (i2c.flags & I2C_CRC_FLAG) {
-							i2c.crc = crcByte(i2c.crc, i2c.dataBuf[i2c.idx]);
-						}
-						i2c.idx++;
-						if (i2c.idx == i2c.msgLen) {
-							if (!(i2c.flags & I2C_CRC_FLAG)) {
-								// send stop bit and reset interface to ready state
-								i2c.txPending = 0;
-								i2c.msg_state = SOS_MSG_TX_END;
-							} else {
-								i2c.txPending = SOS_MSG_CRC_SIZE;  // no unsent bytes
-								i2c.msg_state = SOS_MSG_TX_CRC_LOW;
-							}
-						}
-						break;
-
-					case SOS_MSG_TX_CRC_LOW:
-						i2c_setByte((uint8_t)(i2c.crc));
-						i2c.txPending--;
-						i2c.msg_state = SOS_MSG_TX_CRC_HIGH;
-						break;
-
-					case SOS_MSG_TX_CRC_HIGH:
-						i2c_setByte((uint8_t)(i2c.crc>>8));
+					i2c.txPending = SOS_MSG_CRC_SIZE;  // no unsent bytes
+					i2c.msg_state = SOS_MSG_TX_CRC_LOW;
+				}
+			}
+			break;
+			
+		case SOS_MSG_TX_CRC_LOW:
+			i2c_setByte((uint8_t)(i2c.crc));
+			i2c.txPending--;
+			i2c.msg_state = SOS_MSG_TX_CRC_HIGH;
+			break;
+			
+		case SOS_MSG_TX_CRC_HIGH:
+			i2c_setByte((uint8_t)(i2c.crc>>8));
 						i2c.txPending--;
 						i2c.msg_state = SOS_MSG_TX_END;
 						break;
@@ -682,5 +686,13 @@ i2c_interrupt() {
 					break;
 				}
 		}
+
+#ifdef SOS_USE_PREEMPTION
+  // enable interrupts because 
+  // enabling preemption can cause one to occur
+  ENABLE_GLOBAL_INTERRUPTS();
+  // enable preemption
+  ENABLE_PREEMPTION();
+#endif
 }
 

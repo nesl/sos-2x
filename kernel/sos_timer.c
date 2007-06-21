@@ -693,7 +693,47 @@ int8_t ker_timer_restart(sos_pid_t pid, uint8_t tid, int32_t interval)
   return SOS_OK;
 }
 
+#ifdef SOS_USE_PREEMPTION
+int8_t ker_sys_timer_start(uint8_t tid, int32_t interval, uint8_t type)
+{
+  HAS_ATOMIC_PREEMPTION_SECTION;
+  sos_pid_t my_id = ker_get_current_pid();
 
+  ATOMIC_DISABLE_PREEMPTION();
+  if( (ker_timer_init(my_id, tid, type) != SOS_OK) ||       
+	  (ker_timer_start(my_id, tid, interval) != SOS_OK)) {
+	ATOMIC_ENABLE_PREEMPTION();
+	return ker_mod_panic(my_id);                                 
+  }                                                         
+  ATOMIC_ENABLE_PREEMPTION();
+  return SOS_OK;                                            
+}
+int8_t ker_sys_timer_restart(uint8_t tid, int32_t interval)       
+{                                                             
+  HAS_ATOMIC_PREEMPTION_SECTION;
+  sos_pid_t my_id = ker_get_current_pid();                  
+
+  ATOMIC_DISABLE_PREEMPTION();
+  if( ker_timer_restart(my_id, tid, interval) != SOS_OK ) { 
+	ATOMIC_ENABLE_PREEMPTION();
+	return ker_mod_panic(my_id);                                 
+  }
+  ATOMIC_ENABLE_PREEMPTION();
+  return SOS_OK;                                            
+}                                                             
+
+int8_t ker_sys_timer_stop(uint8_t tid)              
+{                                                             
+  HAS_ATOMIC_PREEMPTION_SECTION;
+  sos_pid_t my_id = ker_get_current_pid();                  
+  
+  ATOMIC_DISABLE_PREEMPTION();
+  ker_timer_stop(my_id, tid);
+  ker_timer_release(my_id, tid);
+  ATOMIC_ENABLE_PREEMPTION();
+  return SOS_OK;                                            
+}                   	
+#else
 int8_t ker_sys_timer_start(uint8_t tid, int32_t interval, uint8_t type)
 {                                                             
 	sos_pid_t my_id = ker_get_current_pid();                  
@@ -703,7 +743,7 @@ int8_t ker_sys_timer_start(uint8_t tid, int32_t interval, uint8_t type)
 		return ker_mod_panic(my_id);                                 
 	}                                                         
 	return SOS_OK;                                            
-}                                                             
+}
 
 int8_t ker_sys_timer_restart(uint8_t tid, int32_t interval)       
 {                                                             
@@ -722,6 +762,7 @@ int8_t ker_sys_timer_stop(uint8_t tid)
 	ker_timer_release(my_id, tid);
 	return SOS_OK;                                            
 }                   	
+#endif
 
 #ifndef SOS_USE_PREEMPTION
 // called from scheduler
@@ -897,9 +938,7 @@ static uint16_t timer_update_realtime_clock(uint8_t cnt)
 timer_interrupt()
 {
 #ifdef SOS_USE_PREEMPTION
-  HAS_CRITICAL_SECTION;
   HAS_PREEMPTION_SECTION;
-  // disable preemption
   DISABLE_PREEMPTION();
   uint8_t cnt = timer_getInterval();
 
@@ -963,18 +1002,13 @@ timer_interrupt()
   if(list_empty(&deltaq) == false) {
 	sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);
 	int32_t hw_cnt;
-	ENTER_CRITICAL_SECTION();
 	hw_cnt = -(timer_hardware_get_counter());
 	if( h->delta - hw_cnt > 0) {
-	  LEAVE_CRITICAL_SECTION();
 	  timer_set_hw_top(h->delta - hw_cnt, true);
 	} else {
-	  LEAVE_CRITICAL_SECTION();
 	}
   } else {
-	ENTER_CRITICAL_SECTION();
 	timer_set_hw_top(MAX_SLEEP_INTERVAL, false);
-	LEAVE_CRITICAL_SECTION();
   }
 
   // enable interrupts because 

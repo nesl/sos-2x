@@ -203,6 +203,10 @@ uint8_t *uart_getRecievedData(void) {
 /* ISR for transmittion */
 #ifndef DISABLE_UART
 uart_send_interrupt() {
+#ifdef SOS_USE_PREEMPTION
+	HAS_PREEMPTION_SECTION;
+	DISABLE_PREEMPTION();
+#endif
 	SOS_MEASUREMENT_IDLE_END();
 	LED_DBG(LED_GREEN_TOGGLE);
 
@@ -301,6 +305,14 @@ uart_send_interrupt() {
 	}
 	//DEBUG("end uart_send_interrupt %d %d %d\n", state[TX].state, state[TX].msg_state,
 	//		state[TX].hdlc_state);
+
+#ifdef SOS_USE_PREEMPTION
+  // enable interrupts because 
+  // enabling preemption can cause one to occur
+  ENABLE_GLOBAL_INTERRUPTS();
+  // enable preemption
+  ENABLE_PREEMPTION();
+#endif
 }
 
 /*
@@ -335,6 +347,10 @@ static inline void uart_reset_recv() {
  * This is the writer of rx_queue.
  */
 uart_recv_interrupt() {
+#ifdef SOS_USE_PREEMPTION
+	HAS_PREEMPTION_SECTION;
+	DISABLE_PREEMPTION();
+#endif
 	
 	uint8_t err;
 	uint8_t byte_in;
@@ -556,6 +572,14 @@ uart_recv_interrupt() {
 				uart_reset_recv();
 				break;
 	} // state[RX].state
+
+#ifdef SOS_USE_PREEMPTION
+  // enable interrupts because 
+  // enabling preemption can cause one to occur
+  ENABLE_GLOBAL_INTERRUPTS();
+  // enable preemption
+  ENABLE_PREEMPTION();
+#endif
 }
 #else
 uart_send_interrupt() {

@@ -467,6 +467,11 @@ void _MacRecvAck(uint8_t ack_seq)
  *************************************************************************/
 void _MacRecvCallBack(int16_t timestamp)
 {
+#ifdef SOS_USE_PREEMPTION
+  HAS_PREEMPTION_SECTION;
+  // disable preemption
+  DISABLE_PREEMPTION();
+#endif
 	VMAC_PPDU ppdu;
 	vhal_data vd;
 
@@ -520,6 +525,11 @@ void _MacRecvCallBack(int16_t timestamp)
 	}
 	timestamp_incoming(msg, ker_systime32());
 	handle_incoming_msg(msg, SOS_MSG_RADIO_IO);
+
+#ifdef SOS_USE_PREEMPTION
+	ENABLE_GLOBAL_INTERRUPTS();
+	ENABLE_PREEMPTION();
+#endif
 }
 
 /*************************************************************************

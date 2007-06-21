@@ -1119,16 +1119,27 @@ static inline bool sched_message_filtered(sos_module_t *h, Message *m)
 
 void sched(void)
 {
-#ifdef SOS_USE_PREEMPTION
 	ENABLE_GLOBAL_INTERRUPTS();
 
 	ker_log_start();
-	for(;;) {
+	for(;;){
 		SOS_MEASUREMENT_IDLE_END();
-
+#ifdef SOS_USE_PREEMPTION
 		// Send the msgs on the queue
 		if(schedpq.head != NULL) {
 			do_dispatch(mq_dequeue(&schedpq));
+#else
+	DISABLE_GLOBAL_INTERRUPTS();
+	
+	if (int_ready != 0) {
+		ENABLE_GLOBAL_INTERRUPTS();
+		if (true == sched_stalled) continue;
+		handle_callback();
+	} else if( schedpq.msg_cnt != 0 ) {
+		ENABLE_GLOBAL_INTERRUPTS();
+		if (true == sched_stalled) continue;
+		do_dispatch();
+#endif
 		}
 		else {
 			SOS_MEASUREMENT_IDLE_START();
@@ -1138,33 +1149,6 @@ void sched(void)
 		}
 		watchdog_reset();
 	}
-#else
-	ENABLE_GLOBAL_INTERRUPTS();
-
-	ker_log_start();
-	for(;;){
-		SOS_MEASUREMENT_IDLE_END();
-		DISABLE_GLOBAL_INTERRUPTS();
-
-		if (int_ready != 0) {
-			ENABLE_GLOBAL_INTERRUPTS();
-			if (true == sched_stalled) continue;
-			handle_callback();
-		} else if( schedpq.msg_cnt != 0 ) {
-			ENABLE_GLOBAL_INTERRUPTS();
-			if (true == sched_stalled) continue;
-			do_dispatch();
-		} else {
-			SOS_MEASUREMENT_IDLE_START();
-			/**
-			 * ENABLE_INTERRUPT() is done inside atomic_hardware_sleep()
-			 */
-			ker_log_flush();
-			atomic_hardware_sleep();
-		}
-		watchdog_reset();
-	}
-#endif
 }
 
 
