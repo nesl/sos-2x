@@ -50,7 +50,7 @@ int8_t par_sensor_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, ui
 	switch(port) {
 		case PAR_SID:
       SYS_LED_DBG(LED_RED_TOGGLE);
-			ker_sensor_data_ready(PAR_SID, value, flags);
+			sys_sensor_data_ready(PAR_SID, value, flags);
 			break;
 		default:
 			return -EINVAL;
@@ -100,14 +100,14 @@ int8_t par_sensor_msg_handler(void *state, Message *msg)
 
 		  sys_adc_bind_port(PAR_SID, PAR_HW_CH, LITEPOT_PID,  SENSOR_DATA_READY_FID);
 			// register with kernel sensor interface
-			ker_sensor_register(LITEPOT_PID, PAR_SID, SENSOR_CONTROL_FID, (void*)(&s->state));
+			sys_sensor_register(LITEPOT_PID, PAR_SID, SENSOR_CONTROL_FID, (void*)(&s->state));
 			break;
 
 		case MSG_FINAL:
 			//  unregister ADC port
 			sys_adc_unbind_port(LITEPOT_PID, PAR_SID);
 			// unregister sensor
-			ker_sensor_deregister(LITEPOT_PID, PAR_SID);
+			sys_sensor_deregister(LITEPOT_PID, PAR_SID);
 			break;
 
 		default:

@@ -62,6 +62,11 @@ sos_pid_t ker_get_current_pid( void );
 sos_pid_t ker_get_caller_pid( void );
 int8_t ker_sys_routing_register( uint8_t fid );
 
+
+int8_t ker_sys_sensor_register( sos_pid_t calling_id, uint8_t sensor_id, uint8_t sensor_fid, void *ctx);
+int8_t ker_sys_sensor_deregister( sos_pid_t calling_id, uint8_t sensor_id);
+int8_t ker_sys_sensor_data_ready(uint8_t sensor_id, uint16_t sensor_data, uint8_t status);
+
 #ifdef SOS_SIM
 #ifdef _MODULE_
 #include <hardware_types.h>
@@ -972,6 +977,139 @@ static inline int8_t sys_routing_register( uint8_t fid )
 	return ker_sys_routing_register( fid );
 #endif
 }
+
+/**
+ * \ingroup sensor_api
+ * \defgroup 
+ * @{
+ */
+/// \cond NOTYPEDEF
+typedef int8_t (* sys_sensor_register_func_t)(sos_pid_t calling_id, uint8_t sensor_id, uint8_t sensor_fid, void *ctx);
+/// \endcond
+
+/**
+ * Register a sensor.
+ *
+ * \param calling_id   
+ * \param sensor_id
+ * \param sensor_fid
+ * \param ctx
+ * \return SOS_OK      If registration was successful
+ */
+static inline int8_t sys_sensor_register(sos_pid_t calling_id, uint8_t sensor_id, uint8_t sensor_fid, void *ctx)
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_sensor_register_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*34))(calling_id, sensor_id, sensor_fid, ctx);
+#else
+  return ker_sys_sensor_register(calling_id, sensor_id, sensor_fid, ctx);
+#endif
+}
+/* @} */
+
+/**
+ * \ingroup sensor_api
+ * \defgroup 
+ * @{
+ */
+/// \cond NOTYPEDEF
+typedef int8_t (* sys_sensor_deregister_func_t)(sos_pid_t calling_id, uint8_t sensor_id);
+/// \endcond
+
+/**
+ * Deregister a sensor.
+ *
+ * \param calling_id   
+ * \param sensor_id
+ * \return SOS_OK      If registration was successful
+ */
+static inline int8_t sys_sensor_deregister(sos_pid_t calling_id, uint8_t sensor_id)
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_sensor_deregister_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*35))(calling_id, sensor_id);
+#else
+  return ker_sys_sensor_deregister(calling_id, sensor_id);
+#endif
+}
+/* @} */
+
+/**
+ * \ingroup sensor_api
+ * \defgroup 
+ * @{
+ */
+/// \cond NOTYPEDEF
+typedef int8_t (* sys_sensor_data_ready_func_t)(uint8_t sensor_id, uint16_t sensor_data, uint8_t status);
+/// \endcond
+
+/**
+ * The data ready message to the application
+ *
+ * \param sensor_id
+ * \return SOS_OK      
+ */
+static inline int8_t sys_sensor_data_ready(uint8_t sensor_id, uint16_t sensor_data, uint8_t status)
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_sensor_data_ready_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*36))(sensor_id, sensor_data, status);
+#else
+  return ker_sys_sensor_data_ready( sensor_id, sensor_data, status);
+#endif
+}
+/* @} */
+
+
+
+/**
+ * \ingroup sensor_api
+ * \defgroup 
+ * @{
+ */
+/// \cond NOTYPEDEF
+typedef int8_t (* sys_sensor_enable_func_t)(uint8_t sensor_id);
+/// \endcond
+
+/**
+ * Enable the sensor.
+ *
+ * \param sensor_id
+ * \return SOS_OK      
+ */
+static inline int8_t sys_sensor_enable(uint8_t sensor_id)
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_sensor_enable_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*37))(sensor_id);
+#else
+  return ker_sys_sensor_enable(sensor_id);
+#endif
+}
+/* @} */
+
+/**
+ * \ingroup sensor_api
+ * \defgroup 
+ * @{
+ */
+/// \cond NOTYPEDEF
+typedef int8_t (* sys_sensor_disable_func_t)(uint8_t sensor_id);
+/// \endcond
+
+/**
+ * Disable the sensor.
+ *
+ * \param sensor_id
+ * \return SOS_OK      
+ */
+static inline int8_t sys_sensor_disable(uint8_t sensor_id)
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_sensor_disable_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*38))(sensor_id);
+#else
+  return ker_sys_sensor_disable(sensor_id);
+#endif
+}
+/* @} */
+
+
 
 
 #endif

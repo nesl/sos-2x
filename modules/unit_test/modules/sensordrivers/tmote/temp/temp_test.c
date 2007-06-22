@@ -1,7 +1,6 @@
 /* -*- Mode: C; tab-width:2 -*- */
 /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
 
-#include <module.h>
 #include <sys_module.h>
 #include <string.h>
 
@@ -55,14 +54,14 @@ static int8_t temp_test_msg_handler(void *state, Message *msg)
 			s->state = TEMP_TEST_APP_INIT;
 			s->pid = msg->did;
 			sys_timer_start(TEMP_TEST_APP_TID, TEMP_TEST_APP_INTERVAL, TIMER_REPEAT);
-			if(ker_sensor_enable(s->pid, TEMP_SID) != SOS_OK) {
+			if(sys_sensor_enable(TEMP_SID) != SOS_OK) {
 				SYS_LED_DBG(LED_RED_ON);
 				sys_timer_stop(TEMP_TEST_APP_TID);
 			}
 			break;
 
 		case MSG_FINAL:
-			ker_sensor_disable(s->pid, TEMP_SID);
+			sys_sensor_disable( TEMP_SID);
 			sys_timer_stop(TEMP_TEST_APP_TID);
 			break;
 
@@ -81,7 +80,7 @@ static int8_t temp_test_msg_handler(void *state, Message *msg)
 
 					case TEMP_TEST_APP_TEMP:
 						s->state = TEMP_TEST_APP_TEMP_BUSY;
-						ker_sensor_get_data(s->pid, TEMP_SID);
+						sys_sensor_get_data( TEMP_SID);
 						break;
 
 					case TEMP_TEST_APP_TEMP_BUSY:
@@ -103,6 +102,7 @@ static int8_t temp_test_msg_handler(void *state, Message *msg)
 
 				data_msg = sys_malloc ( sizeof(MsgParam));
 				if ( data_msg ) {
+          SYS_LED_DBG(LED_RED_TOGGLE);
 					memcpy((void*)data_msg, (void*)msg->data, sizeof(MsgParam));
 
 					post_uart ( s->pid,

@@ -1,7 +1,6 @@
 /* -*- Mode: C; tab-width:2 -*- */
 /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
 
-#include <module.h>
 #include <sys_module.h>
 #include <string.h>
 
@@ -55,14 +54,14 @@ static int8_t tsr_test_msg_handler(void *state, Message *msg)
 			s->state = TSR_TEST_APP_INIT;
 			s->pid = msg->did;
 			sys_timer_start(TSR_TEST_APP_TID, TSR_TEST_APP_INTERVAL, TIMER_REPEAT);
-			if(ker_sensor_enable(s->pid, TSR_SID) != SOS_OK) {
+			if(sys_sensor_enable(TSR_SID) != SOS_OK) {
 				SYS_LED_DBG(LED_RED_ON);
 				sys_timer_stop(TSR_TEST_APP_TID);
 			}
 			break;
 
 		case MSG_FINAL:
-			ker_sensor_disable(s->pid, TSR_SID);
+			sys_sensor_disable(TSR_SID);
 			sys_timer_stop(TSR_TEST_APP_TID);
 			break;
 
@@ -81,7 +80,7 @@ static int8_t tsr_test_msg_handler(void *state, Message *msg)
 
 					case TSR_TEST_APP_TSR:
 						s->state = TSR_TEST_APP_TSR_BUSY;
-						ker_sensor_get_data(s->pid, TSR_SID);
+						sys_sensor_get_data( TSR_SID);
 						break;
 
 					case TSR_TEST_APP_TSR_BUSY:

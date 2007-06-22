@@ -49,7 +49,7 @@ int8_t temp_sensor_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, u
 	// post data ready message here
 	switch(port) {
 		case TEMP_SID:
-			ker_sensor_data_ready(TEMP_SID, value, flags);
+			sys_sensor_data_ready(TEMP_SID, value, flags);
 			break;
 		default:
 			return -EINVAL;
@@ -99,14 +99,14 @@ int8_t temp_sensor_msg_handler(void *state, Message *msg)
 
 		  sys_adc_bind_port(TEMP_SID, TEMP_HW_CH, TEMP_SENSOR_PID,  SENSOR_DATA_READY_FID);
 			// register with kernel sensor interface
-			ker_sensor_register(TEMP_SENSOR_PID, TEMP_SID, SENSOR_CONTROL_FID, (void*)(&s->state));
+			sys_sensor_register(TEMP_SENSOR_PID, TEMP_SID, SENSOR_CONTROL_FID, (void*)(&s->state));
 			break;
 
 		case MSG_FINAL:
 			//  unregister ADC port
 			sys_adc_unbind_port(TEMP_SENSOR_PID, TEMP_SID);
 			// unregister sensor
-			ker_sensor_deregister(TEMP_SENSOR_PID, TEMP_SID);
+			sys_sensor_deregister(TEMP_SENSOR_PID, TEMP_SID);
 			break;
 
 		default:

@@ -50,7 +50,7 @@ int8_t tsr_sensor_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, ui
 	switch(port) {
 		case TSR_SID:
       SYS_LED_DBG(LED_RED_TOGGLE);
-			ker_sensor_data_ready(TSR_SID, value, flags);
+			sys_sensor_data_ready(TSR_SID, value, flags);
 			break;
 		default:
 			return -EINVAL;
@@ -100,14 +100,14 @@ int8_t tsr_sensor_msg_handler(void *state, Message *msg)
 
 		  sys_adc_bind_port(TSR_SID, TSR_HW_CH, PHOTOTEMP_SENSOR_PID,  SENSOR_DATA_READY_FID);
 			// register with kernel sensor interface
-			ker_sensor_register(PHOTOTEMP_SENSOR_PID, TSR_SID, SENSOR_CONTROL_FID, (void*)(&s->state));
+			sys_sensor_register(PHOTOTEMP_SENSOR_PID, TSR_SID, SENSOR_CONTROL_FID, (void*)(&s->state));
 			break;
 
 		case MSG_FINAL:
 			//  unregister ADC port
 			sys_adc_unbind_port(PHOTOTEMP_SENSOR_PID, TSR_SID);
 			// unregister sensor
-			ker_sensor_deregister(PHOTOTEMP_SENSOR_PID, TSR_SID);
+			sys_sensor_deregister(PHOTOTEMP_SENSOR_PID, TSR_SID);
 			break;
 
 		default:

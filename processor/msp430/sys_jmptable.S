@@ -36,6 +36,11 @@ br #ker_sys_routing_register    ; 30
 br #ker_adc_proc_bindPort 
 br #ker_adc_proc_unbindPort		; 32
 br #ker_adc_proc_getData
-br 0
+br #ker_sensor_register         ; 34
+br #ker_sensor_deregister
+br #ker_sensor_data_ready       ; 36
+br #ker_sys_sensor_enable
+br #ker_sys_sensor_disable     ;38
+;br 0
 ;br #ker_adc_proc_getPeriodicData	; 34
 ;br #ker_adc_proc_stopPeriodicData

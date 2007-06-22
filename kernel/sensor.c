@@ -272,6 +272,14 @@ int8_t ker_sensor_enable(sos_pid_t calling_id, uint8_t sensor_id)
   return SOS_OK;
 }
 
+int8_t ker_sys_sensor_enable( uint8_t sensor_id )
+{
+	//int8_t ret;
+	sos_pid_t calling_id = ker_get_current_pid();
+
+	return ker_sensor_enable( calling_id, sensor_id );
+}
+
 
 /**
  * @brief disable the sensor
@@ -291,6 +299,14 @@ int8_t ker_sensor_disable(sos_pid_t calling_id, uint8_t sensor_id)
 	st[sensor_id].client_pid = NULL_PID;
 
   return SOS_OK;
+}
+
+int8_t ker_sys_sensor_disable( uint8_t sensor_id )
+{
+	//int8_t ret;
+	sos_pid_t calling_id = ker_get_current_pid();
+
+	return ker_sensor_disable( calling_id, sensor_id );
 }
 
 
