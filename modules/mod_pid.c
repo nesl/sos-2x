@@ -29,7 +29,7 @@ char mod_pid_name[][256] = {
 	"I2C Packet       ",           // 152
 	"Viz 0 Packet     ",           // 153
 	"Viz 1 Packet     ",           // 154
-	"Temperature      ",           // 155
+	"Acceleration     ",           // 155
 	"Camera Driver    ",           // 156
 	"Blink Module     ",           // 157
 	"MicaWB Serial Sw ",           // 158
@@ -41,4 +41,5 @@ char mod_pid_name[][256] = {
 	"UBMAC Module     ",           // 164
 	"DVM Module       ",           // 165
 	"ADC Sensor       ",           // 166
+    "Temperature      ",           // 167
 };

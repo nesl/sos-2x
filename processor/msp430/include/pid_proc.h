@@ -17,9 +17,10 @@
  */
 enum{
   /* 65 */  UART_PID = (DEV_MOD_MIN_PID + 1), //! UART Driver
+  /* 66 */  ADC_PROC_PID = (DEV_MOD_MIN_PID + 2), //! ADC Driver
 };
 //Note :- Please update the PROC_MAX_PID
 
-#define PROC_MAX_PID        (DEV_MOD_MIN_PID + 1)
+#define PROC_MAX_PID        (DEV_MOD_MIN_PID + 2)
 
 #endif  // _PID_PROC_H

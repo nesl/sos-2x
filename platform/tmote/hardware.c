@@ -97,7 +97,7 @@ void hardware_init(void){
 	// Currently there is no I2C support
 
   // ADC
-  // Currently there is no support
+  adc_proc_init();
 
   // Ram - I dont know which flash this is ?
   //  init_flash();

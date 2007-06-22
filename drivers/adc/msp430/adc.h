@@ -8,8 +8,8 @@
  */
 
 
-#ifndef __ADC_H__
-#define __ADC_H__
+#ifndef __ADC_MSP_H__
+#define __ADC_MSP_H__
 // we source SMCLK which is set to 1MHz in SOS
 #define CPU_CLOCK 1000000
 

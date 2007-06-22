@@ -97,7 +97,7 @@ enum {
   //! 154 - Viz Packet for visualization
   VIZ_PID_1  =  (APP_MOD_MIN_PID + 26),
 
-  //! 155 - Temperate Sensor
+  //! 155 - Accelerometer Sensor
   ACCEL_SENSOR_PID = (APP_MOD_MIN_PID + 27),
 
   //! 156 - Camera Driver Module
@@ -132,6 +132,9 @@ enum {
 
   //! 166 - ADS7828 ADC on mda300
   ADS7828_SENSOR_PID = (APP_MOD_MIN_PID + 38),
+
+  //! 167 - Temperature Sensor
+  TEMP_SENSOR_PID = (APP_MOD_MIN_PID + 39),
 
 //! PLEASE add the name to modules/mod_pid.c
 };

@@ -33,4 +33,9 @@ br #ker_sys_shm_stopwait
 br #ker_get_current_pid    ; 28
 br #ker_get_caller_pid 
 br #ker_sys_routing_register    ; 30
-br 0 
+br #ker_adc_proc_bindPort 
+br #ker_adc_proc_unbindPort		; 32
+br #ker_adc_proc_getData
+br 0
+;br #ker_adc_proc_getPeriodicData	; 34
+;br #ker_adc_proc_stopPeriodicData

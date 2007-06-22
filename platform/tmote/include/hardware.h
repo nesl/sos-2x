@@ -25,6 +25,7 @@
 //#include <cc2420_hal.h>
 #include <vhal.h>
 #include <vmac.h>
+#include <adc_proc.h>
 
 /**
  * @brief initialize hardware
