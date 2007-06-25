@@ -105,7 +105,7 @@ static int8_t temp_test_msg_handler(void *state, Message *msg)
           SYS_LED_DBG(LED_RED_TOGGLE);
 					memcpy((void*)data_msg, (void*)msg->data, sizeof(MsgParam));
 
-					post_uart ( s->pid,
+					sys_post_uart ( s->pid,
 							s->pid,
 							MSG_DATA_READY,
 							sizeof(MsgParam),

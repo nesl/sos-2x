@@ -104,7 +104,7 @@ static int8_t par_test_msg_handler(void *state, Message *msg)
 				if ( data_msg ) {
 					memcpy((void*)data_msg, (void*)msg->data, sizeof(MsgParam));
 
-					post_uart ( s->pid,
+					sys_post_uart (
 							s->pid,
 							MSG_DATA_READY,
 							sizeof(MsgParam),
