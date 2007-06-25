@@ -105,7 +105,6 @@ static int8_t tsr_test_msg_handler(void *state, Message *msg)
 					memcpy((void*)data_msg, (void*)msg->data, sizeof(MsgParam));
 
 					sys_post_uart ( s->pid,
-							s->pid,
 							MSG_DATA_READY,
 						  sizeof(MsgParam),
 							data_msg,

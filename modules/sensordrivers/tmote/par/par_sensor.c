@@ -98,7 +98,9 @@ int8_t par_sensor_msg_handler(void *state, Message *msg)
 		case MSG_INIT:
 			// bind adc channel and register callback pointer
 
-		  sys_adc_bind_port(PAR_SID, PAR_HW_CH, LITEPOT_PID,  SENSOR_DATA_READY_FID);
+		  if(sys_adc_bind_port(PAR_SID, PAR_HW_CH, LITEPOT_PID,  SENSOR_DATA_READY_FID) != SOS_OK){
+        LED_DBG(LED_RED_TOGGLE);
+      }
 			// register with kernel sensor interface
 			sys_sensor_register(LITEPOT_PID, PAR_SID, SENSOR_CONTROL_FID, (void*)(&s->state));
 			break;

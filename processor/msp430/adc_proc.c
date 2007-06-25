@@ -175,8 +175,8 @@ int8_t ker_adc_proc_bindPort(uint8_t port, uint8_t adcPort, sos_pid_t calling_id
     ADC12IFG = 0; // clear any pending interrupts
 	}
   // configure ADC pin
-  if (adcPort < 7){
-    // external ADC ping, enable it
+  if (adcPort <= 7){
+    // external ADC pin, enable it
     P6SEL |= (1 << adcPort); // adc function (instead of general IO)
     P6DIR &= ~(1 << adcPort); // input (instead of output
   }
@@ -194,7 +194,7 @@ int8_t ker_adc_proc_unbindPort(uint8_t port, sos_pid_t pid) {
 	}
 
 	ENTER_CRITICAL_SECTION();
-  if(s.portmap[port] < 7){
+  if(s.portmap[port] <= 7){
     P6SEL &= ~(1 << s.portmap[port]);
     P6DIR |= (1 << s.portmap[port]);
   }
@@ -237,8 +237,8 @@ int8_t ker_adc_proc_getData(uint8_t port, uint8_t flags) {
 			s.calling_flags = flags;
       ADC12CTL0 = SHT0_8 + REFON + ADC12ON;
       ADC12CTL1 = CONSEQ_0 | SHP; // single channle, single conversion 
-			//ADC12MCTL0 = (SREF_1 + s.portmap[port]); //select Vcc ref + port
-			ADC12MCTL0 = (SREF_1 + INCH_10); //select Vcc ref + port
+			ADC12MCTL0 = (SREF_1 + s.portmap[port]); //select Vcc ref + port
+			//ADC12MCTL0 = (SREF_1 + INCH_10); //select Vcc ref + port
       ADC12IE = 0x001; // enable interrupt for mem location 0
       ADC12CTL0 |= ENC + ADC12SC; // start conversion
 			break;
