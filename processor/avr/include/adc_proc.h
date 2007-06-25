@@ -35,7 +35,7 @@
 #if defined(_SOS_KERNEL_)
 #include <sos.h>
 #else
-#include <sys_module.h>
+#include <module.h>
 #endif
 #include <adc_cb.h>
 
