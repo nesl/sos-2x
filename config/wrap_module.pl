@@ -28,7 +28,7 @@ my($cfile) = "module_test_app.c";
 my($rootdir);
 $rootdir = "../.." unless ( $rootdir = $ENV{"SOSROOT"});
 
-my(@searchdirs) = ( "$rootdir/modules/" );
+my(@searchdirs) = ( "$rootdir/modules/" , "$rootdir/extensions/");
 
 # append user defined 
 my($modpath) = $ENV{"SOSMODPATH"};
