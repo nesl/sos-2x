@@ -105,7 +105,7 @@ print MK_FILE "SRCS += ";
 foreach $module (@module_names) {
   print MK_FILE "$module.c ";
 }
-print MK_FILE "\n\ninclude ../Makerules\n\n";
+print MK_FILE "\n\ninclude \$(SOSROOT)/config/Makerules\n\n";
 
 foreach $module (@module_names) {
   print MK_FILE "vpath ${module}.c $moddirs{$module}\/\n";
