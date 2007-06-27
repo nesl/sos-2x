@@ -43,9 +43,6 @@
  */
 #include "hardware.h"
 #include <flash.h>
-#include <kertable.h>
-#include <kertable_proc.h>
-#include <kertable_plat.h>
 
 #define LED_DEBUG
 #include <led_dbg.h>
@@ -77,30 +74,6 @@
 //  GLOBAL DATA 
 //----------------------------------------------------------------------------
 static uint8_t reset_flag NOINIT_VAR;
-/**
- * @brief Kernel jump table
- * The table entries are defined in kertable.h
- */
-
-#ifdef SOS_SFI
-PGM_VOID_P ker_jumptable[128] PROGMEM = SOS_SFI_KER_TABLE;
-#else
-/** Append any processor or platform specific kernel tables */
-#if defined(PROC_KER_TABLE) && defined(PLAT_KER_TABLE)
-PGM_VOID_P ker_jumptable[128] PROGMEM =
-SOS_KER_TABLE( CONCAT_TABLES(PROC_KER_TABLE , PLAT_KER_TABLE) );
-#elif defined(PROC_KER_TABLE)
-PGM_VOID_P ker_jumptable[128] PROGMEM =
-SOS_KER_TABLE(PROC_KER_TABLE);
-#elif defined(PLAT_KER_TABLE)
-PGM_VOID_P ker_jumptable[128] PROGMEM =
-SOS_KER_TABLE(PLAT_KER_TABLE);
-#else
-PGM_VOID_P ker_jumptable[128] PROGMEM =
-SOS_KER_TABLE(NULL);
-#endif
-#endif//SOS_SFI
-
 
 //-------------------------------------------------------------------------
 // FUNCTION DECLARATION
