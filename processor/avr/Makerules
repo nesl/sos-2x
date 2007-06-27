@@ -103,7 +103,3 @@ sfi_jumptable_proc.S:
 
 avr: $(PROJ).elf $(PROJ).elf.lst $(PROJ).srec $(OBJS) 
 
-ifeq ($(BUILD),_SOS_KERNEL_)
-	$(ROOTDIR)/tools/utils/verify_avr_image.pl $(PROJ).elf 
-endif
-
