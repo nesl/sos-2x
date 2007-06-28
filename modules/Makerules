@@ -71,7 +71,7 @@ endif
 endif
 
 ##################################################
-# MEMORY PROTECTION
+# PREEMPTION OPTIONS
 #################################################
 ifeq ($(MODE), preemption)
 DEFS += -DSOS_USE_PREEMPTION
