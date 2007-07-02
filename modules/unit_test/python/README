@@ -1,0 +1,52 @@
+test_suite.py:
+
+this is a test suite to help automate the testing of various sos drivers, and possibly even the kernel's functionality.  It is capable of running tests on: micaz boards, micaz boards, or an avrora simulation.  The basic operations are to install a blank kernel on the desired target, start the sossrv, and install the needed drivers for a test and an associated python test script that will verify any output.
+
+to use the test_suite:
+
+first, config.sys will need to be modified according to your systems setup.
+the things which might need to be modified are:
+1) enviroment variables
+  -  variables such as SOSROOT, SOSTOOLDIR, HOME, and SOSTESTDIR which specifies where the unit test files are located.
+     if not specified each of these have defaults as such 
+     -  SOSROOT = $HOME/sos-2x/trunk
+     -  SOSTOOLDIR = $HOME/local
+     -  HOME = /home/test
+     -  SOSTESTDIR = $SOSROOT/modules/unit_test/modules
+
+2) settings for the nodes.  
+  -  this is to automate the installation of a blank kernel.
+  -  the important things to specify are:
+     - PROG, the programming board such as mib510
+     - install_port, the port which the programmer is listening on. for example, /dev/ttyUSB0
+     - listen_port, the port which the sossrv will be listening on. for example, /dev/ttyUSB1
+     - SOS_GROUP, the group id you which to nodes to have
+
+
+next a set of tests needs to be specified.  To do this you will be modifying test.lst.
+
+each test has a very specific format of 5 lines.
+example layout for a test:
+
+    #test0:
+    accel_sensor
+    /modules/sensordrivers/h34c/accel
+    accel_test
+    /sensordrivers/h34c/modules
+
+1) the first line is simply a title for the test, this line should always start with a # (think of it as just a comment in python), the : is not really neccesary but looks nice.
+2) the next line should be the name of the .c file for the driver code.  
+3) the third line will be location driver which you wish to test, in our case it is the h34c accelerometer sensor driver.  This folder needs to include a make file for compilation, and a file wuch as accel_sensor.c which is specified by the previous line.  this folder should be in $SOSROOT.
+4) this line works much like the second line, except it specifies the name of test drivers name.  Both the .c file and .py file should start with this name.  for example there should be a accel_test.c and accel_test.py
+5) the location of the test driver files.  this must include a make file in it, and a python script.  the path you give should be from $SOSTOOLDIR, as specified in config.sys.  so in our case /sensordrivers/h34c/modules is located in $SOSROOT/modules/unit_test/modules/
+
+finally, now that you have set up the configuration, and the tests you want to run, the test_suite is quite easy to use.
+
+to run simply type:
+    python test_suite.py 2
+where the last arguement is either 0, 1, or 2.  this specifies which target you wish to run the target on.
+0 is for micaz
+1 is for mica2
+2 is for avrora
+
+if not specified, the default is for micaz
