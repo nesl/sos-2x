@@ -102,7 +102,7 @@ int sos_msg_dispatcher()
 			65534, 
 			65535); 
   while (1){
-
+    sleep(1);
   }
   return 0;
 }
