@@ -67,6 +67,14 @@ A detailed description of the programming concepts for modules in SOS.
 
 link:module_prog_guide.html[Module Programming Guide]
 
+Adding System Calls
+-------------------
+
+Instructions on how to expose custom system calls from the SOS kernel to
+user modules.
+
+link:add_syscall.html[System Calls]
+
 Other Documentation
 -------------------
 

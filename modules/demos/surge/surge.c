@@ -41,7 +41,6 @@
 
 
 #include <sys_module.h>
-//#include <module.h>
 #include <led_dbg.h>
 #include "surge.h"
 #include <routing/tree_routing/tree_routing.h>
@@ -56,6 +55,12 @@
 // This memory is used by Avrora to collect Surge statistic
 static uint16_t data_node_id;
 #endif
+
+int8_t error_8(func_cb_ptr p) 
+{
+	DEBUG("error_8 is called\n");
+	return -1;
+}	
 
 
 //-------------------------------------------------------------
@@ -123,7 +128,7 @@ int8_t surge_module_handler(void *state, Message *msg)
   case MSG_INIT:
 	{
 	  s->seq_no = 0;
-	  sys_timer_start(SURGE_BACKOFF_TID, ker_rand() % 1024L, TIMER_ONE_SHOT);
+	  sys_timer_start(SURGE_BACKOFF_TID, sys_rand() % 1024L, TIMER_ONE_SHOT);
 	  s->dest_pid = SURGE_MOD_PID;
 	  break;
 	}
@@ -170,7 +175,7 @@ int8_t surge_module_handler(void *state, Message *msg)
 	  s->smsg->type = SURGE_TYPE_SENSORREADING;
 	  s->smsg->reading = ehtons(param->word);
 	  s->smsg->seq_no  = ehtonl(s->seq_no);
-	  s->smsg->originaddr = ehtons(ker_id());
+	  s->smsg->originaddr = ehtons(sys_id());
 	  LED_DBG(LED_YELLOW_TOGGLE);
 	  DEBUG("<SURGE> Send Surge PKT addr = %d, seq = %d, val = %d\n",
 			s->smsg->originaddr,

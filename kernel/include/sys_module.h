@@ -62,10 +62,15 @@ sos_pid_t ker_get_current_pid( void );
 sos_pid_t ker_get_caller_pid( void );
 int8_t ker_sys_routing_register( uint8_t fid );
 
+int8_t ker_adc_proc_bindPort(uint8_t port, uint8_t adcPort, sos_pid_t calling_id, uint8_t cb_fid);
+int8_t ker_adc_proc_unbindPort(uint8_t port, sos_pid_t pid);
+int8_t ker_adc_proc_getData(uint8_t port, uint8_t flags);
 
 int8_t ker_sys_sensor_register( sos_pid_t calling_id, uint8_t sensor_id, uint8_t sensor_fid, void *ctx);
 int8_t ker_sys_sensor_deregister( sos_pid_t calling_id, uint8_t sensor_id);
 int8_t ker_sys_sensor_data_ready(uint8_t sensor_id, uint16_t sensor_data, uint8_t status);
+int8_t ker_sys_sensor_enable( uint8_t sensor_id );
+int8_t ker_sys_sensor_disable( uint8_t sensor_id );
 
 #ifdef SOS_SIM
 #ifdef _MODULE_
@@ -977,6 +982,58 @@ static inline int8_t sys_routing_register( uint8_t fid )
 	return ker_sys_routing_register( fid );
 #endif
 }
+
+
+/**
+ * TODO: Comment this chunk of code.
+ */
+
+typedef int8_t (*ker_adc_proc_bindPort_func_t)
+    (uint8_t port, uint8_t adcPort, sos_pid_t calling_id, uint8_t cb_fid);
+
+static inline int8_t sys_adc_proc_bindPort(uint8_t port, 
+        uint8_t adcPort, sos_pid_t calling_id, uint8_t cb_fid) 
+{
+#ifdef SYS_JUMP_TBL_START
+	return ((ker_adc_proc_bindPort_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*31))( 
+            port, adcPort, calling_id, cb_fid );
+#else
+	return ker_adc_proc_bindPort(port, adcPort, calling_id, cb_fid);
+#endif
+}
+
+
+/**
+ * TODO: Comment this chunk of code.
+ */
+typedef int8_t (*ker_adc_proc_unbindPort_func_t) (uint8_t port, sos_pid_t pid);
+
+static inline int8_t sys_adc_proc_unbindPort(uint8_t port, sos_pid_t calling_id) 
+{
+#ifdef SYS_JUMP_TBL_START
+	return ((ker_adc_proc_unbindPort_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*32))( 
+            port, calling_id);
+#else
+	return ker_adc_proc_unbindPort(port, calling_id);
+#endif
+}
+
+
+/**
+ * TODO: Comment this chunk of code.
+ */
+typedef int8_t (*ker_adc_proc_getData_func_t) (uint8_t port, uint8_t flags);
+
+static inline int8_t sys_adc_proc_getData(uint8_t port, uint8_t flags)
+{
+#ifdef SYS_JUMP_TBL_START
+	return ((ker_adc_proc_getData_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*33))( 
+            port, flags);
+#else
+	return ker_adc_proc_getData(port, flags);
+#endif
+}
+
 
 /**
  * \ingroup sensor_api

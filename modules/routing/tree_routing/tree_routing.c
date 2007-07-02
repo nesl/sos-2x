@@ -34,7 +34,7 @@
  * @brief Port to sos-1.x
  */
 #include <sys_module.h>
-#include <module.h>
+//#include <module.h>
 #include "tree_routing.h"
 #include <routing/neighbor/neighbor.h>
 #define LED_DEBUG

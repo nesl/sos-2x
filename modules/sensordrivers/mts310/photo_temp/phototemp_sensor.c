@@ -1,11 +1,10 @@
 /* -*- Mode: C; tab-width:2 -*- */
 /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
 
-#include <module.h>
 #include <sys_module.h>
 
 #include <sensor.h>
-#include <adc_proc.h>
+//#include <adc_proc.h>
 
 //#define LED_DEBUG
 #include <led_dbg.h>
@@ -92,11 +91,11 @@ int8_t phototemp_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, uin
 	if ((flags & 0xC0) == PHOTO_SENSOR_ID) {
 		LED_DBG(LED_YELLOW_TOGGLE);
 		photo_off();
-		ker_sensor_data_ready(MTS310_PHOTO_SID, value, flags);
+		sys_sensor_data_ready(MTS310_PHOTO_SID, value, flags);
 	} else {
 		LED_DBG(LED_GREEN_TOGGLE);
 		temp_off();
-		ker_sensor_data_ready(MTS310_TEMP_SID, value, flags);
+		sys_sensor_data_ready(MTS310_TEMP_SID, value, flags);
 	}
 	return SOS_OK;
 }
@@ -114,7 +113,7 @@ static int8_t phototemp_control(func_cb_ptr cb, uint8_t cmd, void* data) {
 			} else {
 				temp_on();
 			}
-			return ker_adc_proc_getData(MTS310_PHOTO_SID, (ctx->options & 0xC0));
+			return sys_adc_proc_getData(MTS310_PHOTO_SID, (ctx->options & 0xC0));
 
 		case SENSOR_ENABLE_CMD:
 			if ((ctx->options & 0xC0) == PHOTO_SENSOR_ID) {
@@ -155,13 +154,13 @@ int8_t phototemp_msg_handler(void *state, Message *msg)
 
 		case MSG_INIT:
 			// bind adc channel and register callback pointer
-			ker_adc_proc_bindPort(MTS310_PHOTO_SID, MTS310_PHOTO_HW_CH, PHOTOTEMP_SENSOR_PID, SENSOR_DATA_READY_FID);
+			sys_adc_proc_bindPort(MTS310_PHOTO_SID, MTS310_PHOTO_HW_CH, PHOTOTEMP_SENSOR_PID, SENSOR_DATA_READY_FID);
 
 			// register with kernel sensor interface
 			s->photo_state.options = PHOTO_SENSOR_ID;
-			ker_sensor_register(PHOTOTEMP_SENSOR_PID, MTS310_PHOTO_SID, SENSOR_CONTROL_FID, (void*)(&s->photo_state));
+			sys_sensor_register(PHOTOTEMP_SENSOR_PID, MTS310_PHOTO_SID, SENSOR_CONTROL_FID, (void*)(&s->photo_state));
 			s->temp_state.options = TEMP_SENSOR_ID;
-			ker_sensor_register(PHOTOTEMP_SENSOR_PID, MTS310_TEMP_SID, SENSOR_CONTROL_FID, (void*)(&s->temp_state));
+			sys_sensor_register(PHOTOTEMP_SENSOR_PID, MTS310_TEMP_SID, SENSOR_CONTROL_FID, (void*)(&s->temp_state));
 			break;
 
 		case MSG_FINAL:
@@ -169,10 +168,10 @@ int8_t phototemp_msg_handler(void *state, Message *msg)
 			photo_off();
 			temp_off();
 			//  unregister ADC port
-			ker_adc_proc_unbindPort(PHOTOTEMP_SENSOR_PID, MTS310_PHOTO_SID);
+			sys_adc_proc_unbindPort(PHOTOTEMP_SENSOR_PID, MTS310_PHOTO_SID);
 			// unregister sensor
-			ker_sensor_deregister(PHOTOTEMP_SENSOR_PID, MTS310_PHOTO_SID);
-			ker_sensor_deregister(PHOTOTEMP_SENSOR_PID, MTS310_TEMP_SID);
+			sys_sensor_deregister(PHOTOTEMP_SENSOR_PID, MTS310_PHOTO_SID);
+			sys_sensor_deregister(PHOTOTEMP_SENSOR_PID, MTS310_TEMP_SID);
 			break;
 
 		default:

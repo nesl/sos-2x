@@ -6,7 +6,7 @@
 #define _MTS3XXSB_H_
 
 #ifndef PC_PLATFORM
-#include <hardware.h>
+#include <adc_proc_common.h>
 #include <pin_map.h>
 #endif
 
