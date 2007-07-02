@@ -31,7 +31,7 @@ int catch(Message* msg) {
   } else {
     // first, parse the data into the tree routing header and surge message:
     char tree_routing_header[sizeof(tr_hdr_t)];
-    char surge_message[sizeof(tr_hdr_t)];
+    char surge_message[sizeof(SurgeMsg)];
     for(i=0; i < sizeof(tr_hdr_t); ++i) {
       tree_routing_header[i] = msg->data[i];
     }
@@ -66,12 +66,14 @@ int catch(Message* msg) {
 
     // print the reading:
     if (tr_hdr->originaddr != 1) {
-      sg_msg->reading = ntohs(sg_msg->reading);
+      sg_msg->reading = entohs(sg_msg->reading);
+      sg_msg->originaddr = entohs(sg_msg->originaddr);
+      sg_msg->seq_no = entohl(sg_msg->seq_no);
+
       printf("Reading: %d\n", sg_msg->reading);
     }
     
     printf("Origin address: %d\n", sg_msg->originaddr);
-    sg_msg->seq_no = entohl(sg_msg->seq_no);
     printf("PS Sequence number: %d\n", sg_msg->seq_no);
     
     printf("Message Data: \n");
