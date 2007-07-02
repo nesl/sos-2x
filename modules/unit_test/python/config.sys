@@ -1,0 +1,9 @@
+HOME = /home/keith
+SOSROOT = /sos-2x/trunk
+SOSTOOLDIR = /local
+TESTS = /modules/unit_test/modules
+PROG = mib510
+install_port = /dev/ttyUSB0
+listen_port = /dev/ttyUSB0
+SOS_GROUP = 101
+
