@@ -56,22 +56,17 @@ int catch(Message* msg) {
     printf("Destination Module: %X (==%d)\n", tr_hdr->dst_pid, tr_hdr->dst_pid);
     printf("Parent address: %d\n", tr_hdr->parentaddr);
 
+    // convert the relevant fields to the proper byte ordering:
+    sg_msg->reading = entohs(sg_msg->reading);
+    sg_msg->originaddr = entohs(sg_msg->originaddr);
+    sg_msg->seq_no = entohl(sg_msg->seq_no);
+
     // print the surge message:
     printf("------------------\n");
     printf("Surge message type: %d\n", sg_msg->type);
-    if (sg_msg->type == 7) { //LAME HACK = ILLITERATE
-      printf("Mote working, MDA dysfunctional\n\n");
-      return 0;
-    }
 
     // print the reading:
-    if (tr_hdr->originaddr != 1) {
-      sg_msg->reading = entohs(sg_msg->reading);
-      sg_msg->originaddr = entohs(sg_msg->originaddr);
-      sg_msg->seq_no = entohl(sg_msg->seq_no);
-
-      printf("Reading: %d\n", sg_msg->reading);
-    }
+    printf("Reading: %d\n", sg_msg->reading);
     
     printf("Origin address: %d\n", sg_msg->originaddr);
     printf("PS Sequence number: %d\n", sg_msg->seq_no);
