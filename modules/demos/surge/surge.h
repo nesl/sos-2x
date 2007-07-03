@@ -36,6 +36,7 @@ enum {
 
 //! Surge Message Structure - Modified from the TOS Implementation
 typedef struct SurgeMsg {
+  uint8_t dummy;
   uint8_t type;
   uint16_t reading;
   uint16_t originaddr;

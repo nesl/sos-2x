@@ -46,7 +46,7 @@
 #define DEBUG(...)
 #endif
 //! Maximum types of sensors supported by SOS
-#define MAX_SENSOR_ID  10
+#define MAX_SENSOR_ID  12
 
 /**
  * @brief Private state of the sensor module
@@ -102,6 +102,10 @@ static mod_header_t mod_header SOS_MODULE_HEADER =
 		// sensor 8
 		{error_8, "cCw2", RUNTIME_PID, RUNTIME_FID},
 		// sensor 9
+		{error_8, "cCw2", RUNTIME_PID, RUNTIME_FID},
+		// sensor 10
+		{error_8, "cCw2", RUNTIME_PID, RUNTIME_FID},
+		// sensor 11
 		{error_8, "cCw2", RUNTIME_PID, RUNTIME_FID},
 	},
 };

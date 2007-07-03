@@ -13,10 +13,10 @@
 
 // sensorboard sensor types
 enum {
-	TEMP_SID= 1,
-    PAR_SID = 2,
-    TSR_SID = 3,
-    VCC_SID = 4,
+	TEMP_SID= 10,
+    PAR_SID = 4,
+    TSR_SID = 5,
+    VCC_SID = 11,
 };
 
 #define TEMP_TYPE TEMPERATURE_SENSOR

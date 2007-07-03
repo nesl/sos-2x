@@ -69,8 +69,11 @@
  * @brief led functions
  */
 #if defined(LED_DEBUG) && !defined(NO_LEDS) && !defined(DISABLE_LEDS)
+#ifdef _MODULE_
+#define LED_DBG(cmd)            sys_led(cmd)
+#else
 #define LED_DBG(cmd)			ker_led(cmd)
-#define SYS_LED_DBG(cmd)        sys_led(cmd)
+#endif
 #define led_dbg_red_on()        led_red_on()
 #define led_dbg_green_on()      led_green_on()
 #define led_dbg_yellow_on()     led_yellow_on()
@@ -82,7 +85,6 @@
 #define led_dbg_yellow_toggle() led_yellow_toggle()
 #else
 #define LED_DBG(cmd)
-#define SYS_LED_DBG(cmd)        
 #define led_dbg_red_on()        
 #define led_dbg_green_on()     
 #define led_dbg_yellow_on()   

@@ -49,7 +49,7 @@ int8_t par_sensor_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, ui
 	// post data ready message here
 	switch(port) {
 		case PAR_SID:
-      SYS_LED_DBG(LED_RED_TOGGLE);
+      LED_DBG(LED_RED_TOGGLE);
 			sys_sensor_data_ready(PAR_SID, value, flags);
 			break;
 		default:

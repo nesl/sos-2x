@@ -55,7 +55,7 @@ static int8_t temp_test_msg_handler(void *state, Message *msg)
 			s->pid = msg->did;
 			sys_timer_start(TEMP_TEST_APP_TID, TEMP_TEST_APP_INTERVAL, TIMER_REPEAT);
 			if(sys_sensor_enable(TEMP_SID) != SOS_OK) {
-				SYS_LED_DBG(LED_RED_ON);
+				LED_DBG(LED_RED_ON);
 				sys_timer_stop(TEMP_TEST_APP_TID);
 			}
 			break;
@@ -67,7 +67,7 @@ static int8_t temp_test_msg_handler(void *state, Message *msg)
 
 		case MSG_TIMER_TIMEOUT:
 			{
-				SYS_LED_DBG(LED_YELLOW_TOGGLE);
+				LED_DBG(LED_YELLOW_TOGGLE);
 				switch (s->state) {
 					case TEMP_TEST_APP_INIT:
 						// do any necessary init here
@@ -87,7 +87,7 @@ static int8_t temp_test_msg_handler(void *state, Message *msg)
 						break;
 						
 					default:
-						SYS_LED_DBG(LED_RED_TOGGLE);
+						LED_DBG(LED_RED_TOGGLE);
 						s->state = TEMP_TEST_APP_INIT;
 						break;
 				}
@@ -98,11 +98,11 @@ static int8_t temp_test_msg_handler(void *state, Message *msg)
 			{
 				uint8_t *data_msg;
 
-				SYS_LED_DBG(LED_GREEN_TOGGLE);
+				LED_DBG(LED_GREEN_TOGGLE);
 
 				data_msg = sys_malloc ( sizeof(MsgParam));
 				if ( data_msg ) {
-          SYS_LED_DBG(LED_RED_TOGGLE);
+          LED_DBG(LED_RED_TOGGLE);
 					memcpy((void*)data_msg, (void*)msg->data, sizeof(MsgParam));
 
 					sys_post_uart ( s->pid,
