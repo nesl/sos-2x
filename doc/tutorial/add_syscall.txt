@@ -17,9 +17,9 @@ We will show how to add a 'sys_foo' kernel system call.  The prototype is
 shown below.
 
 [c]
-code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 int8_t sys_foo( int32_t bar );
-code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Implementing a System Call
 --------------------------
@@ -30,8 +30,9 @@ call can use all functions provided in the SOS kernel.  The prototypes of the
 functions can be found at $SOSROOT/kernel/include.
 
 The code below implements 'sys_foo' system call.  
+
 [c]
-code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 int8_t ker_sys_foo( int32_t bar )
 {
 	sos_pid_t calling_pid = ker_get_current_pid();
@@ -41,7 +42,7 @@ int8_t ker_sys_foo( int32_t bar )
 	//
 	return SOS_OK;
 }
-code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 One should note that the name of the function is not 'sys_foo'.  
 This is because 'sys_foo' will be used for providing the interface, 
@@ -71,7 +72,7 @@ Let's use AVR processor as an example.  The jumptable is in
 $SOSROOT/processor/avr/sys_jmptable.S.  Below is part of the file.
 
 [c]
-code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 jmp ker_sys_codemem_read   ; 21
 jmp ker_sys_shm_open       ; 22
 jmp ker_sys_shm_update     ; 23
@@ -80,7 +81,7 @@ jmp ker_sys_shm_get        ; 25
 jmp ker_sys_shm_wait       ; 26
 jmp ker_sys_shm_stopwait   ; 27
 jmp ker_sys_foo            ; 28
-code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 As one can see, adding system call to the jumptable is merely copy and paste.  
 The code is also very readable.  'jmp' refers to the jump instruction on AVR. 
@@ -101,7 +102,7 @@ behavior.  Below shows the implementation of the system call interface.
 
 
 [c]
-code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 typedef int8_t (*sys_foo_func_t)(int32_t bar);
 
 static inline int8_t sys_foo( int32_t bar )
@@ -112,7 +113,7 @@ static inline int8_t sys_foo( int32_t bar )
   return ker_sys_foo( bar );
 #endif  
 }
-code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The implementation can be separated into two parts.  The typedef defines the 
 function pointer type, which allows us to "type-cast" the jumptable address 
@@ -129,7 +130,7 @@ declare the function prototype for the emulated version of system call.  This is
 located around line 30 in the sys_module.h shown below.  
 
 [c]
-code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #ifndef SYS_JUMP_TBL_START
 /// \cond NOTYPEDEF
 void* ker_sys_malloc(uint16_t size);
@@ -138,6 +139,6 @@ void* ker_sys_realloc(void* pntr, uint16_t newSize);
 int8_t ker_sys_foo(int32_t bar);
 /// \endcond                                                    
 #endif
-code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+source~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
