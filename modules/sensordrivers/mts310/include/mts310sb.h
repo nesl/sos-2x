@@ -5,7 +5,7 @@
 #ifndef _MTS310SB_H_
 #define _MTS310SB_H_
 
-#include <mts3XXsb.h>
+#include "mts3XXsb.h"
 
 #ifndef MTS310SB
 #define MTS310SB

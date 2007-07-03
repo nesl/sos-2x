@@ -26,6 +26,8 @@
  * The purpose is to keep func_cb align in 16 bits.
  */
 #include <hardware_proc.h>
+#include <error_type.h>
+
 #define RUNTIME_FID    255
 #define RUNTIME_PID    NULL_PID  // Please make sure this value is 255
 

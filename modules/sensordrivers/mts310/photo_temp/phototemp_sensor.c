@@ -9,7 +9,7 @@
 //#define LED_DEBUG
 #include <led_dbg.h>
 
-#include <mts310sb.h>
+#include <sensordrivers/mts310/include/mts310sb.h>
 
 /**
  * private conguration options for this driver

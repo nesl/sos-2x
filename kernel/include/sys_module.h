@@ -26,6 +26,7 @@
 #include <sos_error_types.h>
 #include <codemem.h>
 #include <sos_shm.h>
+#include <error_type.h>
 
 #ifndef SYS_JUMP_TBL_START
 /// \cond NOTYPEDEF

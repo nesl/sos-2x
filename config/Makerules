@@ -63,20 +63,22 @@ DEFS += -DSFI_DOMS_2
 else
 DEFS += -DSFI_DOMS_8
 endif
-endif
-
-ifeq ($(MODE),)
+else
 SRCS += malloc.c
 endif
 #################################################
 
 ##################################################
-# Preemption On or off
+# Preemption Options
 #################################################
 ifeq ($(MODE), preemption)
 DEFS += -DSOS_USE_PREEMPTION
 SRCS += priority.c
-SRCS += malloc.c
+endif
+ifeq ($(MODE), preemption_profiler)
+DEFS += -DUSE_PREEMPTION_PROFILER
+DEFS += -DSOS_USE_PREEMPTION
+SRCS += priority.c
 endif
 ##################################################
 
@@ -88,6 +90,7 @@ SRCS += sos_list.c sos_info.c
 SRCS += random.c sensor.c timestamp.c
 SRCS += sos_logging.c
 SRCS += sos_shm.c slab.c
+SRCS += error_type.c
 #SRCS += version_sync.c sos_cam.c
 
 # Check if ViRe framework needs to be included.

@@ -76,6 +76,10 @@ endif
 ifeq ($(MODE), preemption)
 DEFS += -DSOS_USE_PREEMPTION
 endif
+ifeq ($(MODE), preemption_profiler)
+DEFS += -DUSE_PREEMPTION_PROFILER
+DEFS += -DSOS_USE_PREEMPTION
+endif
 
 
 #################################################

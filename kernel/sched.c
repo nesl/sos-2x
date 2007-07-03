@@ -1066,6 +1066,9 @@ void sched_msg_alloc(Message *m)
 		// Preempt current module if msg of higher priority and no preemption issues
 		while((schedpq.head != NULL) && (schedpq.head->priority > cur_pri) &&
 					preemption_point(schedpq.head)) {
+#ifdef USE_PREEMPTION_PROFILER
+			preemption_profile(curr_pid);
+#endif
 			do_dispatch(mq_dequeue(&schedpq));
 		}
 		return;
@@ -1075,7 +1078,9 @@ void sched_msg_alloc(Message *m)
 	// and currently executing module and also for preemption issues
 	if (((schedpq.head == NULL) || (m->priority > schedpq.head->priority))
 			&& (m->priority > cur_pri) && preemption_point(m)) {
-		// dispatch this msg now
+#ifdef USE_PREEMPTION_PROFILER
+			preemption_profile(curr_pid);
+#endif
 		do_dispatch(m);
 	}
 	else {
@@ -1084,6 +1089,10 @@ void sched_msg_alloc(Message *m)
 		// Check to continue with cur module or dispatch another msg
 		if((schedpq.head != NULL) && (schedpq.head->priority > cur_pri) && 
 			 preemption_point(schedpq.head)) {
+#ifdef USE_PREEMPTION_PROFILER
+			preemption_profile(curr_pid);
+#endif
+			// ??? Warning potential race condition here
 			Message *msg = mq_dequeue(&schedpq);
 			do_dispatch(msg);
 		}

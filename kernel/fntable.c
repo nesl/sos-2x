@@ -49,6 +49,7 @@
 #include <sos_linker_conf.h>
 #include <fntable_types.h>
 #include <fntable.h>
+#include <error_type.h>
 #ifdef SOS_SFI
 #include <sfi_jumptable.h>
 #endif
@@ -426,35 +427,6 @@ static bool check_proto(uint8_t *proto1, uint8_t *proto2)
 	}
 
 	return false;
-}
-
-void error_v(func_cb_ptr p) 
-{
-	DEBUG("error_v is called\n");
-}
-
-int8_t error_8(func_cb_ptr p) 
-{
-	DEBUG("error_8 is called\n");
-	return -1;
-}	
-
-int16_t error_16(func_cb_ptr p)
-{
-	DEBUG("error_16 is called\n");
-	return -1;
-}
-
-int32_t error_32(func_cb_ptr p)
-{
-	DEBUG("error_32 is called\n");
-	return -1;
-}	
-
-void* error_ptr(func_cb_ptr p)
-{
-	DEBUG("error_ptr is called\n");
-	return NULL;
 }
 
 dummy_func ker_get_func_ptr(func_cb_ptr p, sos_pid_t *prev)

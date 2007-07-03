@@ -48,7 +48,6 @@
 #include <sos_linker_conf.h>
 #include <fntable_types.h>
 
-
 #ifndef _MODULE_
 
 
@@ -119,15 +118,6 @@ void fntable_unfix_address(
 int8_t fntable_link(sos_module_t *m);
 
 void* ker_fntable_get_dfunc_addr(sos_pid_t pub_pid, uint8_t fid);
-
-/**
- * @brief error stub for function subscriber
- */
-extern void error_v(func_cb_ptr);
-extern int8_t error_8(func_cb_ptr);
-extern int16_t error_16(func_cb_ptr);
-extern int32_t error_32(func_cb_ptr);
-extern void* error_ptr(func_cb_ptr);
 
 extern dummy_func ker_get_func_ptr(func_cb_ptr p, sos_pid_t *prev);
 //extern int8_t error_stub(func_cb_ptr proto, ...);

@@ -44,7 +44,7 @@
 #include <led_dbg.h>
 #include "surge.h"
 #include <routing/tree_routing/tree_routing.h>
-#include <mts310sb.h>
+#include <sensordrivers/mts310/include/mts310sb.h>
 
 #ifndef SOS_SURGE_DEBUG
 #undef DEBUG
@@ -55,13 +55,6 @@
 // This memory is used by Avrora to collect Surge statistic
 static uint16_t data_node_id;
 #endif
-
-int8_t error_8(func_cb_ptr p) 
-{
-	DEBUG("error_8 is called\n");
-	return -1;
-}	
-
 
 //-------------------------------------------------------------
 // MODULE STATE
