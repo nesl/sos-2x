@@ -1,6 +1,16 @@
 #include <error_type.h>
 #include <sos_types.h>
 
+//----------------------------------------------------------------------------
+// DEBUG
+#ifdef DBGMODE
+#include <stdio.h>
+#define DEBUG(arg...) printf(arg)
+#else
+#define DEBUG(arg...)
+#endif
+
+
 /**
  * @brief error stub for function subscriber
  */
