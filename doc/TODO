@@ -1,0 +1,11 @@
+Documentation to Write
+======================
+
+This is a compilation of documentation that is currently missing from SOS
+and requested by users.  As requests for documentation appear, add them to
+this list.  Remember to remove from this list the documentation that is
+covered.
+
+-  high-level description of source code layout / modularization in SOS
+
+
