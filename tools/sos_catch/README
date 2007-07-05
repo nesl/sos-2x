@@ -31,6 +31,12 @@ able to find the headers it needs. Finally, recompile sos_catch. Then new
 executable should subscribe your function to all SOS messages. If you only want
 to process a certain type of message, use conditionals in your catch function.
 
+Also included is surge_dump.c. This is an alternate implementation of
+catch_surge.c which writes message information into a file instead of printing
+it to the console. To use it, just change the line in sos_catch.c that includes
+catch_surge.c to include surge_dump.c instead. Feel free to use surge_dump.c as
+a model for writing your own message recording functionality.
+
 TESTING
 -------
 Run the SOS Surge tutorial at:
