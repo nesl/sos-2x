@@ -1,7 +1,6 @@
 /* -*- Mode: C; tab-width:2 -*- */
 /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
 
-#include <module.h>
 #include <sys_module.h>
 #include <string.h>
 
@@ -54,24 +53,28 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 	switch ( msg->type ) {
 
 		case MSG_INIT:
+			sys_led(LED_GREEN_OFF);
+			sys_led(LED_YELLOW_OFF);
+			sys_led(LED_RED_OFF);
+
 			s->state = ACCEL_TEST_APP_INIT;
 			s->pid = msg->did;
-			ker_timer_init(s->pid, ACCEL_TEST_APP_TID, TIMER_REPEAT);
-			ker_timer_start(s->pid, ACCEL_TEST_APP_TID, ACCEL_TEST_APP_INTERVAL);
-			if(ker_sensor_enable(s->pid, MTS310_ACCEL_0_SID) != SOS_OK) {
-				LED_DBG(LED_RED_ON);
-				ker_timer_stop(s->pid, ACCEL_TEST_APP_TID);
+			sys_timer_start(ACCEL_TEST_APP_TID, ACCEL_TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
+			if(sys_sensor_enable(MTS310_ACCEL_0_SID) != SOS_OK) {
+				sys_led(LED_RED_ON);
+				sys_timer_stop(ACCEL_TEST_APP_TID);
 			}
 			break;
 
 		case MSG_FINAL:
-			ker_sensor_disable(s->pid, MTS310_ACCEL_0_SID);
-			ker_timer_stop(s->pid, ACCEL_TEST_APP_TID);
+			sys_sensor_disable(MTS310_ACCEL_0_SID);
+			sys_timer_stop( ACCEL_TEST_APP_TID);
 			break;
 
 		case MSG_TIMER_TIMEOUT:
 			{
-				LED_DBG(LED_YELLOW_TOGGLE);
+				//LED_DBG(LED_YELLOW_TOGGLE);
+			  sys_led(LED_YELLOW_TOGGLE);
 				switch (s->state) {
 					case ACCEL_TEST_APP_INIT:
 						// do any necessary init here
@@ -84,7 +87,7 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 
 					case ACCEL_TEST_APP_ACCEL_0:
 						s->state = ACCEL_TEST_APP_ACCEL_0_BUSY;
-						ker_sensor_get_data(s->pid, MTS310_ACCEL_0_SID);
+						sys_sensor_get_data(MTS310_ACCEL_0_SID);
 						break;
 
 					case ACCEL_TEST_APP_ACCEL_0_BUSY:
@@ -93,7 +96,7 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 						
 					case ACCEL_TEST_APP_ACCEL_1:
 						s->state = ACCEL_TEST_APP_ACCEL_1_BUSY;
-						ker_sensor_get_data(s->pid, MTS310_ACCEL_0_SID);
+						sys_sensor_get_data(MTS310_ACCEL_0_SID);
 						break;
 
 					case ACCEL_TEST_APP_ACCEL_1_BUSY:
@@ -101,7 +104,7 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 						break;
 
 					default:
-						LED_DBG(LED_RED_TOGGLE);
+						sys_led(LED_GREEN_TOGGLE);
 						s->state = ACCEL_TEST_APP_INIT;
 						break;
 				}
@@ -112,13 +115,13 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 			{
 				uint8_t *data_msg;
 
-				LED_DBG(LED_GREEN_TOGGLE);
+				sys_led(LED_GREEN_TOGGLE);
 
 				data_msg = sys_malloc ( UART_MSG_LEN );
 				if ( data_msg ) {
 					memcpy((void*)data_msg, (void*)msg->data, UART_MSG_LEN);
 
-					post_uart ( s->pid,
+					sys_post_uart ( 
 							s->pid,
 							MSG_DATA_READY,
 							UART_MSG_LEN,

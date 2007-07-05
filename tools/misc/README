@@ -1,0 +1,16 @@
+build_tool.py:
+
+build_tool is a simple python program which will build all of the sos modules, tools, and blank kernel.  It attempts to build the modules and kernel for: micaz, mica2, and sim targets.  Any build errors are logged durring execution and later printed out to the screen to help diagnose what the specific problems are.  
+
+To run build_tool, simply go to the directory $SOSROOT/tools/misc, and type:
+
+python build_test.py your_home_directory
+
+where the arguement to build_test is the location of your current home directory.  This arguement must be provided, but most often this will simply be $HOME.  
+
+build_tool might need a short change to the code to work propperly on your system depending on where you placed your sos code, and where you install the required tool chains. By default, build_tool assumes that enviroment variables are set as such: 
+SOSROOT = $HOME/sos-2x/trunk 
+and 
+SOSTOOLDIR = $HOME/local
+
+if you have placed things differently, simply changes lines 53 and 54 to reflect where your folders are located.  

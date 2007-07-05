@@ -50,8 +50,8 @@ import subprocess
 # Assume that this is run from the SOS directory
 #
 def set_environment(home = "/home/test"):
-    os.environ['SOSROOT'] = home + "/svn/sos-2x"
-    os.environ['SOSTOOLDIR'] = home + "/local"
+    os.environ['SOSROOT'] = home + "/sos-2x/trunk"  # this path might need to be modified on a user basis
+    os.environ['SOSTOOLDIR'] = home + "/local"      # as might this path
     os.environ['SOSMSPTOOLDIR'] = os.environ['SOSTOOLDIR']
     os.environ['PATH'] = home + os.environ['SOSTOOLDIR'] + "/bin:" + os.environ['PATH']
     os.chdir(os.environ['SOSROOT'])
@@ -72,7 +72,7 @@ def build_and_log(dir, command="", out="/dev/null", err="/dev/null"):
 # Helper function to clean up the source tree
 #
 def clean(dir):
-    cmd_clean = ["make", "-C", dir]
+    cmd_clean = ["make", "-C", "clean", dir]
     null = open("/dev/null", "w")
     print cmd_clean
     subprocess.call(cmd_clean, stdout=null, stderr=null)
