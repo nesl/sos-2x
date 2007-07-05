@@ -40,6 +40,12 @@ LDFLAGS += -framework IOKit -framework CoreFoundation
 TRG=
 endif
 
+ifeq ($(MAKECMDGOALS), nslu2)
+SRCS += sossrv.c sock_utils.c parsecmd.c dev_serial.c dev_network.c
+CFLAGS += -DBBIG_ENDIAN
+TRG=armeb-linux-
+endif
+
 # OBJECT FILES
 OBJS += $(SRCS:.c=.o)
 
@@ -76,6 +82,9 @@ ppc: $(PROJ).exe
 
 arm: $(PROJ).exe
 	@echo "Compiling sos_srv for ARM target"
+
+nslu2: $(PROJ).exe
+	@echo "Compiling sos_srv for OpenSlug target"
 
 clean:
 	@echo "Cleaning up ..."
