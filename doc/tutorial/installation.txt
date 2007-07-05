@@ -199,7 +199,7 @@ that might occur during installation and later use.
 
 - Download and install the latest version of *Xcode* from link:http://developer.apple.com/[here].
 This will ensure that you have the required development libraries for gcc.
-- Download and install *DarwinPorts* from link:http://darwinports.com/[here].
+- Download and install *MacPorts* from link:http://trac.macosforge.org/projects/macports/browser/downloads/MacPorts-1.4.0/[here].
 It is a tool (like Fink) to provide an easy way to download, configure and install
 various open-source software products on the Darwin OS family. 
 
@@ -208,7 +208,7 @@ Obtain SOS 2.x
 
 - Begin by installing some extra libraries used to compile the tool chain 
 and SOS tools. The following command should do the trick assuming you have
-Darwin Ports installed on your system:
+Mac Ports installed on your system:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
