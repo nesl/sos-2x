@@ -27,7 +27,7 @@ link:../../publications/sos_complete_fall_04.sxi[Presentation (SXI)] |
 link:../../publications/sos_complete_fall_04.ppt[Presentation (PPT)]
 
 
-.Reconfigurable Sensor Networks with SOS</strong>
+.Reconfigurable Sensor Networks with SOS
 Chih-Chieh Han, Ram Kumar Rengaswamy, Roy Shea and Mani Srivastava.
 CENS Research Review</em>, 2004.
 
