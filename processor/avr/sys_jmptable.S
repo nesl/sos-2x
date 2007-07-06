@@ -40,9 +40,9 @@ jmp ker_sys_routing_register ; 30
 jmp ker_adc_proc_bindPort       ; 31
 jmp ker_adc_proc_unbindPort     ; 32
 jmp ker_adc_proc_getData        ; 33
-jmp ker_sensor_register     ; 34
-jmp ker_sensor_deregister   ; 35
-jmp ker_sensor_data_ready   ; 36
-jmp ker_sensor_enable       ; 37
-jmp ker_sensor_disable      ; 38
+jmp ker_sys_sensor_register     ; 34
+jmp ker_sys_sensor_deregister   ; 35
+jmp ker_sys_sensor_data_ready   ; 36
+jmp ker_sys_sensor_enable       ; 37
+jmp ker_sys_sensor_disable      ; 38
 jmp 0                      ; 37
