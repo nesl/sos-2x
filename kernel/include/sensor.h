@@ -101,18 +101,16 @@ extern int8_t sensor_micro_reboot(sos_pid_t pid);
 
 /**
  * @brief System call for enabling aqusition of from a sensor
- * @param client_pid The process id of the module enabling the sensor
  * @param sensor_id of the sensor whose data is being enabled
  */
-extern int8_t ker_sensor_enable(sos_pid_t client_pid, uint8_t sensor_id);
+extern int8_t ker_sensor_enable(uint8_t sensor_id);
 
 
 /**
  * @brief System call for enabling aqusition of from a sensor
- * @param client_pid The process id of the module enabling the sensor
  * @param sensor_id of the sensor whose data is being disaabled
  */
-extern int8_t ker_sensor_disable(sos_pid_t client_pid, uint8_t sensor_id);
+extern int8_t ker_sensor_disable(uint8_t sensor_id);
 
 
 /**
@@ -126,10 +124,9 @@ extern int8_t ker_sensor_control(sos_pid_t client_pid, uint8_t sensor_id, void* 
 
 /**
  * @brief System call for getting data from the sensor
- * @param client_pid The process id of the module requesting sensor data
  * @param sensor_id Type of the sensor whose data is being requested
  */
-extern int8_t ker_sensor_get_data(sos_pid_t client_pid, uint8_t sensor_id);
+extern int8_t ker_sensor_get_data(uint8_t sensor_id);
 
 
 /**

@@ -17,7 +17,7 @@ jmp ker_hw_type            ; 11
 jmp ker_id                 ; 12
 jmp ker_rand               ; 13
 jmp ker_systime32          ; 14
-jmp ker_sys_sensor_get_data
+jmp ker_sensor_get_data
 jmp ker_led                ; 16
 jmp ker_sys_get_module_state ; 17
 jmp ker_sys_fntable_subscribe ; 18

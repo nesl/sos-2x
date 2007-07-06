@@ -190,10 +190,11 @@ int8_t ker_sensor_deregister(sos_pid_t calling_id, uint8_t sensor_id) {
  * @brief Get the sensor data
  */
 #ifdef SOS_USE_PREEMPTION
-int8_t ker_sensor_get_data(sos_pid_t calling_id, uint8_t sensor_id) 
+int8_t ker_sensor_get_data(uint8_t sensor_id) 
 {
 	HAS_ATOMIC_PREEMPTION_SECTION;
 	int8_t ret;
+	sos_pid_t calling_id = ker_get_current_pid();
 	if ((sensor_id > MAX_SENSOR_ID) || (st[sensor_id].pid == NULL_PID) || (st[sensor_id].client_pid != NULL_PID)) {
 		return -EINVAL;
 	}
@@ -213,9 +214,11 @@ int8_t ker_sensor_get_data(sos_pid_t calling_id, uint8_t sensor_id)
   return SOS_OK;
 }
 #else
-int8_t ker_sensor_get_data(sos_pid_t calling_id, uint8_t sensor_id) 
+int8_t ker_sensor_get_data(uint8_t sensor_id) 
 {
 	int8_t ret;
+	sos_pid_t calling_id = ker_get_current_pid();
+
 	if ((sensor_id > MAX_SENSOR_ID) || (st[sensor_id].pid == NULL_PID) || (st[sensor_id].client_pid != NULL_PID)) {
 		return -EINVAL;
 	}
@@ -234,33 +237,10 @@ int8_t ker_sensor_get_data(sos_pid_t calling_id, uint8_t sensor_id)
 }
 #endif
 
-int8_t ker_sys_sensor_get_data( uint8_t sensor_id )
-{
-	//int8_t ret;
-	sos_pid_t calling_id = ker_get_current_pid();
-
-	/*
-	if ((sensor_id > MAX_SENSOR_ID) || (st[sensor_id].pid == NULL_PID) || (st[sensor_id].client_pid != NULL_PID)) {
-		return -EINVAL;
-	}
-	st[sensor_id].client_pid = calling_id;  //changed
-
-	ret = SOS_CALL(sensor_func_ptr[sensor_id], sensor_func_t, SENSOR_GET_DATA_CMD, st[sensor_id].ctx);
-	if (SOS_OK != ret) {
-		//! XXX ????
-		st[sensor_id].client_pid = NULL_PID; //changed
-		return -EINVAL;
-	}
-	return SOS_OK;
-	*/
-	return ker_sensor_get_data( calling_id, sensor_id );
-}
-
-
 /**
  * @brief enable the sensor
  */
-int8_t ker_sensor_enable(sos_pid_t calling_id, uint8_t sensor_id) 
+int8_t ker_sensor_enable(uint8_t sensor_id) 
 {
 	int8_t ret;
 	if ((sensor_id > MAX_SENSOR_ID) || (st[sensor_id].pid == NULL_PID) || (st[sensor_id].client_pid != NULL_PID)) {
@@ -276,19 +256,10 @@ int8_t ker_sensor_enable(sos_pid_t calling_id, uint8_t sensor_id)
   return SOS_OK;
 }
 
-int8_t ker_sys_sensor_enable( uint8_t sensor_id )
-{
-	//int8_t ret;
-	sos_pid_t calling_id = ker_get_current_pid();
-
-	return ker_sensor_enable( calling_id, sensor_id );
-}
-
-
 /**
  * @brief disable the sensor
  */
-int8_t ker_sensor_disable(sos_pid_t calling_id, uint8_t sensor_id) 
+int8_t ker_sensor_disable(uint8_t sensor_id) 
 {
 	int8_t ret;
 	if ((sensor_id > MAX_SENSOR_ID) || (st[sensor_id].pid == NULL_PID) || (st[sensor_id].client_pid != NULL_PID)) {
@@ -304,15 +275,6 @@ int8_t ker_sensor_disable(sos_pid_t calling_id, uint8_t sensor_id)
 
   return SOS_OK;
 }
-
-int8_t ker_sys_sensor_disable( uint8_t sensor_id )
-{
-	//int8_t ret;
-	sos_pid_t calling_id = ker_get_current_pid();
-
-	return ker_sensor_disable( calling_id, sensor_id );
-}
-
 
 /**
  * @brief reconfigure the sensor
