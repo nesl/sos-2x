@@ -147,7 +147,7 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - The MSP430 Tool Chain for TMote Sky
 	* Make sure that you have defined the environment variable SOSTOOLDIR as described above.
-	* To install the toolchain, execute iin terminal:
+	* To install the toolchain, execute in terminal:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -315,7 +315,7 @@ Intel based Mac on the website.
 
 - The MSP430 Tool Chain for TMote Sky
 	* Make sure that you have defined the environment variable SOSTOOLDIR as described above.
-	* To install the toolchain, execute iin terminal:
+	* To install the toolchain, execute in terminal:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
