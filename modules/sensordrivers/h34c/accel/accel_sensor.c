@@ -1,11 +1,10 @@
 /* -*- Mode: C; tab-width:2 -*- */
 /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
 
-#include <module.h>
 #include <sys_module.h>
 
 #include <sensor.h>
-#include <adc_proc.h>
+#include <adc_proc_common.h>
 
 #include <h34c.h>
 
@@ -59,13 +58,13 @@ int8_t accel_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, uint8_t
 	// post data ready message here
 	switch(port) {
 		case H34C_ACCEL_0_SID:
-			ker_sensor_data_ready(H34C_ACCEL_0_SID, value, flags);
+			sys_sensor_data_ready(H34C_ACCEL_0_SID, value, flags);
 			break;
 		case H34C_ACCEL_1_SID:
-			ker_sensor_data_ready(H34C_ACCEL_1_SID, value, flags);
+			sys_sensor_data_ready(H34C_ACCEL_1_SID, value, flags);
 			break;
 		case H34C_ACCEL_2_SID:
-			ker_sensor_data_ready(H34C_ACCEL_2_SID, value, flags);
+			sys_sensor_data_ready(H34C_ACCEL_2_SID, value, flags);
 			break;
 		default:
 			return -EINVAL;
@@ -92,11 +91,11 @@ static int8_t accel_control(func_cb_ptr cb, uint8_t cmd, void* data) {\
 			// get ready to read accel sensor
 			switch(ctx & 0xC0) {
 				case ACCEL_0_SENSOR_ID:
-					return ker_adc_proc_getData(H34C_ACCEL_0_SID, ACCEL_0_SENSOR_ID);
+					return sys_adc_proc_getData(H34C_ACCEL_0_SID, ACCEL_0_SENSOR_ID);
 				case ACCEL_1_SENSOR_ID:
-					return ker_adc_proc_getData(H34C_ACCEL_1_SID, ACCEL_1_SENSOR_ID);
+					return sys_adc_proc_getData(H34C_ACCEL_1_SID, ACCEL_1_SENSOR_ID);
 				case ACCEL_2_SENSOR_ID:
-					return ker_adc_proc_getData(H34C_ACCEL_2_SID, ACCEL_2_SENSOR_ID);
+					return sys_adc_proc_getData(H34C_ACCEL_2_SID, ACCEL_2_SENSOR_ID);
 				default:
 					return -EINVAL;
 			}
@@ -134,29 +133,29 @@ int8_t accel_msg_handler(void *state, Message *msg)
 		case MSG_INIT:
 			// bind adc channel and register callback pointer
 
-			ker_adc_proc_bindPort(H34C_ACCEL_0_SID, H34C_ACCEL_0_HW_CH, ACCEL_SENSOR_PID,  SENSOR_DATA_READY_FID);
-			ker_adc_proc_bindPort(H34C_ACCEL_1_SID, H34C_ACCEL_1_HW_CH, ACCEL_SENSOR_PID,  SENSOR_DATA_READY_FID);
-			ker_adc_proc_bindPort(H34C_ACCEL_2_SID, H34C_ACCEL_2_HW_CH, ACCEL_SENSOR_PID,  SENSOR_DATA_READY_FID);
+			sys_adc_proc_bindPort(H34C_ACCEL_0_SID, H34C_ACCEL_0_HW_CH, ACCEL_SENSOR_PID,  SENSOR_DATA_READY_FID);
+			sys_adc_proc_bindPort(H34C_ACCEL_1_SID, H34C_ACCEL_1_HW_CH, ACCEL_SENSOR_PID,  SENSOR_DATA_READY_FID);
+			sys_adc_proc_bindPort(H34C_ACCEL_2_SID, H34C_ACCEL_2_HW_CH, ACCEL_SENSOR_PID,  SENSOR_DATA_READY_FID);
 			// register with kernel sensor interface
 			s->accel_0_state = ACCEL_0_SENSOR_ID;
-			ker_sensor_register(ACCEL_SENSOR_PID, H34C_ACCEL_0_SID, SENSOR_CONTROL_FID, (void*)(&s->accel_0_state));
+			sys_sensor_register(ACCEL_SENSOR_PID, H34C_ACCEL_0_SID, SENSOR_CONTROL_FID, (void*)(&s->accel_0_state));
 			s->accel_1_state = ACCEL_1_SENSOR_ID;
-			ker_sensor_register(ACCEL_SENSOR_PID, H34C_ACCEL_1_SID, SENSOR_CONTROL_FID, (void*)(&s->accel_1_state));
+			sys_sensor_register(ACCEL_SENSOR_PID, H34C_ACCEL_1_SID, SENSOR_CONTROL_FID, (void*)(&s->accel_1_state));
 			s->accel_2_state = ACCEL_2_SENSOR_ID;
-			ker_sensor_register(ACCEL_SENSOR_PID, H34C_ACCEL_2_SID, SENSOR_CONTROL_FID, (void*)(&s->accel_2_state));
+			sys_sensor_register(ACCEL_SENSOR_PID, H34C_ACCEL_2_SID, SENSOR_CONTROL_FID, (void*)(&s->accel_2_state));
 			break;
 
 		case MSG_FINAL:
 			// shutdown sensor
 			accel_off();
 			//  unregister ADC port
-			ker_adc_proc_unbindPort(ACCEL_SENSOR_PID, H34C_ACCEL_0_SID);
-			ker_adc_proc_unbindPort(ACCEL_SENSOR_PID, H34C_ACCEL_1_SID);
-			ker_adc_proc_unbindPort(ACCEL_SENSOR_PID, H34C_ACCEL_2_SID);
+			sys_adc_proc_unbindPort(ACCEL_SENSOR_PID, H34C_ACCEL_0_SID);
+			sys_adc_proc_unbindPort(ACCEL_SENSOR_PID, H34C_ACCEL_1_SID);
+			sys_adc_proc_unbindPort(ACCEL_SENSOR_PID, H34C_ACCEL_2_SID);
 			// unregister sensor
-			ker_sensor_deregister(ACCEL_SENSOR_PID, H34C_ACCEL_0_SID);
-			ker_sensor_deregister(ACCEL_SENSOR_PID, H34C_ACCEL_1_SID);
-			ker_sensor_deregister(ACCEL_SENSOR_PID, H34C_ACCEL_2_SID);
+			sys_sensor_deregister(ACCEL_SENSOR_PID, H34C_ACCEL_0_SID);
+			sys_sensor_deregister(ACCEL_SENSOR_PID, H34C_ACCEL_1_SID);
+			sys_sensor_deregister(ACCEL_SENSOR_PID, H34C_ACCEL_2_SID);
 			break;
 
 		default:

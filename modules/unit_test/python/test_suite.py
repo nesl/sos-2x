@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import signal
+import time
 import os
 import sys
 import subprocess
@@ -10,7 +11,8 @@ prog = 'mib510'
 install_port = '/dev/ttyUSB0'
 listen_port = '/dev/ttyUSB1'
 sos_group = '0'
-number_of_nodes = '1'
+number_of_nodes = 1
+number_of_prog = 1
 
 sos_child = 0
 avrora_child = 0
@@ -45,6 +47,10 @@ def configure_setup():
 	words = re.match(r'NODES = (\d+)\n', line)
 	if words:
             number_of_nodes = words.group(1)
+	    continue
+	words = re.match(r'boards = (\d+)\n', line)
+	if words:
+	    number_of_prog = words.group(1)
 	    continue
 	words = re.match(r'HOME = (\S+)\n', line)
 	if words:
@@ -110,7 +116,7 @@ def install_kernel(platform):
         cmd_make = ["make", "-C", "config/blank", "micaz"]
         cmd_install = ["make", "-C", "config/blank", "install", "PROG=" + prog, "PORT=" + install_port, "SOS_GROUP=" + sos_group] 
         subprocess.call(cmd_make)
-	subprocess.call(["sleep", "5"])
+	time.sleep(5)
         subprocess.call(cmd_install)
     elif platform == '1':
         cmd_make = ["make", "-C", "config/blank", "mica2"]
@@ -138,14 +144,13 @@ def run_sossrv(target):
 
     print "starting sossrv"
 
-    cmd_sleep = ['sleep', '20']
     subprocess.call(cmd_sleep)
 
     ret = os.fork()
     if ret == 0:
 	run_and_redirect(cmd_run, os.environ['SOSTESTDIR'] + '/../python/sossrv.log')
 
-    subprocess.call(cmd_sleep)
+    time.sleep(10)
     return ret
 
 
@@ -158,8 +163,6 @@ def run_tests(test_list, target):
     print "starting tests"
 
     cmd_clean = ["sos_tool.exe", "--rmmod=0"]
-    cmd_sleep = ["sleep", "5"]
-    cmd_long_sleep = ['sleep', '60']
     for test in test_list:
 	subprocess.call(cmd_clean)
 
@@ -171,7 +174,7 @@ def run_tests(test_list, target):
 	cmd_install = ["sos_tool.exe", "--insmod=" + driver_location +'/' + test.driver_name + ".mlf"]
 	subprocess.call(cmd_make)
 	subprocess.call(cmd_install)
-	subprocess.call(cmd_sleep)
+	time.sleep(5)
 
 	cmd_make = ['make', '-C', test_location, platform]
 	cmd_install = ['sos_tool.exe', '--insmod=' + test_location + '/' + test.test_name + '.mlf']
@@ -184,7 +187,7 @@ def run_tests(test_list, target):
 	    cmd_test = ['python', test_location + '/' + test.test_name + '.py']
 	    run_and_redirect(cmd_test, '')
 	else:
-	    subprocess.call(cmd_long_sleep)
+	    time.sleep(60)
 	    os.kill(child, signal.SIGKILL)
 	    os.waitpid(child, 0)
 

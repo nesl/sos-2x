@@ -75,7 +75,6 @@ static inline void accel_off() {
 }
 
 static int8_t accel_control(func_cb_ptr cb, uint8_t cmd, void* data) {\
-	sys_led(LED_YELLOW_ON);
 
 	uint8_t ctx = *(uint8_t*)data;
 	

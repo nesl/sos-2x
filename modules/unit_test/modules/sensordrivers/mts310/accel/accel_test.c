@@ -61,7 +61,6 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 			s->pid = msg->did;
 			sys_timer_start(ACCEL_TEST_APP_TID, ACCEL_TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
 			if(sys_sensor_enable(MTS310_ACCEL_0_SID) != SOS_OK) {
-				sys_led(LED_RED_ON);
 				sys_timer_stop(ACCEL_TEST_APP_TID);
 			}
 			break;
