@@ -4,6 +4,11 @@
 #ifndef _SYSTIME_H
 #define _SYSTIME_H
 
+static inline uint32_t ticks_to_msec(uint32_t ticks) {
+  return ((ticks >> 5) * 1000) >> 10;
+}
+
+
 /**
  * @brief initialize systime kernel device
  */
