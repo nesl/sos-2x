@@ -4,6 +4,6 @@ SOSTOOLDIR = /local
 TESTS = /modules/unit_test/modules
 PROG = mib510
 install_port = /dev/ttyUSB0
-listen_port = /dev/ttyUSB0
+listen_port = /dev/ttyUSB1
 SOS_GROUP = 101
 

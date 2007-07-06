@@ -7,7 +7,7 @@ import subprocess
 import re
 
 prog = 'mib510'
-install_port = '/dev/ttyUBS0'
+install_port = '/dev/ttyUSB0'
 listen_port = '/dev/ttyUSB1'
 sos_group = '0'
 number_of_nodes = '1'
@@ -44,10 +44,11 @@ def configure_setup():
     for line in config_f:
 	words = re.match(r'NODES = (\d+)\n', line)
 	if words:
-            number_of_nodes = worse.group(1)
+            number_of_nodes = words.group(1)
 	    continue
 	words = re.match(r'HOME = (\S+)\n', line)
 	if words:
+	    print "home match"
 	    home = words.group(1)
 	    continue
 	words = re.match(r'SOSROOT = (\S+)\n', line)
@@ -107,14 +108,15 @@ def install_kernel(platform):
 
     if platform == '0':
         cmd_make = ["make", "-C", "config/blank", "micaz"]
-        cmd_install = ["make", "-C", "install", prog, install_port, sos_group] 
+        cmd_install = ["make", "-C", "config/blank", "install", "PROG=" + prog, "PORT=" + install_port, "SOS_GROUP=" + sos_group] 
         subprocess.call(cmd_make)
+	subprocess.call(["sleep", "5"])
         subprocess.call(cmd_install)
     elif platform == '1':
         cmd_make = ["make", "-C", "config/blank", "mica2"]
-	cmd_install = ["make", "-C", "install", prog, install_port, sos_group]
+	cmd_install = ["make", "-C", "config/blank", "install", "PROG=" + prog, "PORT=" + install_port, "SOS_GROUP=" + sos_group]
 	subprocess.call(cmd_make)
-	subporcess.call(cmd_install)
+	subprocess.call(cmd_install)
     elif platform == '2':
 	cmd_make =  ["make", "-C", "config/blank", "avrora"]
 	cmd_install = ["java", "-server", "avrora/Main", "-banner-false", "-colors=true", "-platform=mica2", "-simulation=sensor-network", "-monitors=serial,real-time", "-sections=.data,.text, .sos_bls", "-update-node-id", "-nodecount=1", os.environ['SOSROOT']+ "/config/blank/blank.od"]
@@ -134,6 +136,8 @@ def run_sossrv(target):
     elif target == '2':
 	cmd_run = ['sossrv.exe', '-n', '127.0.0.1:2390']
 
+    print "starting sossrv"
+
     cmd_sleep = ['sleep', '20']
     subprocess.call(cmd_sleep)
 
@@ -150,6 +154,8 @@ def run_tests(test_list, target):
 	platform = 'micaz'
     elif target == '1' or target == '2':
 	platform = 'mica2'
+
+    print "starting tests"
 
     cmd_clean = ["sos_tool.exe", "--rmmod=0"]
     cmd_sleep = ["sleep", "5"]

@@ -6,7 +6,7 @@
 #define _H34C_H_
 
 #ifndef PC_PLATFORM
-#include <hardware.h>
+#include <adc_proc_common.h>
 #include <pin_map.h>
 #endif
 
