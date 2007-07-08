@@ -75,7 +75,7 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 
 		case MSG_TIMER_TIMEOUT:
 			{
-				sys_led(LED_YELLOW_TOGGLE);
+				//sys_led(LED_YELLOW_TOGGLE);
 				switch (s->state) {
 					case ACCEL_TEST_APP_INIT:
 						// do any necessary init here
@@ -114,7 +114,7 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 						break;
 
 					default:
-						sys_led(LED_RED_TOGGLE);
+						//sys_led(LED_RED_TOGGLE);
 						s->state = ACCEL_TEST_APP_INIT;
 						break;
 				}
@@ -125,10 +125,10 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 			{
 				uint8_t *data_msg;
 
-				LED_DBG(LED_GREEN_TOGGLE);
 
 				data_msg = sys_malloc ( UART_MSG_LEN );
 				if ( data_msg ) {
+				  sys_led(LED_GREEN_TOGGLE);
 					memcpy((void*)data_msg, (void*)msg->data, UART_MSG_LEN);
 
 					sys_post_uart ( 
@@ -137,7 +137,7 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 							UART_MSG_LEN,
 							data_msg,
 							SOS_MSG_RELEASE,
-							UART_ADDRESS);
+							BCAST_ADDRESS);
 				}
 				switch(s->state) {
 					case ACCEL_TEST_APP_ACCEL_0_BUSY:

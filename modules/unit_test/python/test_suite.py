@@ -18,12 +18,13 @@ sos_child = 0
 avrora_child = 0
 
 class Test:
-    def __init__(self, n, d, dl, t, tl):
+    def __init__(self, n, d, dl, t, tl, dur):
 	self.name = n
 	self.driver_name = d
 	self.driver_location = dl
 	self.test_name = t
 	self.test_location = tl
+	self.time = dur * 60 
 
 def run_and_redirect(run_cmd, outfile):
     if outfile != '':
@@ -37,6 +38,13 @@ def run_and_redirect(run_cmd, outfile):
    
 def configure_setup():
     config_f = open('config.sys', 'r')
+
+    global listen_port
+    global install_port
+    global SOS_GROUP
+    global prog
+    global number_of_nodes
+    global number_of_prog
 
     home = '/home/test'
     sos_root = home + '/sos-2x/trunk'
@@ -54,7 +62,6 @@ def configure_setup():
 	    continue
 	words = re.match(r'HOME = (\S+)\n', line)
 	if words:
-	    print "home match"
 	    home = words.group(1)
 	    continue
 	words = re.match(r'SOSROOT = (\S+)\n', line)
@@ -90,7 +97,6 @@ def configure_setup():
     os.environ['SOSTOOLDIR'] = home + sos_tool_dir
     os.environ['SOSTESTDIR'] = home + sos_root + test_dir
 
-
 def configure_tests():
     test_f = open("test.lst", "r")
     
@@ -102,7 +108,8 @@ def configure_tests():
 	    driver_location = test_f.readline()[:-1]
 	    test_name = test_f.readline()[:-1]
 	    test_location = test_f.readline()[:-1]
-	    new_test = Test(line, driver_name, driver_location, test_name, test_location)
+	    time = int(test_f.readline()[:-1])
+	    new_test = Test(line, driver_name, driver_location, test_name, test_location, time)
 	    test_list.append(new_test)
 	line = test_f.readline()
 
@@ -122,6 +129,7 @@ def install_kernel(platform):
         cmd_make = ["make", "-C", "config/blank", "mica2"]
 	cmd_install = ["make", "-C", "config/blank", "install", "PROG=" + prog, "PORT=" + install_port, "SOS_GROUP=" + sos_group]
 	subprocess.call(cmd_make)
+	time.sleep(5)
 	subprocess.call(cmd_install)
     elif platform == '2':
 	cmd_make =  ["make", "-C", "config/blank", "avrora"]
@@ -143,12 +151,12 @@ def run_sossrv(target):
 	cmd_run = ['sossrv.exe', '-n', '127.0.0.1:2390']
 
     print "starting sossrv"
-
-    subprocess.call(cmd_sleep)
+    time.sleep(10)
 
     ret = os.fork()
     if ret == 0:
 	run_and_redirect(cmd_run, os.environ['SOSTESTDIR'] + '/../python/sossrv.log')
+	#run_and_redirect(cmd_run, '')
 
     time.sleep(10)
     return ret
@@ -162,22 +170,26 @@ def run_tests(test_list, target):
 
     print "starting tests"
 
-    cmd_clean = ["sos_tool.exe", "--rmmod=0"]
+    cmd_erase = ["sos_tool.exe", "--rmmod=0"]
     for test in test_list:
-	subprocess.call(cmd_clean)
+	subprocess.call(cmd_erase)
 
 	print "running test" + test.name
         driver_location = os.environ['SOSROOT'] + test.driver_location
 	test_location = os.environ['SOSTESTDIR'] + test.test_location
 	
+	cmd_clean = ["make" , "-C", driver_location, "clean"]
         cmd_make = ["make", "-C",driver_location, platform]
 	cmd_install = ["sos_tool.exe", "--insmod=" + driver_location +'/' + test.driver_name + ".mlf"]
+	subprocess.call(cmd_clean)
 	subprocess.call(cmd_make)
 	subprocess.call(cmd_install)
 	time.sleep(5)
 
+        cmd_clean = ["make", "-C", test_location, "clean"]
 	cmd_make = ['make', '-C', test_location, platform]
 	cmd_install = ['sos_tool.exe', '--insmod=' + test_location + '/' + test.test_name + '.mlf']
+	subprocess.call(cmd_clean)
 	subprocess.call(cmd_make)
 	subprocess.call(cmd_install)
 
@@ -187,7 +199,7 @@ def run_tests(test_list, target):
 	    cmd_test = ['python', test_location + '/' + test.test_name + '.py']
 	    run_and_redirect(cmd_test, '')
 	else:
-	    time.sleep(60)
+	    time.sleep(test.time)
 	    os.kill(child, signal.SIGKILL)
 	    os.waitpid(child, 0)
 

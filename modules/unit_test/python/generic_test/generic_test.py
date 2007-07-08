@@ -2,14 +2,14 @@ import socket
 import struct
 import pysos
 
-ACCELEROMETER_MODULE = 0x80
+TEST_MODULE = 0x80
 CENTROID = 512
 MSG_DATA_READY = 4
 oldstate = -1
 state = -1
 
 def accel_test(msg):
-    """ Small example of accelerometer usage. It simulates a virtual
+    """ Small example of test driver usage. It simulates a virtual
     dice and shows which side of the dice is up.
     """
     global oldstate
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     srv = pysos.sossrv()
     msg = srv.listen()
 
-    srv.register_trigger(accel_test, type=MSG_DATA_READY)
+    srv.register_trigger(generic_test, type=MSG_DATA_READY)
 
     while(1):
         continue

@@ -1,0 +1,8 @@
+this directory includes the 3 needed files for any test.  included are a Makefile, a .c file which should be loaded onto the node, and a python script which will be run on the server.
+
+in each file is a template which you are reccomended to follow, and make any needed changes to based on the specific driver you are testing.
+
+It is recomended that you place your new test driver files in:
+ $SOSROOT/modules/unit_test/board_type_here/driver_name_here/
+
+
