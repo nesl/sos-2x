@@ -1,8 +1,8 @@
 this directory includes the 3 needed files for any test.  included are a Makefile, a .c file which should be loaded onto the node, and a python script which will be run on the server.
 
-in each file is a template which you are reccomended to follow, and make any needed changes to based on the specific driver you are testing.
+in each file is a template which you are reccomended to follow, and make any needed changes to based on the specific driver you are testing.  It is assumed you have the basic knowledge of how to write a SOS module, since the purpose of these files is to simply facilitate the writing of sensor tests that you or other associates have written already.
 
-It is recomended that you place your new test driver files in:
+It is recomended that you place all three of your new test driver files in:
  $SOSROOT/modules/unit_test/board_type_here/driver_name_here/
 
 

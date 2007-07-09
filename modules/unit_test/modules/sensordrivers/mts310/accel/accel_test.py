@@ -4,7 +4,7 @@ import pysos
 
 ACCELEROMETER_MODULE = 0x80
 CENTROID = 512
-MSG_DATA_READY = 4
+MSG_DATA_READY = 33 
 oldstate = -1
 state = -1
 

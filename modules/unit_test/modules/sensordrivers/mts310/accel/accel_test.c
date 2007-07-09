@@ -16,6 +16,8 @@
 
 #define UART_MSG_LEN 3
 
+#define MSG_ACCEL_DATA (MOD_MSG_START + 1)
+
 enum {
 	ACCEL_TEST_APP_INIT=0,
 	ACCEL_TEST_APP_IDLE,
@@ -30,6 +32,10 @@ typedef struct {
 	uint8_t state;
 } app_state_t;
 
+typedef struct {
+	uint8_t id;
+	uint8_t data[UART_MSG_LEN];
+} data_msg_t;
 
 static int8_t accel_test_msg_handler(void *state, Message *msg);
 
@@ -109,23 +115,48 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 			}
 			break;
 
+		case MSG_ACCEL_DATA:
+			{
+				sys_post_uart (
+						s->pid,
+						MSG_ACCEL_DATA,
+						msg->len,
+						msg->data,
+						SOS_MSG_RELEASE,
+						BCAST_ADDRESS);
+			}
+			break;
+
 		case MSG_DATA_READY:
 			{
-				uint8_t *data_msg;
+				data_msg_t *data_msg;
 
-
-				data_msg = sys_malloc ( UART_MSG_LEN );
+				data_msg = (data_msg_t*) sys_malloc (sizeof(data_msg_t));
 				if ( data_msg ) {
 				  sys_led(LED_GREEN_TOGGLE);
-					memcpy((void*)data_msg, (void*)msg->data, UART_MSG_LEN);
 
-					sys_post_uart ( 
-							s->pid,
-							MSG_DATA_READY,
-							UART_MSG_LEN,
-							data_msg,
-							SOS_MSG_RELEASE,
-							BCAST_ADDRESS);
+					data_msg->id = sys_id();
+					memcpy((void *)data_msg->data, (void*)msg->data, UART_MSG_LEN);
+
+					if (sys_id() == 0){
+						sys_post_uart ( 
+								s->pid,
+								MSG_ACCEL_DATA,
+								sizeof(data_msg_t),
+								data_msg,
+								SOS_MSG_RELEASE,
+								BCAST_ADDRESS);
+					} else {
+						sys_led(LED_YELLOW_TOGGLE);
+
+						sys_post_net (
+								s->pid, 
+								MSG_ACCEL_DATA,
+								sizeof(data_msg_t),
+								data_msg,
+								SOS_MSG_RELEASE,
+								0);
+					}
 				} else
 					sys_led(LED_RED_ON);
 				switch(s->state) {

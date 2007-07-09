@@ -131,13 +131,23 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 				  sys_led(LED_GREEN_TOGGLE);
 					memcpy((void*)data_msg, (void*)msg->data, UART_MSG_LEN);
 
-					sys_post_uart ( 
-							s->pid,
-							MSG_DATA_READY,
-							UART_MSG_LEN,
-							data_msg,
-							SOS_MSG_RELEASE,
-							BCAST_ADDRESS);
+					if (sys_id() == 0){
+						sys_post_uart ( 
+								s->pid,
+								MSG_DATA_READY,
+								UART_MSG_LEN,
+								data_msg,
+								SOS_MSG_RELEASE,
+								BCAST_ADDRESS);
+					} else {
+					  sys_post_net(
+								s->pid,
+								MSG_DATA_READY,
+								UART_MSG_LEN,
+								data_msg,
+								SOS_MSG_RELEASE,
+								BCAST_ADDRESS);
+					}
 				}
 				switch(s->state) {
 					case ACCEL_TEST_APP_ACCEL_0_BUSY:

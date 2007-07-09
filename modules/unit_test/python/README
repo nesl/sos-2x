@@ -23,8 +23,7 @@ the things which might need to be modified are:
      - SOS_GROUP, the group id you which to nodes to have
   -  addition, and more advanced options are:
      - number_of_nodes, change this if you whish to install a blank kernel on several nodes, and then have a "basestation" node distrubute the drivers through the network.
-     - number_of_prog, change this if you have multiple programming boards connected to your pc and you want to install on several nodes without swapping them.  If you set this value, you will also need to set an approriate number of install ports
-     - install_portX, where X is an integer more than 0.  This specifies ports where additional programming boards are connected too, if you want these to be used you must also modify number_of_prog.
+     - install_portX, where X is an integer more than 0.  This specifies ports where additional programming boards are connected too.  the X value is not important, and the order of installation might not match the way you delcare the ports
      
 
 
