@@ -1,13 +1,15 @@
 README
--------
+------
 SOS Catch is a tool for connecting custom message handlers to an SOS server.
 
 AUTHOR
--------
-Written by Peter Mawhorter (code largely copied from test_sossrv_client.c).
+------
+Written by Peter Mawhorter (code largely copied from test_sossrv_client.c). If
+you find problems with the code or would like extra functionality, send
+mail to pmawhworter@cs.hmc.edu or the sos-users mailing list.
 
 USAGE
--------
+-----
 ./sos_catch.exe [-h] [-cPORT] [-rADDRESS]
 
 Flag summary:
@@ -17,7 +19,7 @@ Flag summary:
                        address). Default is localhost.
 
 ABOUT
--------
+-----
 This code is a simplification of the sos_server API. At the moment, it is
 configured to subscribe to messages from a running sossrv.exe and print the
 data contained within Surge messages recieved. Running it while you have a
@@ -31,11 +33,32 @@ able to find the headers it needs. Finally, recompile sos_catch. Then new
 executable should subscribe your function to all SOS messages. If you only want
 to process a certain type of message, use conditionals in your catch function.
 
+ALTERNATE SETUPS
+----------------
 Also included is surge_dump.c. This is an alternate implementation of
 catch_surge.c which writes message information into a file instead of printing
 it to the console. To use it, just change the line in sos_catch.c that includes
 catch_surge.c to include surge_dump.c instead. Feel free to use surge_dump.c as
 a model for writing your own message recording functionality.
+
+For those interested in databases, there is also a file surge_db.c which works
+just like catch_surge.c and surge_dump.c but wrties to a database instead of
+the screen or a file. It uses the freely available SQLite3 database software
+which creates a database in a single file. To use surge_db as the catching
+function, you'll need to first set up a database. This can be accomplished by
+typing "make setup_db.exe" and then running the resulting "setup_db.exe" file.
+The name of the database file must be set the same in both setup_db.c and
+surge_db.c, but it can be changed from the default "messages.sql". If the
+make command for setup_db.exe fails with a linker error, you'll need to change
+the library search path in the make file: see the comments in the make file
+about that. Once the database file has been created, you can compile using
+"make ppc" just like normal, assuming that you've changed the #include line
+in sos_catch.c to include surge_db.c instead of catch_surge.c, and running
+sos_catch.exe should then put messages into the database. You can use the
+sqlite3 command-line tool to look at the database or write your own programs
+to read it (Python has built-in sqlite3 support as of version 2.5). As with
+surge_dump.c, feel free to write your own database code using this as a starting
+point.
 
 TESTING
 -------
