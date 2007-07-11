@@ -19,6 +19,12 @@
 
 #define TEST_PID DFLT_APP_ID0
 
+/* this is a new message type which specifies our test driver's packet type
+ * both the python test script, and the message handler will need to handle messages of this type
+ */
+
+#define MSG_TEST_DATA (MOD_MSG_START + 1)
+
 /* this is the number of bytes which will be sent to the sever
  * if you are going to be sending more, modify this value
  */
@@ -42,6 +48,16 @@ typedef struct {
 	uint8_t state;
 } app_state_t;
 
+/* struct specifying how the data will be sent throug the network and the uart.  
+ * this specifies an id, which wil be unique to each node
+ * and the other field will hold the data recieved from the sensor
+ * feel free to add more fields such as a packet counter or other information to assist
+ * you testing
+ */
+typedef struct {
+	uint8_t id;
+	uint8_t data[MSG_LEN];
+} data_msg_t;
 
 static int8_t generic_test_msg_handler(void *state, Message *msg);
 
@@ -120,20 +136,46 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 			}
 			break;
 
+	  /* here we handle messages of type MSG_TEST_DATA
+		 * in most cases, only the base station node should be doing this since it is the only one connected to the uart
+		 * if your test does not use multiple nodes, or your messages are sent via another module, this is not needed
+		 */
+		case MSG_TEST_DATA:
+			{
+				uint8_t *payload;
+				uint8_t msg_len;
+
+				msg_len = msg->len;
+				payload = sys_msg_take_data(msg);
+
+				sys_post_uart(
+						s->pid, 
+						MSG_TEST_DATA,
+						msg_len,
+						payload,
+						SOS_MSG_RELEASE,
+						BCAST_ADDRESS);
+    	}
+			break;
+
 	  /* when your data is ready, it is now time to be sent to the server either via the UART 
 		 * or the network depending on which node this is
 		 * the value for this case might be changed depending on which type value the sensor sends
 		 */
 		case MSG_DATA_READY:
 			{
-				uint8_t *data_msg;
+				/* out data message that will be sent through the uart or network */
+				data_msg_t *data_msg;
 
 				// create a message with a appropriate size
-				data_msg = sys_malloc ( MSG_LEN );
+				data_msg = (data_msg_t *) sys_malloc ( sizeof(data_msg_t) );
+
 				if ( data_msg ) {
 				  sys_led(LED_GREEN_TOGGLE);
+
 					// copy all the data you wish to send
-					memcpy((void*)data_msg, (void*)msg->data, MSG_LEN);
+					data_msg->id = sys_id();
+					memcpy((void*)data_msg->data, (void*)msg->data, MSG_LEN);
 
 					/* if you are running this test on multiple nodes at the same time you will need this
 					 * but if you are running it on just one node at a time, you only need the call to sys_post_uart
@@ -141,19 +183,19 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 					if (sys_id() == 0){
 						sys_post_uart ( 
 								s->pid,
-								MSG_DATA_READY,
-								MSG_LEN,
+								MSG_TEST_DATA,
+								sizeof(data_msg_t),
 								data_msg,
 								SOS_MSG_RELEASE,
 								BCAST_ADDRESS);
 					} else {
 						sys_post_net (
 								s->pid, 
-								MSG_DATA_READY,
-								MSG_LEN,
+								MSG_TEST_DATA,
+								sizeof(data_msg_t),
 								data_msg,
 								SOS_MSG_RELEASE,
-								BCAST_ADDRESS);
+								0);
 					}
 				} else
 					sys_led(LED_RED_ON);

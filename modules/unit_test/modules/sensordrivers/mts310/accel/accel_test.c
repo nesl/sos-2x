@@ -10,11 +10,14 @@
 #include <mts310sb.h>
 
 #define ACCEL_TEST_APP_TID 0
-#define ACCEL_TEST_APP_INTERVAL 20
+#define ACCEL_TEST_APP_INTERVAL 10
+#define ACCEL_TEST_APP_INTERVAL_2 20
 
 #define ACCEL_TEST_PID DFLT_APP_ID0
 
 #define UART_MSG_LEN 3
+#define CHANGE_FREQ 10000
+#define CHANGE_FREQ_2 20000
 
 #define MSG_ACCEL_DATA (MOD_MSG_START + 1)
 
@@ -30,10 +33,13 @@ enum {
 typedef struct {
 	uint8_t pid;
 	uint8_t state;
+	uint16_t counter;
 } app_state_t;
 
 typedef struct {
 	uint8_t id;
+	uint8_t change;
+	uint16_t counter;
 	uint8_t data[UART_MSG_LEN];
 } data_msg_t;
 
@@ -51,6 +57,19 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
 	.module_handler = accel_test_msg_handler,
 };
 
+static int8_t accel_change_freq(int8_t new_freq){
+  sys_sensor_disable(MTS310_ACCEL_0_SID);
+  sys_timer_stop( ACCEL_TEST_APP_TID );
+
+	sys_timer_start(ACCEL_TEST_APP_TID, new_freq, SLOW_TIMER_REPEAT);
+	if(sys_sensor_enable(MTS310_ACCEL_0_SID) != SOS_OK) {
+		sys_led(LED_RED_ON);
+		sys_timer_stop(ACCEL_TEST_APP_TID);
+		return -EINVAL;
+	}
+
+	return SOS_OK;
+}
 
 static int8_t accel_test_msg_handler(void *state, Message *msg)
 {
@@ -65,8 +84,10 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 
 			s->state = ACCEL_TEST_APP_INIT;
 			s->pid = msg->did;
+			s->counter = 0;
 			sys_timer_start(ACCEL_TEST_APP_TID, ACCEL_TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
 			if(sys_sensor_enable(MTS310_ACCEL_0_SID) != SOS_OK) {
+				sys_led(LED_RED_ON);
 				sys_timer_stop(ACCEL_TEST_APP_TID);
 			}
 			break;
@@ -117,11 +138,17 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 
 		case MSG_ACCEL_DATA:
 			{
+				uint8_t *payload;
+				uint8_t msg_len;
+
+				msg_len = msg->len;
+				payload = sys_msg_take_data(msg);
+
 				sys_post_uart (
 						s->pid,
 						MSG_ACCEL_DATA,
-						msg->len,
-						msg->data,
+						msg_len,
+						payload,
 						SOS_MSG_RELEASE,
 						BCAST_ADDRESS);
 			}
@@ -136,6 +163,17 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 				  sys_led(LED_GREEN_TOGGLE);
 
 					data_msg->id = sys_id();
+
+					if (s->counter == CHANGE_FREQ)
+						data_msg->change = 2;
+					else if (s->counter == CHANGE_FREQ_2)
+						data_msg->change = 1;
+					else
+						data_msg->change = 0;
+
+					data_msg->counter = s->counter;
+					s->counter++;
+
 					memcpy((void *)data_msg->data, (void*)msg->data, UART_MSG_LEN);
 
 					if (sys_id() == 0){
@@ -166,6 +204,14 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 					case ACCEL_TEST_APP_ACCEL_1_BUSY:
 						s->state = ACCEL_TEST_APP_ACCEL_0;
 						break;
+				}
+
+				if (s->counter == CHANGE_FREQ){
+					if (accel_change_freq(ACCEL_TEST_APP_INTERVAL_2) != SOS_OK)
+            sys_led(LED_RED_ON);	
+        } else if (s->counter == CHANGE_FREQ_2){
+					if (accel_change_freq(ACCEL_TEST_APP_INTERVAL) != SOS_OK)
+						sys_led(LED_RED_ON);
 				}
 			}
 			break;

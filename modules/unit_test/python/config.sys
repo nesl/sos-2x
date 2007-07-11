@@ -8,4 +8,5 @@ install_port1 = /dev/ttyUSB8
 listen_port = /dev/ttyUSB0
 SOS_GROUP = 101
 number_of_nodes = 3
+test_list = test.lst
 

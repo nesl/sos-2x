@@ -14,8 +14,11 @@ listen_port = '/dev/ttyUSB1'
 sos_group = '0'
 number_of_nodes = 1
 number_of_prog = 1
+tests_to_run = 'test.lst'
 
 class Test:
+    ''' a small object to hold all the important information regarding a test
+    '''
     def __init__(self, n, d, dl, t, tl, dur):
 	self.name = n
 	self.driver_name = d
@@ -25,6 +28,10 @@ class Test:
 	self.time = dur * 60 
 
 def run_and_redirect(run_cmd, outfile):
+    ''' redirect the output to outfile, if a file is specified
+        and create change the programming running to the one specified in run_cmd
+	if for some reason that returns, we exit with status 1
+	'''
     if outfile != '':
 	out = open(outfile, 'w')
 	out2 = os.dup(out.fileno())
@@ -35,11 +42,16 @@ def run_and_redirect(run_cmd, outfile):
     os._exit(1)
 
 def clean(dest):
+    ''' call make clean on the specified directory 
+    '''
     null = open("/dev/null", "w")
     cmd_clean = ['make', '-C', dest, 'clean']
     subprocess.call(cmd_clean, stdout=null)
        
 def configure_setup():
+    ''' read the config.sys file to set up the hardware and envrioment variables correctly
+        a number of options can be set, and is detailed in the README file
+	'''
     config_f = open('config.sys', 'r')
 
     global listen_port
@@ -48,6 +60,7 @@ def configure_setup():
     global prog
     global number_of_nodes
     global number_of_prog
+    global tests_to_run
 
     home = '/home/test'
     sos_root = home + '/sos-2x/trunk'
@@ -55,6 +68,10 @@ def configure_setup():
     test_dir = sos_root + '/modules/unit_test'
 
     for line in config_f:
+	words = re.match(r'test_list = (\S+)\n', line)
+	if words:
+	    tests_to_run = words.group(1)
+	    continue
 	words = re.match(r'number_of_nodes = (\d+)\n', line)
 	if words:
             number_of_nodes = int( words.group(1) )
@@ -105,8 +122,17 @@ def configure_setup():
     os.environ['SOSTOOLDIR'] = home + sos_tool_dir
     os.environ['SOSTESTDIR'] = home + sos_root + test_dir
 
-def configure_tests():
-    test_f = open("test.lst", "r")
+def configure_tests(test_list_name):
+    ''' read the test.lst file to build our set of tests.
+        each test should conform to the following layout:
+	  test name
+	  sensor driver file name
+	  sensor driver location
+	  test driver file name
+	  test driver location
+	  amount of time you want the test script to run
+        '''
+    test_f = open(test_list_name, "r")
     
     test_list = []
     line = test_f.readline()
@@ -124,7 +150,11 @@ def configure_tests():
     return test_list
 
 def make_kernel(platform):
-    null = open("/dev/null", "w")
+    ''' attempts to compiler the kernel for the given platform.  either micaz, mica2, or avrora.
+        if there are any comipilation issues, it informs the user and exits
+	all output from compiliation is saved in $SOSROOT/modules/unit_test/python/kernel.log
+	'''
+    kernel_f = open(os.environ['SOSTESTDIR'] + "/../python/kernel.log", "w")
 
     clean("config/blank")
     if platform == 0:
@@ -134,22 +164,43 @@ def make_kernel(platform):
     elif platform == 2:
         cmd_make =  ["make", "-C", "config/blank", "avrora"]
 
-    subprocess.call(cmd_make, stdout=null)
+    try:
+      subprocess.check_call(cmd_make, stderr=kernel_f, stdout=kernel_f)
+    except subprocess.CalledProcessError:
+      print "compiling the kernel ran into some issues, please check the kernel.log file to see the error"
+      sys.exit(1)
+
     time.sleep(5)
 
 def install_on_mica(platform, address, port):
+    ''' assuming the kernel has been properly compiled, this will load a blank kernel onto the programming board
+        specified by the value in install_port[port].  the group id of the node will be sos_group, and the address
+	of the port is of course port.
+	if the installation fails for any reason, a message is displayed to the user, urging them to check the connection
+	and then retry installing the kernel again.
+	'''
 
     if platform == 0:
         cmd_install = ["make", "-C", "config/blank", "install", "PROG=" + prog, "PORT=" + install_port[port], "SOS_GROUP=" + sos_group, "ADDRESS=" + str(address)] 
-        subprocess.call(cmd_install)
     elif platform == 1:
 	cmd_install = ["make", "-C", "config/blank", "install", "PROG=" + prog, "PORT=" + install_port[port], "SOS_GROUP=" + sos_group, "ADDRESS=" + str(address)]
-	subprocess.call(cmd_install)
     else:
         print "you shouldn't be doing this"
 	os.exit(0)
+    
+    try:
+      subprocess.check_call(cmd_install)
+    except subprocess.CalledProcessError:
+	print "problem installing on board: %s, please be sure that the board is connected propperly" %install_port[port]
+	print "please press any key when ready"
+
+	raw_input()
+	install_on_mica(platform, address, port)
+
 
 def install_on_avrora(node_count):
+    ''' this will start up avrora as it's own child process with the options specified below.
+        and it will install a blank kernel to run. '''
 
     cmd_install = ["java", "-server", "avrora/Main", "-banner-false", "-colors=true", "-platform=mica2", "-simulation=sensor-network", "-monitors=serial,real-time", "-sections=.data,.text, .sos_bls", "-update-node-id", "-nodecount="+ str(node_count), os.environ['SOSROOT']+ "/config/blank/blank.od"]
     os.chdir(os.environ['SOSROOT'] + '/avrora/bin')
@@ -161,6 +212,9 @@ def install_on_avrora(node_count):
     
 
 def run_sossrv(target):
+    ''' start up sossrv.  for targets mica2 or micaz, it will run sossrv on the listen port specified.  
+        for avrora taget, it will set up on localhost:2390, which is the port avrora expects on default
+	output from sossrv will be directed to $SOSROOT/modules/unit_test/python/sossrv.log '''
     if target == 0 or target == 1:
 	cmd_run = ['sossrv.exe', '-s', listen_port]
     elif target == 2:
@@ -178,6 +232,13 @@ def run_sossrv(target):
 
 
 def run_tests(test_list, target):
+    ''' given a list of tests, and the target node, compile, dynamically load, and test the output for each
+        test.  before each test, all modules will be removed from the network to prevent any conflicts.
+	Also, the python test script, which is used to verify the output of the tests, and runs that tests 
+	for the number of minutes specified by each test
+	the standard output and error for the python script will be saved in in a log file located in the test
+	driver's location
+	'''
     if target == 0:
 	platform = 'micaz'
     elif target == 1 or target == 2:
@@ -226,10 +287,11 @@ if __name__ == '__main__':
     
     configure_setup()
 
-    print number_of_nodes
-    test_list = configure_tests()
+    test_list = configure_tests(tests_to_run)
     
     os.chdir(os.environ['SOSROOT'])
+    
+    #get the arguement for the node type, if not available, assume it is for micaz
     if (len(sys.argv) == 2):
 	target = int(sys.argv[1])
     else:
@@ -242,13 +304,16 @@ if __name__ == '__main__':
     make_kernel(target)
 
     if target == 2:
+	#install on avrora with the approriate number of nodes
 	avrora_child = install_on_avrora(number_of_nodes)
     elif number_of_prog == 1: 
+	# installing several nodes via the same programming board
+	# it will install one node at a time, and wait for the user to switch nodes before continuing
 	print "installing several nodes via the same board, please pay attention"
 	while (number_of_nodes > 1):
 	    install_on_mica(target, number_of_nodes - 1, 0)
 
-	    print "this current nodes address is: " + str(number_of_nodes - 1)
+	    print "this current nodes address is: %d" %(number_of_nodes - 1)
 	    print "please remove the current node and place another on the programming board"
 	    print "press any key when ready to install on the next node"
 	    
@@ -259,12 +324,14 @@ if __name__ == '__main__':
 	install_on_mica(target, 0, 0)
 	print "this is the base station node, please leave it connected to the programming board"
     else:
+	# installing on several programming boards, serially
+	# we assume that for each port assigned, there is a programming board and node connected
 	print "installing through multiple programming boards, your reaction is not required"
 
 	while (number_of_prog > 0):
 	    install_on_mica(target, number_of_prog -1, number_of_prog-1)
 
-	    print "this nodes address is: " + str(number_of_prog-1)
+	    print "this nodes address is: %d" %(number_of_prog-1)
 	    print "the next node will be installed automatically"
 
 	    number_of_prog -= 1
@@ -273,6 +340,7 @@ if __name__ == '__main__':
 
     run_tests(test_list, target)
 
+    # killing any child processes that are running
     if (sos_child > 0):
         print "killing sossrv"
         os.kill(sos_child, signal.SIGTERM)

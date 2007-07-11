@@ -1,0 +1,19 @@
+when running with a sampling frequency of 50 hz on more than one node this particular sensor test results in some packet loss.  
+
+a simple python script waits for packets from sossrv, and when recieving a packet, it checks the node id and packet id.  Since we are using an 8 bit unsigned integer to hold the packet id, it loops over after 255.  The python program simply checks to see if any packet id's are missing between the current count, and the last recieved count. It also keeps track of each nodes losses whenever they occur.  And after 255 packet id's have been gone through, it just reports the number of losses recorded
+
+When running just two nodes, where one is the base station, and the other sends all messages to the base station, we see a small amount of packet loss.
+  Base station's losses:
+	0 packets
+  Node 1's packet losses:
+	on average 4 or 5 packets are lost for every 255 sent from the node.  this amounts to about 2% packet loss.
+
+When running with three nodes, with one as a Base station, and the other two numbered as 1 and 3, we see even more packet loss.
+  Base Station's losses:
+	0 packets on average
+  Node 1's packet Losses:
+	again we see about 2% to 3% packet loss
+  Node 3's packet losses:
+	here we see about 10 or 11 packets lost for every 255 sent from the node.  At times, up to 23 or even 30 packets are lost per 255, but this seems to be an uncommon occurance.  On average we have about 5% packet loss, 
+
+

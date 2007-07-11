@@ -1,4 +1,5 @@
 import socket
+import signal
 import struct
 import pysos
 
@@ -7,6 +8,13 @@ CENTROID = 512
 MSG_DATA_READY = 33 
 oldstate = -1
 state = -1
+count = {}
+total = {}
+
+def panic_handler(signum, frame):
+    print "it is likely that your base station node has entered panic mode"
+    print "please reset the node"
+    os.exit(1)
 
 def accel_test(msg):
     """ Small example of accelerometer usage. It simulates a virtual
@@ -15,10 +23,27 @@ def accel_test(msg):
     global oldstate
     global state
 
-    print "message recieved"
-    (accelid, value) = pysos.unpack("<BH", msg['data'])
-    print accelid
-    print value
+    signal.alarm(60)
+
+    (nodeid, change_freq, packetid, accelid, value) = pysos.unpack("<BBHBH", msg['data'])
+
+    if nodeid not in count.keys():
+	count[nodeid] = packetid
+	total[nodeid] = 0
+    else:
+
+	if ( packetid % 1000 == 0):
+	    print "total packets lost for node %d after 1000 messages is %d" %(nodeid, total[nodeid])
+	    total[nodeid] = 0
+        if (packetid - count[nodeid] ) > 1 :
+	    total[nodeid] = total[nodeid] + 1
+
+	if (change_freq == 2):
+	    print "node %d changing frequency to 50hz" %nodeid
+	elif (change_freq == 1):
+	    print "node %d changing frequency to 100hz" %nodeid
+
+	count[nodeid] = packetid
     g = (value-512)/1024.0*3000/333.0
     if abs(g)>0.8:
 	if g > 0:
@@ -33,7 +58,10 @@ if __name__ == "__main__":
     srv = pysos.sossrv()
     msg = srv.listen()
 
+
     srv.register_trigger(accel_test, type=MSG_DATA_READY)
 
+    signal.signal(signal.SIGALRM, panic_handler)
+    signal.alarm(60)
     while(1):
         continue
