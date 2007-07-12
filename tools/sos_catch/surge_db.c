@@ -160,15 +160,15 @@ int catch(Message* msg) {
        * tree routing origin address.
        */
       check = sprintf(command,
-              "INSERT INTO messages VALUES(%d, %d, %d, %d, %d, %d, %d, %d)",
-              tr_hdr->originaddr,
-              tr_hdr->seqno,
-              tr_hdr->hopcount,
-              tr_hdr->originhopcount,
-              tr_hdr->parentaddr,
-              sg_msg->type,
-              sg_msg->seq_no,
-              sg_msg->reading);
+            "INSERT INTO messages VALUES(NULL, %d, %d, %d, %d, %d, %d, %d, %d)",
+            tr_hdr->originaddr,
+            tr_hdr->seqno,
+            tr_hdr->hopcount,
+            tr_hdr->originhopcount,
+            tr_hdr->parentaddr,
+            sg_msg->type,
+            sg_msg->seq_no,
+            sg_msg->reading);
 
       if (check >= COMMAND_SIZE) {
         printf(

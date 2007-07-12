@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
   int ret; // return value
   char *err; // error value
   // Command to set up the tables:
-  const char *setup = "CREATE TABLE messages (origin_address INTEGER, routing_sequence_number INTEGER, hop_count INTEGER, origin_hop_count INTEGER, parent_address INTEGER, surge_message_type INTEGER, surge_sequence_number INTEGER, reading INTEGER); CREATE TABLE motes (address INTEGER, start_time INTEGER, last_time INTEGER)";
+  const char *setup = "CREATE TABLE messages (id INTEGER PRIMARY KEY, origin_address INTEGER, routing_sequence_number INTEGER, hop_count INTEGER, origin_hop_count INTEGER, parent_address INTEGER, surge_message_type INTEGER, surge_sequence_number INTEGER, reading INTEGER); CREATE TABLE motes (address INTEGER, start_time INTEGER, last_time INTEGER)";
   sqlite3 *connection; // The connection to the database.
   
   // Open the database:
