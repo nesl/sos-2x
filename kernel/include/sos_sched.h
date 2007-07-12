@@ -5,6 +5,13 @@
 #include <sos_types.h>
 #include <sos_module_types.h>
 
+/**
+ * Need this to make schedpq an external variable
+ */
+#ifdef SOS_USE_PREEMPTION
+#include <message_queue.h>
+#endif
+
 enum {
 	SCHED_NUMBER_BINS    = 4,      //!< number of bins to store modules
 };
@@ -173,6 +180,22 @@ extern uint8_t sched_stalled;
 extern sos_pid_t    curr_pid;                      //!< current executing pid
 extern sos_pid_t*   pid_sp;                        //!< pid stack pointer
 
+#ifdef SOS_USE_PREEMPTION
+/**
+ * Expose curr_pri just like curr_pid so timer interrupt in sos_timer can use it.
+ */
+extern pri_t curr_pri;
+extern uint8_t preemption_point (sos_pid_t pid);
+
+/**
+ * Expose schedpq just like curr_pid so timer interrupt in sos_timer can use it.
+ */
+extern mq_t schedpq NOINIT_VAR;
+/**
+ * Expose sched_queue just like sched_msg_alloc
+ */
+extern void sched_queue(Message *m);
+#endif
 
 #define SCHED_STALL() {sched_stalled = true;}
 

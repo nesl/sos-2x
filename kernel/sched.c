@@ -73,7 +73,6 @@
 #define LED_DEBUG
 #include <led_dbg.h>
 
-
 #ifndef SOS_DEBUG_SCHED
 #undef  DEBUG
 #define DEBUG(...)
@@ -102,7 +101,7 @@ static int8_t do_register_module(mod_header_ptr h, sos_module_t *handle,
 																 void *init, uint8_t init_size, uint8_t flag);
 static sos_pid_t sched_get_pid_from_pool();
 #ifdef SOS_USE_PREEMPTION
-static uint8_t preemption_point (Message *msg);
+uint8_t preemption_point (sos_pid_t pid);
 #endif
 
 
@@ -118,8 +117,13 @@ static mod_header_t mod_header SOS_MODULE_HEADER =
 	.module_handler = sched_handler, 	
   };
 
+#ifdef SOS_USE_PREEMPTION
 //! message queue
-static mq_t schedpq NOINIT_VAR;
+mq_t schedpq NOINIT_VAR;
+#else
+//! message queue
+mq_t schedpq NOINIT_VAR;
+#endif
 
 #ifndef SOS_USE_PREEMPTION
 //! module data structure
@@ -138,15 +142,20 @@ sos_pid_t    curr_pid;                      //!< current executing pid
 static sos_pid_t    pid_stack[SOS_PID_STACK_SIZE]; //!< pid stack
 sos_pid_t*   pid_sp;                        //!< pid stack pointer
 
+#ifdef SOS_USE_PREEMPTION
+pri_t curr_pri;                            //!< current executing task's priority
+#endif
+
 #ifndef SOS_USE_PREEMPTION
 static uint8_t int_ready = 0;
 static sched_int_t  int_array[SCHED_NUM_INTS];
 
+uint8_t sched_stalled = false;
+#endif
+
 // this is for dispatch short message directly
 static Message short_msg;
 
-uint8_t sched_stalled = false;
-#endif
 
 /**
  * @brief module bins
@@ -196,9 +205,15 @@ void sched_init(uint8_t cond)
 		pid_pool[i] = 0;
   }
 
-#ifdef SOS_USE_PREEMPTION
 	// Initialize PID stack
-	pid_sp = pid_stack;  
+	pid_sp = pid_stack;
+	// initialize short message
+	short_msg.data = short_msg.payload;
+	short_msg.daddr = node_address;
+	short_msg.saddr = node_address;
+	short_msg.len = 3;
+
+#ifdef SOS_USE_PREEMPTION
 	// Initialize slab
 	ker_slab_init( KER_SCHED_PID, &sched_slab, sizeof(sos_module_t), 4, SLAB_LONGTERM);
 	// register the module
@@ -210,20 +225,8 @@ void sched_init(uint8_t cond)
 	for(i = 0; i < SCHED_NUM_INTS; i++) {
 		int_array[i] = NULL;
 	}
-	//
-	// Initialize PID stack
-	//
-	pid_sp = pid_stack;
-	// initialize short message
-	short_msg.data = short_msg.payload;
-	short_msg.daddr = node_address;
-	short_msg.saddr = node_address;
-	short_msg.len = 3;
 
-
-	//
 	// Initialize slab
-	//
 	ker_slab_init( KER_SCHED_PID, &sched_slab, sizeof(sos_module_t), 4, SLAB_LONGTERM );
 #endif	
 }
@@ -260,13 +263,21 @@ static void handle_callback( void )
 // Get pointer to module control block
 sos_module_t* ker_get_module(sos_pid_t pid)
 {
-  //! first hash pid into bins
-  uint8_t bins = hash_pid(pid);
+	static sos_module_t *cache = NULL;
+  uint8_t bins;
   sos_module_t *handle;
 
+	// Check the cache for module
+	if((cache != NULL) && (cache->pid == pid)) {
+		return cache;
+	}
+
+  //! first hash pid into bins
+	bins = hash_pid(pid);
   handle = mod_bin[bins];
   while(handle != NULL) {
 		if(handle->pid == pid) {
+			cache = handle;
 			return handle;
 		} else {
 			handle = handle->next;
@@ -837,7 +848,6 @@ static uint8_t do_setjmp( void )
 }
 #endif
 
-#ifndef SOS_USE_PREEMPTION
 /**
  * @brief dispatch short message
  * This is used by the callback that was register by interrupt handler
@@ -846,7 +856,7 @@ void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
 		uint8_t type, uint8_t byte,
 		uint16_t word, uint16_t flag)
 {
-		sos_module_t *handle;
+	sos_module_t *handle;
 	msg_handler_t handler;
 	void *handler_state;
 
@@ -856,7 +866,7 @@ void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
 	if( handle == NULL ) { return; }
 
 	handler = (msg_handler_t)sos_read_header_ptr(handle->header,
-			offsetof(mod_header_t,
+				offsetof(mod_header_t,
 				module_handler));
 	handler_state = handle->handler_state;
 
@@ -869,10 +879,17 @@ void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
 	p->word = word;
 	short_msg.flag = flag;
 
-	/*
-	 * Update current pid
-	 */
+#ifdef SOS_USE_PREEMPTION
+	// push the curr_pid on to the stack
+	*pid_sp = curr_pid;
+	pid_sp++;
+#endif
+	// Update current pid
 	curr_pid = dst;
+#ifdef SOS_USE_PREEMPTION
+			// set the current priority
+			curr_pri = get_module_priority(curr_pid);
+#endif
 
 #ifdef SOS_USE_EXCEPTION_HANDLING
 	if( do_setjmp() != 0 )
@@ -887,9 +904,14 @@ void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
 	handler(handler_state, &short_msg);
 #endif
 	ker_log( SOS_LOG_HANDLE_MSG_END, curr_pid, type );
-
-}
+#ifdef SOS_USE_PREEMPTION
+	// pop the pid from the stack
+	pid_sp--;
+	curr_pid = *pid_sp;
+	// set the current priority
+	curr_pri = get_module_priority(curr_pid);
 #endif
+}
 
 /**
  * @brief    real dispatch function
@@ -911,11 +933,14 @@ static void do_dispatch()
 	sos_pid_t senddone_dst_pid = NULL_PID;     // Destination module ID for the MSG_PKT_SENDDONE
 	uint8_t senddone_flag = SOS_MSG_SEND_FAIL; // Status information for the MSG_PKT_SENDDONE
 
-	SOS_MEASUREMENT_DEQUEUE_START();
 #ifndef SOS_USE_PREEMPTION
+	SOS_MEASUREMENT_DEQUEUE_START();
 	e = mq_dequeue(&schedpq);
-#endif
 	SOS_MEASUREMENT_DEQUEUE_END();
+#endif
+
+	if (e == NULL) return;
+
 	handle = ker_get_module(e->did);
 	// Destination module might muck around with the
 	// type field. So we check type before dispatch
@@ -966,6 +991,10 @@ static void do_dispatch()
 #endif
 
 			curr_pid = handle->pid;
+#ifdef SOS_USE_PREEMPTION
+			// set the current priority
+			curr_pri = get_module_priority(curr_pid);
+#endif
 #ifdef SOS_USE_EXCEPTION_HANDLING
 			if( do_setjmp() == 0 ) 
 #endif
@@ -980,7 +1009,9 @@ static void do_dispatch()
 				// pop the pid from the stack
 				pid_sp--;
 				curr_pid = *pid_sp;
-
+				// set the current priority
+				curr_pri = get_module_priority(curr_pid);
+				
 				// need to call the split phase of deregister if final message
 				if(e->type == MSG_FINAL) {
 					ker_deregister_module_split(e->did);
@@ -1042,61 +1073,39 @@ int8_t ker_query_task(uint8_t pid)
 }
 
 
+/**
+ * When preemption is enabled. This function should not be called with
+ * a NULL Message. 
+ */
+
 void sched_msg_alloc(Message *m)
 {
 	DEBUG("sched_msg_alloc\n");
 #ifdef SOS_USE_PREEMPTION
-	pri_t cur_pri;
-
-  if((m != NULL) && (flag_msg_release(m->flag))){
+  if(flag_msg_release(m->flag)){
 		ker_change_own(m->data, KER_SCHED_PID);
   }
 
 	// If preemption is disabled, simply queue the msg
 	if (GET_PREEMPTION_STATUS() == DISABLED) {
-		if (m != NULL) mq_enqueue(&schedpq, m);
+		mq_enqueue(&schedpq, m);
 		return;
 	}
 
-	// Get current priority
-	cur_pri = get_module_priority(curr_pid);
-
-	// This case is only valid when preemption is reenabled
-	if(m == NULL) {
-		// Preempt current module if msg of higher priority and no preemption issues
-		while((schedpq.head != NULL) && (schedpq.head->priority > cur_pri) &&
-					preemption_point(schedpq.head)) {
-#ifdef USE_PREEMPTION_PROFILER
-			preemption_profile(curr_pid);
-#endif
+	// dispatch msg if of higher priority and no race conditions
+	if ((m->priority > curr_pri) && (preemption_point(m->did) == 1)) {
+		do_dispatch(m);
+		
+		// if dispatched msg, need to check the queue for any other high priority msgs
+		while((schedpq.head != NULL) && (schedpq.head->priority > curr_pri) &&
+					(preemption_point(schedpq.head->did) == 1)) {
 			do_dispatch(mq_dequeue(&schedpq));
 		}
-		return;
-	}
-
-	// Check for priority of msg against msgs on queue 
-	// and currently executing module and also for preemption issues
-	if (((schedpq.head == NULL) || (m->priority > schedpq.head->priority))
-			&& (m->priority > cur_pri) && preemption_point(m)) {
-#ifdef USE_PREEMPTION_PROFILER
-			preemption_profile(curr_pid);
-#endif
-		do_dispatch(m);
 	}
 	else {
-		// queue it up for later
+		// if msg is not higher priority, queue up and return
 		mq_enqueue(&schedpq, m);
-		// Check to continue with cur module or dispatch another msg
-		if((schedpq.head != NULL) && (schedpq.head->priority > cur_pri) && 
-			 preemption_point(schedpq.head)) {
-#ifdef USE_PREEMPTION_PROFILER
-			preemption_profile(curr_pid);
-#endif
-			// ??? Warning potential race condition here
-			Message *msg = mq_dequeue(&schedpq);
-			do_dispatch(msg);
-		}
-	}	
+	}
 #else
   if(flag_msg_release(m->flag)){
 		ker_change_own(m->data, KER_SCHED_PID);
@@ -1107,14 +1116,31 @@ void sched_msg_alloc(Message *m)
 
 #ifdef SOS_USE_PREEMPTION
 /**
+ * Used when enabling preemption
+ */
+void sched_queue(Message *m) 
+{
+	if ((m != NULL) && (m->priority > curr_pri) && (preemption_point(m->did) == 1)) {
+		do_dispatch(m);
+	}	
+	else {
+		if(m != NULL) mq_enqueue(&schedpq, m);
+	}	
+	while((schedpq.head != NULL) && (schedpq.head->priority > curr_pri) &&
+				(preemption_point(schedpq.head->did) == 1)) {
+		do_dispatch(mq_dequeue(&schedpq));
+	}
+}
+
+/**
  * Checks if the msg can preempt current module
  * based on conflicts due to function_calls.
  * Returns 1 if can preempt or else returns 0
  */
-static uint8_t preemption_point (Message *msg)
+uint8_t preemption_point (sos_pid_t pid)
 {
 	uint8_t i;
-	sos_module_t *module = ker_get_module(msg->did);
+	sos_module_t *module = ker_get_module(pid);
 
 	if((module == NULL) || (module->num_sub == 0)) return 1;
 

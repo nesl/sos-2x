@@ -47,7 +47,6 @@ uint8_t ker_hw_type();
 uint16_t ker_id();
 uint16_t ker_rand();
 uint32_t ker_systime32();
-int8_t ker_sys_sensor_get_data( uint8_t sensor_id );
 int8_t ker_led(uint8_t op);
 void* ker_sys_get_module_state( void );
 int8_t ker_sys_fntable_subscribe( sos_pid_t pub_pid, uint8_t fid, uint8_t table_index );
@@ -66,12 +65,6 @@ int8_t ker_sys_routing_register( uint8_t fid );
 int8_t ker_adc_proc_bindPort(uint8_t port, uint8_t adcPort, sos_pid_t calling_id, uint8_t cb_fid);
 int8_t ker_adc_proc_unbindPort(uint8_t port, sos_pid_t pid);
 int8_t ker_adc_proc_getData(uint8_t port, uint8_t flags);
-
-int8_t ker_sys_sensor_register( sos_pid_t calling_id, uint8_t sensor_id, uint8_t sensor_fid, void *ctx);
-int8_t ker_sys_sensor_deregister( sos_pid_t calling_id, uint8_t sensor_id);
-int8_t ker_sys_sensor_data_ready(uint8_t sensor_id, uint16_t sensor_data, uint8_t status);
-int8_t ker_sys_sensor_enable( uint8_t sensor_id );
-int8_t ker_sys_sensor_disable( uint8_t sensor_id );
 
 #ifdef SOS_SIM
 #ifdef _MODULE_
@@ -660,7 +653,7 @@ static inline int8_t sys_sensor_get_data( uint8_t sensor_id )
 #ifdef SYS_JUMP_TBL_START
 	return ((sys_sensor_get_data_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*15))( sensor_id );
 #else
-	return ker_sys_sensor_get_data( sensor_id );
+	return ker_sensor_get_data( sensor_id );
 #endif
 }
 /* @} */
@@ -1059,7 +1052,7 @@ static inline int8_t sys_sensor_register(sos_pid_t calling_id, uint8_t sensor_id
 #ifdef SYS_JUMP_TBL_START
   return ((sys_sensor_register_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*34))(calling_id, sensor_id, sensor_fid, ctx);
 #else
-  return ker_sys_sensor_register(calling_id, sensor_id, sensor_fid, ctx);
+  return ker_sensor_register(calling_id, sensor_id, sensor_fid, ctx);
 #endif
 }
 /* @} */
@@ -1085,7 +1078,7 @@ static inline int8_t sys_sensor_deregister(sos_pid_t calling_id, uint8_t sensor_
 #ifdef SYS_JUMP_TBL_START
   return ((sys_sensor_deregister_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*35))(calling_id, sensor_id);
 #else
-  return ker_sys_sensor_deregister(calling_id, sensor_id);
+  return ker_sensor_deregister(calling_id, sensor_id);
 #endif
 }
 /* @} */
@@ -1110,7 +1103,7 @@ static inline int8_t sys_sensor_data_ready(uint8_t sensor_id, uint16_t sensor_da
 #ifdef SYS_JUMP_TBL_START
   return ((sys_sensor_data_ready_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*36))(sensor_id, sensor_data, status);
 #else
-  return ker_sys_sensor_data_ready( sensor_id, sensor_data, status);
+  return ker_sensor_data_ready( sensor_id, sensor_data, status);
 #endif
 }
 /* @} */
@@ -1137,7 +1130,7 @@ static inline int8_t sys_sensor_enable(uint8_t sensor_id)
 #ifdef SYS_JUMP_TBL_START
   return ((sys_sensor_enable_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*37))(sensor_id);
 #else
-  return ker_sys_sensor_enable(sensor_id);
+  return ker_sensor_enable(sensor_id);
 #endif
 }
 /* @} */
@@ -1162,7 +1155,7 @@ static inline int8_t sys_sensor_disable(uint8_t sensor_id)
 #ifdef SYS_JUMP_TBL_START
   return ((sys_sensor_disable_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*38))(sensor_id);
 #else
-  return ker_sys_sensor_disable(sensor_id);
+  return ker_sensor_disable(sensor_id);
 #endif
 }
 /* @} */

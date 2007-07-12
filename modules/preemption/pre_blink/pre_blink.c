@@ -34,10 +34,13 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
 
 static int8_t pre_blink_msg_handler(void *state, Message *msg)
 {
+  app_state_t *s = (app_state_t*)state;
+  
   switch (msg->type){
   case MSG_INIT:
 	{
 	  sys_timer_start(BLINK_TID, BLINK_TIMER_INTERVAL, TIMER_REPEAT);
+	  s->state = 0;
 	  break;
 	}
 

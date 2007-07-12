@@ -34,10 +34,10 @@ uint8_t preemption_status;
   do {                                          \
     _prem_prev_ = preemption_status;		\
     preemption_status = DISABLED;} while(0)
-#define ENABLE_PREEMPTION()			\
+#define ENABLE_PREEMPTION(x)			\
   do {                                          \
     preemption_status = _prem_prev_;		\
-    sched_msg_alloc(NULL);} while(0)
+    sched_queue(x);} while(0)
 
 /**
  * The following group of preemption macros are
@@ -59,7 +59,7 @@ uint8_t preemption_status;
     ENTER_CRITICAL_SECTION();			\
     preemption_status = _prem_prev_;		\
     LEAVE_CRITICAL_SECTION();			\
-    sched_msg_alloc(NULL);} while(0)
+    sched_queue(NULL);} while(0)
 
 #define GET_PREEMPTION_STATUS() preemption_status
 

@@ -375,6 +375,6 @@ adc_proc_interrupt() {
 	}
 #ifdef SOS_USE_PREEMPTION
 	ENABLE_GLOBAL_INTERRUPTS();
-	ENABLE_PREEMPTION();
+	ENABLE_PREEMPTION(NULL);
 #endif
 }

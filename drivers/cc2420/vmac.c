@@ -528,7 +528,7 @@ void _MacRecvCallBack(int16_t timestamp)
 
 #ifdef SOS_USE_PREEMPTION
 	ENABLE_GLOBAL_INTERRUPTS();
-	ENABLE_PREEMPTION();
+	ENABLE_PREEMPTION(NULL);
 #endif
 }
 

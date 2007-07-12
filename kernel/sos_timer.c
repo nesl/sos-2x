@@ -20,6 +20,11 @@
 #include <sos_logging.h>
 #include <slab.h>
 
+#ifdef SOS_USE_PREEMPTION
+#include <priority.h>
+#include <message_queue.h>
+#endif
+
 #ifndef SOS_DEBUG_TIMER
 #undef DEBUG
 #define DEBUG(...)
@@ -938,28 +943,24 @@ static uint16_t timer_update_realtime_clock(uint8_t cnt)
 timer_interrupt()
 {
 #ifdef SOS_USE_PREEMPTION
-  HAS_PREEMPTION_SECTION;
-  DISABLE_PREEMPTION();
+  HAS_CRITICAL_SECTION;
   uint8_t cnt = timer_getInterval();
 
-  timer_update_delta(cnt);
-  while(list_empty(&deltaq) == false) {
+  // The ISR is not reentrant
+  timer_disable_interrupt();
+  ENABLE_GLOBAL_INTERRUPTS();
 
+  timer_update_delta(cnt);
+
+  while(list_empty(&deltaq) == false) {
 	sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);         
 	if(h->delta <= 0) {
 	  sos_pid_t pid = h->pid;
 	  uint8_t tid = h->tid;
-	  uint8_t flag;
-	  Message *msg;
 	  MsgParam *p;
+	  Message *msg;
 
 	  list_remove_head(&deltaq);
-	  
-	  if(((h->type) & SLOW_TIMER_MASK) == 0){
-		flag = SOS_MSG_HIGH_PRIORITY;
-	  } else {
-		flag = 0;
-	  }
 	  
 	  if (((h->type) & ONE_SHOT_TIMER_MASK) == 0){
 		//! periocic timer
@@ -973,21 +974,29 @@ timer_interrupt()
 		list_insert_tail(&timer_pool, (list_link_t*)h);
 	  }
 
-	  // Create a msg and call sched_msg_alloc to queue it up
-	  msg = msg_create();
-	  if (msg != NULL) {
-		msg->did = pid;
-		msg->sid = TIMER_PID;
-		msg->type = MSG_TIMER_TIMEOUT;
-		msg->flag = flag;
-		// assign priority based on priority of pid
-		msg->priority = get_module_priority(pid);
-		p = (MsgParam*)(msg->data);
-		p->byte = tid;
-		p->word = 0;
-		sched_msg_alloc(msg);
+	  // If priority is higher than current, msg_queue and preemption point is ok
+	  // dispatch now
+	  if((get_module_priority(pid) > curr_pri) && 
+		 ((schedpq.head == NULL) || (get_module_priority(pid) > schedpq.head->priority)) &&
+		 (preemption_point(pid) == 1)) {
+	  sched_dispatch_short_message(pid, TIMER_PID, MSG_TIMER_TIMEOUT, 
+								   tid, 0, 0);
 	  }
-	  
+	  else {
+		// Create a msg
+		msg = msg_create();
+		if (msg != NULL) {
+		  msg->did = pid;
+		  msg->sid = TIMER_PID;
+		  msg->type = MSG_TIMER_TIMEOUT;
+		  msg->flag = 0;
+		  msg->priority = get_module_priority(pid);
+		  p = (MsgParam*)(msg->data);
+		  p->byte = tid;
+		  p->word = 0;
+		  mq_enqueue(&schedpq, msg);
+		}
+	  }
 	} else {
 	  break;
 	}
@@ -1002,20 +1011,23 @@ timer_interrupt()
   if(list_empty(&deltaq) == false) {
 	sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);
 	int32_t hw_cnt;
+	ENTER_CRITICAL_SECTION();
 	hw_cnt = -(timer_hardware_get_counter());
+	LEAVE_CRITICAL_SECTION();
 	if( h->delta - hw_cnt > 0) {
 	  timer_set_hw_top(h->delta - hw_cnt, true);
-	} else {
 	}
-  } else {
+  } 
+  else {
+	ENTER_CRITICAL_SECTION();
 	timer_set_hw_top(MAX_SLEEP_INTERVAL, false);
+	LEAVE_CRITICAL_SECTION();
   }
 
-  // enable interrupts because 
-  // enabling preemption can cause one to occur
-  ENABLE_GLOBAL_INTERRUPTS();
-  // enable preemption
-  ENABLE_PREEMPTION();
+  // Enable timer interrupts which was disable to make 
+  // the ISR non-reentrant
+  timer_enable_interrupt();
+
 #else
 	uint8_t cnt = timer_getInterval();
 	outstanding_ticks += cnt;

@@ -692,7 +692,7 @@ i2c_interrupt()
   // enabling preemption can cause one to occur
   ENABLE_GLOBAL_INTERRUPTS();
   // enable preemption
-  ENABLE_PREEMPTION();
+  ENABLE_PREEMPTION(NULL);
 #endif
 }
 
