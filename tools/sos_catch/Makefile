@@ -13,12 +13,11 @@ INCDIR += -I$(ROOTDIR)/modules/demos/surge/
 
 # Library and search path for sqlite3:
 LDFLAGS += -lsqlite3
-# You'll probably have to edit this search path as this corresponds to a
-# MacPorts install of sqlite3 on a PowerPC Mac. Your installation of sqlite
-# might already be on the library search path, but if it's not, just
-# do "locate sqlite.h" and change this flag (the entire part after the -L)
-# to that directory.
-LIBS += -L/opt/local/include
+
+# If the sqlite3.h file isn't in the right place on your system, you'll need to
+# add a -L option to LIBS here such as:
+#LIBS += -L/opt/local/lib
+# If sqlite3.h were in /opt/local/lib.
 
 include ../sos_server/lib/Makesossrvlib
 
