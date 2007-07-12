@@ -14,10 +14,10 @@ INCDIR += -I$(ROOTDIR)/modules/demos/surge/
 # Library and search path for sqlite3:
 LDFLAGS += -lsqlite3
 
-# If the sqlite3.h file isn't in the right place on your system, you'll need to
+# If the sqlite3 library isn't in the right place on your system, you'll need to
 # add a -L option to LIBS here such as:
 #LIBS += -L/opt/local/lib
-# If sqlite3.h were in /opt/local/lib.
+# If sqlite3 were in /opt/local/lib.
 
 include ../sos_server/lib/Makesossrvlib
 
