@@ -19,13 +19,22 @@ tests_to_run = 'test.lst'
 class Test:
     ''' a small object to hold all the important information regarding a test
     '''
-    def __init__(self, n, d, dl, t, tl, dur):
+    def __init__(self, n, d, dl, t, tl, dur, dep):
 	self.name = n
 	self.driver_name = d
 	self.driver_location = dl
 	self.test_name = t
 	self.test_location = tl
 	self.time = dur * 60 
+	self.dep_list = dep
+
+class Dependency:
+
+    def __init__(self):
+	self.name = ''
+	self.source = ''
+	self.sub_dep = []
+
 
 def run_and_redirect(run_cmd, outfile):
     ''' redirect the output to outfile, if a file is specified
@@ -121,6 +130,30 @@ def configure_setup():
     os.environ['SOSROOT'] = home + sos_root
     os.environ['SOSTOOLDIR'] = home + sos_tool_dir
     os.environ['SOSTESTDIR'] = home + sos_root + test_dir
+    
+def gather_dependencies(dep_list_name):
+    dep_f = open(dep_list_name, 'r')
+
+    current_name = ''
+    current_dep = Dependency()
+    dep_dict = {}
+
+    for line in dep_f:
+	if line[0] == '#':
+	    if current_name != '':
+		dep_dict[current_name] = current_dep
+	    current_dep = Dependency()
+	    current_dep.name = line[1:-1]
+     	    current_name = line[1:-1]
+	elif line[0] == '/':
+	    current_dep.source = line[:-1]
+	else:
+	    current_dep.sub_dep.append(line[:-1])
+
+    if current_name != '':
+	dep_dict[current_name] = current_dep
+	
+    return dep_dict
 
 def configure_tests(test_list_name):
     ''' read the test.lst file to build our set of tests.
@@ -134,18 +167,35 @@ def configure_tests(test_list_name):
         '''
     test_f = open(test_list_name, "r")
     
+    name = ''
+    driver_name = ''
+    driver_location = ''
+    test_name = ''
+    test_location = ''
+    time = 0
+    dep_list = []
     test_list = []
+
     line = test_f.readline()
     while (line != ''):
         if line[0] == '#':
+	    if name != '': 
+	        new_test = Test(name, driver_name, driver_location, test_name, test_location, time, dep_list)
+	        test_list.append(new_test)
+		dep_list = []
+	    name = line[:-1]
 	    driver_name = test_f.readline()[:-1]
 	    driver_location = test_f.readline()[:-1]
 	    test_name = test_f.readline()[:-1]
 	    test_location = test_f.readline()[:-1]
 	    time = int(test_f.readline()[:-1])
-	    new_test = Test(line, driver_name, driver_location, test_name, test_location, time)
-	    test_list.append(new_test)
+	else:
+	    dep_list.append(line[:-1])
 	line = test_f.readline()
+
+    if name != '':
+	new_test = Test(name, driver_name, driver_location, test_name, test_location, time, dep_list)
+	test_list.append(new_test)
 
     return test_list
 
@@ -221,6 +271,7 @@ def run_sossrv(target):
 	cmd_run = ['sossrv.exe', '-n', '127.0.0.1:2390']
 
     print "starting sossrv"
+    print cmd_run
     time.sleep(10)
 
     ret = os.fork()
@@ -230,8 +281,36 @@ def run_sossrv(target):
     time.sleep(10)
     return ret
 
+def install_dependency(dep_list, dep_dict, target):
+    if len(dep_list) == 0:
+	return
+    if len(dep_dict) == 0:
+	return
 
-def run_tests(test_list, target):
+    if target == 0:
+	plat = 'micaz'
+    elif target == 1:
+	plat = 'mica2'
+
+    for dep in dep_list:
+	print "installing dependency: %s" %dep
+	current_dep = dep_dict[dep]
+
+	if len(current_dep.sub_dep) > 0:
+	    install_dependency(current_dep.sub_dep, dep_dict,target)
+	 
+	 
+        cmd_make = ['make', '-C', os.environ['SOSROOT'] + current_dep.source, plat]
+	cmd_install = ['sos_tool.exe', '--insmod=' + os.environ['SOSROOT'] + current_dep.source+'/' + current_dep.name + '.mlf']
+
+	print cmd_make
+	print cmd_install
+	clean(os.environ['SOSROOT'] + current_dep.source)
+        subprocess.call(cmd_make)
+        subprocess.call(cmd_install)
+	time.sleep(5)
+
+def run_tests(test_list, target, dep_dict):
     ''' given a list of tests, and the target node, compile, dynamically load, and test the output for each
         test.  before each test, all modules will be removed from the network to prevent any conflicts.
 	Also, the python test script, which is used to verify the output of the tests, and runs that tests 
@@ -254,6 +333,9 @@ def run_tests(test_list, target):
         driver_location = os.environ['SOSROOT'] + test.driver_location
 	test_location = os.environ['SOSTESTDIR'] + test.test_location
 	
+        #first install all the depenedencies
+	install_dependency(test.dep_list, dep_dict,target)
+
 	#first install the sensor driver
         cmd_make = ["make", "-C",driver_location, platform]
 	cmd_install = ["sos_tool.exe", "--insmod=" + driver_location +'/' + test.driver_name + ".mlf"]
@@ -287,6 +369,8 @@ if __name__ == '__main__':
     
     configure_setup()
 
+    dep_dict = gather_dependencies("depend.lst")
+
     test_list = configure_tests(tests_to_run)
     
     os.chdir(os.environ['SOSROOT'])
@@ -311,7 +395,7 @@ if __name__ == '__main__':
 	# it will install one node at a time, and wait for the user to switch nodes before continuing
 	print "installing several nodes via the same board, please pay attention"
 	while (number_of_nodes > 1):
-	    install_on_mica(target, number_of_nodes - 1, 0)
+	    #install_on_mica(target, number_of_nodes - 1, 0)
 
 	    print "this current nodes address is: %d" %(number_of_nodes - 1)
 	    print "please remove the current node and place another on the programming board"
@@ -321,7 +405,7 @@ if __name__ == '__main__':
 
 	    number_of_nodes -= 1
 
-	install_on_mica(target, 0, 0)
+	#install_on_mica(target, 0, 0)
 	print "this is the base station node, please leave it connected to the programming board"
     else:
 	# installing on several programming boards, serially
@@ -329,7 +413,7 @@ if __name__ == '__main__':
 	print "installing through multiple programming boards, your reaction is not required"
 
 	while (number_of_prog > 0):
-	    install_on_mica(target, number_of_prog -1, number_of_prog-1)
+	    #install_on_mica(target, number_of_prog -1, number_of_prog-1)
 
 	    print "this nodes address is: %d" %(number_of_prog-1)
 	    print "the next node will be installed automatically"
@@ -338,7 +422,7 @@ if __name__ == '__main__':
 	    
     sos_child = run_sossrv(target)
 
-    run_tests(test_list, target)
+    run_tests(test_list, target, dep_dict)
 
     # killing any child processes that are running
     if (sos_child > 0):

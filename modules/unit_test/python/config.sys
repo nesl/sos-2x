@@ -3,10 +3,10 @@ SOSROOT = /sos-2x/trunk
 SOSTOOLDIR = /local
 TESTS = /modules/unit_test/modules
 PROG = mib510
-install_port = /dev/ttyUSB0
-install_port1 = /dev/ttyUSB8
-listen_port = /dev/ttyUSB0
+install_port = /dev/ttyUSB8
+#install_port1 = /dev/ttyUSB8
+listen_port = /dev/ttyUSB9
 SOS_GROUP = 101
-number_of_nodes = 3
+#number_of_nodes = 3
 test_list = test.lst
 

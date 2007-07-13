@@ -4,6 +4,7 @@ accel_sensor
 accel_test
 /sensordrivers/h34c/modules
 1
+surge
 #test1:
 accel_sensor
 /modules/sensordrivers/mts310/accel
