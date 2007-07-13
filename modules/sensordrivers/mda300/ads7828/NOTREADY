@@ -1,2 +1,0 @@
-This won't work, because it doesn't some power pins (the commented
-ADS_POWER_ON code). It compiles, though!

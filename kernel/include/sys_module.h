@@ -1160,7 +1160,73 @@ static inline int8_t sys_sensor_disable(uint8_t sensor_id)
 }
 /* @} */
 
+/// \cond NOTYPEDEF
+typedef int8_t (*sys_i2c_reserve_bus_t)(uint8_t calling_id, uint8_t i2c_addr, uint8_t flags);
+/// \endcond
 
+/**
+ * TODO: Comment this chunk of code.
+ */
+
+static inline int8_t sys_i2c_reserve_bus(uint8_t calling_id, uint8_t i2c_addr, uint8_t flags)
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_i2c_reserve_bus_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*39))(calling_id, i2c_addr, flags);
+#else
+  return ker_i2c_reserve_bus(calling_id, i2c_addr, flags);
+#endif
+}
+
+/// \cond NOTYPEDEF
+typedef int8_t (*sys_i2c_release_bus_t)(uint8_t calling_id);
+/// \endcond
+
+/**
+ * TODO: Comment this chunk of code.
+ */
+
+static inline int8_t sys_i2c_release_bus(uint8_t calling_id)
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_i2c_release_bus_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*40))(calling_id);
+#else
+  return ker_i2c_release_bus(calling_id);
+#endif
+}
+
+/// \cond NOTYPEDEF
+typedef int8_t (*sys_i2c_send_data_t)(uint8_t i2c_addr, uint8_t *msg, uint8_t msg_size, uint8_t calling_id);
+/// \endcond
+
+/**
+ * TODO: Comment this chunk of code.
+ */
+
+static inline int8_t sys_i2c_send_data(uint8_t i2c_addr, uint8_t *msg, uint8_t msg_size, uint8_t calling_id)
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_i2c_send_data_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*41))(i2c_addr, msg, msg_size, calling_id);
+#else
+  return ker_i2c_send_data(i2c_addr, msg, msg_size, calling_id);
+#endif
+}
+
+/// \cond NOTYPEDEF
+typedef int8_t (*sys_i2c_read_data_t)(uint8_t i2c_addr, uint8_t read_size, uint8_t calling_id);
+/// \endcond
+
+/**
+ * TODO: Comment this chunk of code.
+ */
+
+static inline int8_t sys_i2c_read_data(uint8_t i2c_addr, uint8_t read_size, uint8_t calling_id)
+{
+#ifdef SYS_JUMP_TBL_START
+  return ((sys_i2c_read_data_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*42))(i2c_addr, read_size, calling_id);
+#else
+  return ker_i2c_read_data(i2c_addr, read_size, calling_id);
+#endif
+}
 
 
 #endif

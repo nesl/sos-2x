@@ -93,10 +93,10 @@
 
 // Array of the channel identifiers of all the sensors we expose.
 // The (SID - 1)s are indices into this.
-static uint8_t ADS7828_SENSOR_CHANNELS[] = {
+/*static uint8_t ADS7828_SENSOR_CHANNELS[] = {
 		ADS7828_CH0, ADS7828_CH1, ADS7828_CH2, ADS7828_CH3,
 		ADS7828_CH4, ADS7828_CH5, ADS7828_CH6, ADS7828_CH7
-};
+};*/
 
 ////
 // Hardware specific defines

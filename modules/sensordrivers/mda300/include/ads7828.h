@@ -33,6 +33,7 @@ enum {
 	// Note that channel 7 isn't connected on the MDA300
 	ADS7828_CH7_SID,
 
+// We don't actually export these because you can only have 10 sensors.
 	// Differential channels -- one direction
 	ADS7828_DIFF_CH_0_1_SID,
 	ADS7828_DIFF_CH_2_3_SID,

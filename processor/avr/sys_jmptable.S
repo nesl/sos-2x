@@ -45,4 +45,8 @@ jmp ker_sensor_deregister   ; 35
 jmp ker_sensor_data_ready   ; 36
 jmp ker_sensor_enable       ; 37
 jmp ker_sensor_disable      ; 38
-jmp 0                      ; 37
+jmp ker_i2c_reserve_bus     ; 39
+jmp ker_i2c_release_bus     ; 40
+jmp ker_i2c_send_data       ; 41
+jmp ker_i2c_read_data       ; 42
+jmp 0                      ; 43
