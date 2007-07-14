@@ -757,7 +757,6 @@ static inline int8_t sys_fntable_subscribe( sos_pid_t pub_pid, uint8_t fid, uint
 /* @} */
 
 /**
- * \ingroup system_api
  * \ingroup malloc
  * @{
  */
@@ -1030,8 +1029,9 @@ static inline int8_t sys_adc_proc_getData(uint8_t port, uint8_t flags)
 
 
 /**
- * \ingroup sensor_api
- * \defgroup 
+ * \ingroup system_api
+ * \defgroup sensor_api Sensor API
+ * Functions controlling sensors
  * @{
  */
 /// \cond NOTYPEDEF
@@ -1055,13 +1055,7 @@ static inline int8_t sys_sensor_register(sos_pid_t calling_id, uint8_t sensor_id
   return ker_sensor_register(calling_id, sensor_id, sensor_fid, ctx);
 #endif
 }
-/* @} */
 
-/**
- * \ingroup sensor_api
- * \defgroup 
- * @{
- */
 /// \cond NOTYPEDEF
 typedef int8_t (* sys_sensor_deregister_func_t)(sos_pid_t calling_id, uint8_t sensor_id);
 /// \endcond
@@ -1081,13 +1075,7 @@ static inline int8_t sys_sensor_deregister(sos_pid_t calling_id, uint8_t sensor_
   return ker_sensor_deregister(calling_id, sensor_id);
 #endif
 }
-/* @} */
 
-/**
- * \ingroup sensor_api
- * \defgroup 
- * @{
- */
 /// \cond NOTYPEDEF
 typedef int8_t (* sys_sensor_data_ready_func_t)(uint8_t sensor_id, uint16_t sensor_data, uint8_t status);
 /// \endcond
@@ -1095,7 +1083,9 @@ typedef int8_t (* sys_sensor_data_ready_func_t)(uint8_t sensor_id, uint16_t sens
 /**
  * The data ready message to the application
  *
- * \param sensor_id
+ * \param sensor_id Type of sensor
+ * \param sensor_data Value of data received from the sensor
+ * \param status Can be used to specify high priority data samples
  * \return SOS_OK      
  */
 static inline int8_t sys_sensor_data_ready(uint8_t sensor_id, uint16_t sensor_data, uint8_t status)
@@ -1106,15 +1096,9 @@ static inline int8_t sys_sensor_data_ready(uint8_t sensor_id, uint16_t sensor_da
   return ker_sensor_data_ready( sensor_id, sensor_data, status);
 #endif
 }
-/* @} */
 
 
 
-/**
- * \ingroup sensor_api
- * \defgroup 
- * @{
- */
 /// \cond NOTYPEDEF
 typedef int8_t (* sys_sensor_enable_func_t)(uint8_t sensor_id);
 /// \endcond
@@ -1133,13 +1117,6 @@ static inline int8_t sys_sensor_enable(uint8_t sensor_id)
   return ker_sensor_enable(sensor_id);
 #endif
 }
-/* @} */
-
-/**
- * \ingroup sensor_api
- * \defgroup 
- * @{
- */
 /// \cond NOTYPEDEF
 typedef int8_t (* sys_sensor_disable_func_t)(uint8_t sensor_id);
 /// \endcond
@@ -1164,10 +1141,35 @@ static inline int8_t sys_sensor_disable(uint8_t sensor_id)
 typedef int8_t (*sys_i2c_reserve_bus_t)(uint8_t calling_id, uint8_t i2c_addr, uint8_t flags);
 /// \endcond
 
+
+
+
+
+
+
+
 /**
- * TODO: Comment this chunk of code.
+ * \ingroup system_api
+ * \defgroup i2c I2C
+ * Functions controlling the I2C bus
+ * @{
  */
 
+
+/**
+ * Reserve the I2C bus.
+ *
+ * \param calling_id ID of the module reserving the I2C bus
+ * 
+ * \param i2c_addr Hardware address that the I2C controlled by the node should assume
+ * 
+ * \param flags Describes the status of the reserved bus.  When using this
+ * API the 'I2C_SYS_MASTER_FLAG | I2C_SYS_TX_FLAG' is used for transmit and
+ * 'I2C_SYS_MASTER_FLAG' is used to read data.
+ * is being reserved in master mode
+ *
+ * \returns SOS_OK on successful reservation of bus
+ */
 static inline int8_t sys_i2c_reserve_bus(uint8_t calling_id, uint8_t i2c_addr, uint8_t flags)
 {
 #ifdef SYS_JUMP_TBL_START
@@ -1181,8 +1183,14 @@ static inline int8_t sys_i2c_reserve_bus(uint8_t calling_id, uint8_t i2c_addr, u
 typedef int8_t (*sys_i2c_release_bus_t)(uint8_t calling_id);
 /// \endcond
 
-/**
- * TODO: Comment this chunk of code.
+
+/** 
+ * Release the I2C bus.
+ *
+ * \param calling_id ID of the module attempting to release the I2C bus.
+ * Note that the same module should reserve and release the I2C bus.
+ *
+ * \return SOS_OK if the bus is released.
  */
 
 static inline int8_t sys_i2c_release_bus(uint8_t calling_id)
@@ -1198,8 +1206,23 @@ static inline int8_t sys_i2c_release_bus(uint8_t calling_id)
 typedef int8_t (*sys_i2c_send_data_t)(uint8_t i2c_addr, uint8_t *msg, uint8_t msg_size, uint8_t calling_id);
 /// \endcond
 
-/**
- * TODO: Comment this chunk of code.
+
+/** 
+ * Send raw data over I2C.
+ *
+ * \param i2c_addr Hardware address of I2C device that is being sent the
+ * data.  Note that this is the pre-shifted address (no read / write bit).
+ * 
+ * \param msg Pointer to the data being sent.
+ * 
+ * \param msg_size Size of the data being sent.
+ * 
+ * \param calling_id ID of the module attempting to send the data.  Note
+ * that the same modulde should reserve the I2C bus.
+ *
+ * \return SOS_OK if the data is sent over the wire.  A 'MSG_I2C_SEND_DONE'
+ * message will be delivered to 'calling_id' after the I2C bus finishes
+ * transmitting the data.
  */
 
 static inline int8_t sys_i2c_send_data(uint8_t i2c_addr, uint8_t *msg, uint8_t msg_size, uint8_t calling_id)
@@ -1215,8 +1238,21 @@ static inline int8_t sys_i2c_send_data(uint8_t i2c_addr, uint8_t *msg, uint8_t m
 typedef int8_t (*sys_i2c_read_data_t)(uint8_t i2c_addr, uint8_t read_size, uint8_t calling_id);
 /// \endcond
 
-/**
- * TODO: Comment this chunk of code.
+
+/** 
+ * Read raw data over I2C.
+ *
+ * \param i2c_addr Hardware address of I2C device that is being read from.
+ * Note that this is the pre-shifted address (no read / write bit).
+ * 
+ * \param read_size Number of byets to read
+ * 
+ * \param calling_id ID of the module attempting to read the data.  Note
+ * that the same modulde should reserve the I2C bus.
+ *
+ * \return SOS_OK if the data is sent over the wire.  A 'MSG_I2C_READ_DONE'
+ * message will be delivered after the data is read from I2C.  Data payload
+ * will be contained in the 'msg->data' field of this message.
  */
 
 static inline int8_t sys_i2c_read_data(uint8_t i2c_addr, uint8_t read_size, uint8_t calling_id)
@@ -1227,6 +1263,7 @@ static inline int8_t sys_i2c_read_data(uint8_t i2c_addr, uint8_t read_size, uint
   return ker_i2c_read_data(i2c_addr, read_size, calling_id);
 #endif
 }
+/* @} */
 
 
 #endif
