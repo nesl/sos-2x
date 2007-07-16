@@ -65,7 +65,7 @@ def configure_setup():
 
     global listen_port
     global install_port
-    global SOS_GROUP
+    global sos_group 
     global prog
     global number_of_nodes
     global number_of_prog
@@ -229,6 +229,10 @@ def install_on_mica(platform, address, port):
 	if the installation fails for any reason, a message is displayed to the user, urging them to check the connection
 	and then retry installing the kernel again.
 	'''
+    global prog
+    global sos_group
+
+    print sos_group
 
     if platform == 0:
         cmd_install = ["make", "-C", "config/blank", "install", "PROG=" + prog, "PORT=" + install_port[port], "SOS_GROUP=" + sos_group, "ADDRESS=" + str(address)] 
@@ -238,6 +242,7 @@ def install_on_mica(platform, address, port):
         print "you shouldn't be doing this"
 	os.exit(0)
     
+    print cmd_install
     try:
       subprocess.check_call(cmd_install)
     except subprocess.CalledProcessError:
@@ -395,7 +400,7 @@ if __name__ == '__main__':
 	# it will install one node at a time, and wait for the user to switch nodes before continuing
 	print "installing several nodes via the same board, please pay attention"
 	while (number_of_nodes > 1):
-	    #install_on_mica(target, number_of_nodes - 1, 0)
+	    install_on_mica(target, number_of_nodes - 1, 0)
 
 	    print "this current nodes address is: %d" %(number_of_nodes - 1)
 	    print "please remove the current node and place another on the programming board"
@@ -405,7 +410,7 @@ if __name__ == '__main__':
 
 	    number_of_nodes -= 1
 
-	#install_on_mica(target, 0, 0)
+	install_on_mica(target, 0, 0)
 	print "this is the base station node, please leave it connected to the programming board"
     else:
 	# installing on several programming boards, serially
@@ -413,7 +418,7 @@ if __name__ == '__main__':
 	print "installing through multiple programming boards, your reaction is not required"
 
 	while (number_of_prog > 0):
-	    #install_on_mica(target, number_of_prog -1, number_of_prog-1)
+	    install_on_mica(target, number_of_prog -1, number_of_prog-1)
 
 	    print "this nodes address is: %d" %(number_of_prog-1)
 	    print "the next node will be installed automatically"

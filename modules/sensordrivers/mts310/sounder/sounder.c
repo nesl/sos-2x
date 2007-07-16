@@ -1,12 +1,13 @@
 /* -*- Mode: C; tab-width:2 -*- */
 /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
 
-#include <module.h>
 
+#include <sys_module.h>
 #include <sensor.h>
-#include <adc_proc.h>
 
 #include <mts310sb.h>
+
+#define PHOTO_0_SENSOR_ID 0
 
 static int8_t sounder_control(func_cb_ptr cb, uint8_t cmd, uint8_t options);
 
@@ -28,6 +29,7 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
 /**
  * adc call back
  * not a one to one mapping so not SOS_CALL
+ * why does this currently do nothing?
  */
 int8_t sounder_data_ready_cb(uint8_t port, uint16_t value, uint8_t status) {
 	return -EINVAL;
@@ -44,16 +46,19 @@ static inline void photo_off() {
 }
 
 
-static int8_t sounder_control(func_cb_ptr cb, uint8_t cmd, uint8_t options) {
+static int8_t sounder_control(func_cb_ptr cb, uint8_t cmd, void* data) {
+
+	uint8_t options = *(uint8_t*) data;
 
 	switch (cmd) {
 		case SENSOR_GET_DATA_CMD:
 			// get ready to read sounder sensor
-			return ker_adc_proc_getData(MTS310_PHOTO_SID);
+			return sys_adc_proc_getData(MTS310_PHOTO_SID, PHOTO_0_SENSOR_ID);
 			break;
 
 		case SENSOR_ENABLE_CMD:
 			if (options & PHOTO_SENSOR_FLAG) {
+			  // FIXME: these functions don't exist, what should they do?
 				photo_on();
 			} else {
 				temp_on();
@@ -81,10 +86,10 @@ int8_t sounder_msg_handler(void *state, Message *msg)
 
 		case MSG_INIT:
 			// bind adc channel and register callback pointer
-			ker_adc_proc_bindPort(MTS310_PHOTO_SID, MTS310_PHOTO_ADC, BUZZER_SENSOR_PID, &sounder_data_ready_cb);
+			sys_adc_proc_bindPort(MTS310_PHOTO_SID, MTS310_PHOTO_ADC, BUZZER_SENSOR_PID, &sounder_data_ready_cb);
 			// register with kernel sensor interface
-			ker_sensor_register(BUZZER_SENSOR_PID, MTS310_PHOTO_SID, SENSOR_CONTROL_FID, PHOTO_SENSOR_FLAG);
-			ker_sensor_register(BUZZER_SENSOR_PID, MTS310_TEMP_SID, SENSOR_CONTROL_FID, TEMP_SENSOR_FLAG);
+			sys_sensor_register(BUZZER_SENSOR_PID, MTS310_PHOTO_SID, SENSOR_CONTROL_FID, PHOTO_SENSOR_FLAG);
+			sys_sensor_register(BUZZER_SENSOR_PID, MTS310_TEMP_SID, SENSOR_CONTROL_FID, TEMP_SENSOR_FLAG);
 			break;
 
 		case MSG_FINAL:
@@ -92,10 +97,10 @@ int8_t sounder_msg_handler(void *state, Message *msg)
 			photo_off();
 			temp_off();
 			//  unregister ADC port
-			ker_adc_proc_unbindPort(BUZZER_SENSOR_PID, MTS310_PHOTO_SID);
+			sys_adc_proc_unbindPort(BUZZER_SENSOR_PID, MTS310_PHOTO_SID);
 			// unregister sensor
-			ker_sensor_deregister(BUZZER_SENSOR_PID, MTS310_PHOTO_SID);
-			ker_sensor_deregister(BUZZER_SENSOR_PID, MTS310_TEMP_SID);
+			sys_sensor_deregister(BUZZER_SENSOR_PID, MTS310_PHOTO_SID);
+			sys_sensor_deregister(BUZZER_SENSOR_PID, MTS310_TEMP_SID);
 			break;
 
 		default:

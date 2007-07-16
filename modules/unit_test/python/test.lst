@@ -11,3 +11,9 @@ accel_sensor
 accel_test
 /sensordrivers/mts310/accel
 10
+#test2:
+mag_sensor
+/modules/sensordrivers/mts310/mag
+mag_test
+/sensordrivers/mts310/mag
+1

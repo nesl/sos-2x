@@ -13,6 +13,7 @@ the things which might need to be modified are:
      -  SOSTOOLDIR = $HOME/local
      -  HOME = /home/test
      -  SOSTESTDIR = $SOSROOT/modules/unit_test/modules
+     - test_list = the list of test which you want to perform, by default this is test.lst
 
 2) settings for the nodes.  
   -  this is to automate the installation of a blank kernel.
@@ -24,10 +25,8 @@ the things which might need to be modified are:
   -  addition, and more advanced options are:
      - number_of_nodes, change this if you whish to install a blank kernel on several nodes, and then have a "basestation" node distrubute the drivers through the network.
      - install_portX, where X is an integer more than 0.  This specifies ports where additional programming boards are connected too.  the X value is not important, and the order of installation might not match the way you delcare the ports
-     
 
-
-next a set of tests needs to be specified.  To do this you will be modifying test.lst.
+next a set of tests needs to be specified.  To do this you will be modifying test.lst, or by modifying the config.sys file to point to your file of choice
 
 each test has a very specific format of 5 lines.
 example layout for a test:
@@ -45,6 +44,20 @@ example layout for a test:
 4) this line works much like the second line, except it specifies the name of test drivers name.  Both the .c file and .py file should start with this name.  for example there should be a accel_test.c and accel_test.py
 5) the location of the test driver files.  this must include a make file in it, and a python script.  the path you give should be from $SOSTOOLDIR, as specified in config.sys.  so in our case /sensordrivers/h34c/modules is located in $SOSROOT/modules/unit_test/modules/
 6) the number of minutes you want the test to run for, in our example, it is just 1 minute
+
+One last file needs to be modified now, the dependency list
+
+by default this is depend.lst, and will contain a list of modules, and the modules that each one depends on
+
+already included is the dependency list for the Surge module, to give you an idea of how to add more dependencies
+specificly, each dependency should look like this:
+
+ 1)the name of the module, this should specificly be the name which other modules will know it by and be the .c files name
+ 2) the location of the module under $SOSROOT
+ 3) any other modules which this one directly depends on, with one module per line
+
+ for example, for surge we say that it depends on tree_routng and phototemp_sensor, so each of these gets their own line
+in addition, the dependency list is modular, so surge does not need to declare neighbor as a dependency, only tree_routing does.
 
 finally, now that you have set up the configuration, and the tests you want to run, the test_suite is quite easy to use.
 

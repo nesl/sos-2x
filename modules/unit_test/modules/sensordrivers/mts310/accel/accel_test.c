@@ -121,7 +121,7 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 						
 					case ACCEL_TEST_APP_ACCEL_1:
 						s->state = ACCEL_TEST_APP_ACCEL_1_BUSY;
-						sys_sensor_get_data(MTS310_ACCEL_0_SID);
+						sys_sensor_get_data(MTS310_ACCEL_1_SID);
 						break;
 
 					case ACCEL_TEST_APP_ACCEL_1_BUSY:

@@ -2,13 +2,12 @@
 /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
 //written by: Martin Moreno
 
-#include <module.h>
+#include <sys_module.h>
 
 #define LED_DEBUG
 #include <led_dbg.h>
 
 #include <sensor.h>
-#include <adc_proc.h>
 
 #include <mts310sb.h>
 #include <i2c_system.h>
@@ -70,14 +69,14 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
 int8_t magnet_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, uint8_t flags) {
 
 	// get the current state of the sensor
-	magnet_sensor_state_t *s = (magnet_sensor_state_t*) ker_get_module_state(MAG_SENSOR_PID);
+	magnet_sensor_state_t *s = (magnet_sensor_state_t*) sys_get_state();
 
 	if(s->callibrate_mode == 0) { // we are NOT calibrating, this is real data
 		// post data ready message here
 		if (port == MTS310_MAG_0_SID) {
-			ker_sensor_data_ready(MTS310_MAG_0_SID, value, flags);
+			sys_sensor_data_ready(MTS310_MAG_0_SID, value, flags);
 		} else {
-			ker_sensor_data_ready(MTS310_MAG_1_SID, value, flags);
+			sys_sensor_data_ready(MTS310_MAG_1_SID, value, flags);
 		}
 
 	}
@@ -91,7 +90,7 @@ int8_t magnet_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, uint8_
 			else
 				poten_register = 0x80;
 
-			s->i2c_data_ptr = ker_malloc(sizeof(uint16_t), MAG_SENSOR_PID);
+			s->i2c_data_ptr = sys_malloc(sizeof(uint16_t));
 
 			// DEBUG PURPOSES
 			uint32_t temp1, temp2;
@@ -100,9 +99,9 @@ int8_t magnet_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, uint8_
 			temp1 = temp1<<24;
 			temp2 = s->i2c_data_value;
 			temp2 = temp2<<16;
-			uint32_t *uart_data = ker_malloc(sizeof(uint32_t), MAG_SENSOR_PID);
+			uint32_t *uart_data = sys_malloc(sizeof(uint32_t));
 			*uart_data = ((value & (0x00FF))<<8)|(value >> 8)|temp1|temp2;
-			post_uart(MAG_SENSOR_PID, MAG_SENSOR_PID, MSG_DATA_READY, sizeof(uint32_t), (void*)uart_data, SOS_MSG_RELEASE, UART_ADDRESS);
+			sys_post_uart(MAG_SENSOR_PID, MSG_DATA_READY, sizeof(uint32_t), (void*)uart_data, SOS_MSG_RELEASE, UART_ADDRESS);
 
 			 
 			// check the ADC value that was previously read
@@ -159,8 +158,8 @@ int8_t magnet_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, uint8_
 
 
 			*(s->i2c_data_ptr) = poten_register | ((s->i2c_data_value)<<8);
-			ker_i2c_reserve_bus(MAG_SENSOR_PID, I2C_ADDRESS, I2C_SYS_MASTER_FLAG|I2C_SYS_TX_FLAG);
-			ker_i2c_send_data(I2C_POTEN_ADDR, (uint8_t*)(s->i2c_data_ptr), 2, MAG_SENSOR_PID);
+			sys_i2c_reserve_bus(MAG_SENSOR_PID, I2C_ADDRESS, I2C_SYS_MASTER_FLAG|I2C_SYS_TX_FLAG);
+			sys_i2c_send_data(I2C_POTEN_ADDR, (uint8_t*)(s->i2c_data_ptr), 2, MAG_SENSOR_PID);
 		}
 
 	return SOS_OK;
@@ -179,7 +178,7 @@ static inline void magnet_off() {
 
 static inline int8_t mag_callibrate(uint8_t x_or_y) {
 
-	magnet_sensor_state_t *s = (magnet_sensor_state_t*) ker_get_module_state(MAG_SENSOR_PID);
+	magnet_sensor_state_t *s = (magnet_sensor_state_t*) sys_get_state();
 	
 	s->callibrate_mode = 1; // we are now in calibrate mode
 	s->step_size = 0x40;
@@ -188,7 +187,7 @@ static inline int8_t mag_callibrate(uint8_t x_or_y) {
 	s->steady_count = 0;
 	s->callibrate_timeout = 0;
 
-	(s->i2c_data_ptr) = ker_malloc(sizeof(uint16_t), MAG_SENSOR_PID);
+	(s->i2c_data_ptr) = sys_malloc(sizeof(uint16_t));
 
 	// setup the i2c on the corresponding sensor
 	if(x_or_y == 0) {
@@ -203,14 +202,15 @@ static inline int8_t mag_callibrate(uint8_t x_or_y) {
 		return -EINVAL;
 	}
 
-	if(SOS_OK == ker_i2c_reserve_bus(MAG_SENSOR_PID, I2C_ADDRESS, I2C_SYS_MASTER_FLAG|I2C_SYS_TX_FLAG)) {
-		ker_i2c_send_data(I2C_POTEN_ADDR, (uint8_t*)(s->i2c_data_ptr), 2, MAG_SENSOR_PID);
+	if(SOS_OK == sys_i2c_reserve_bus(MAG_SENSOR_PID, I2C_ADDRESS, I2C_SYS_MASTER_FLAG|I2C_SYS_TX_FLAG)) {
+		sys_i2c_send_data(I2C_POTEN_ADDR, (uint8_t*)(s->i2c_data_ptr), 2, MAG_SENSOR_PID);
 	}
 	else {
 		return -EBUSY;
 	}		
 	
-	ker_timer_start(MAG_SENSOR_PID, 0, CALLIBRATE_MAX_TIME);
+	// FIXME: is the timer type correct for this sensor? 
+	sys_timer_start(0, CALLIBRATE_MAX_TIME, TIMER_ONE_SHOT);
 	
 	return SOS_OK;
 }
@@ -218,15 +218,17 @@ static inline int8_t mag_callibrate(uint8_t x_or_y) {
 
 static int8_t magnet_control(func_cb_ptr cb, uint8_t cmd, void* data) {
 
+	sys_led(LED_YELLOW_ON);
+
 	uint8_t ctx = *(uint8_t*)data;
 	
 	switch (cmd) {
 	case SENSOR_GET_DATA_CMD:
 		// get ready to read accel sensor
 		if ((ctx & 0xC0) == MAG_0_SENSOR_ID) {
-			return ker_adc_proc_getData(MTS310_MAG_0_SID, MAG_0_SENSOR_ID);
+			return sys_adc_proc_getData(MTS310_MAG_0_SID, MAG_0_SENSOR_ID);
 		} else {
-			return ker_adc_proc_getData(MTS310_MAG_1_SID, MAG_1_SENSOR_ID);
+			return sys_adc_proc_getData(MTS310_MAG_1_SID, MAG_1_SENSOR_ID);
 		}
 		break;
 
@@ -241,7 +243,7 @@ static int8_t magnet_control(func_cb_ptr cb, uint8_t cmd, void* data) {
 	case SENSOR_CONFIG_CMD:
 		// no configuation
 		if (data != NULL) {
-			ker_free(data);
+			sys_free(data);
 		}
 
 		// POSSIBLE ERROR IN sensor.c,  line 234
@@ -269,18 +271,17 @@ int8_t magnet_msg_handler(void *state, Message *msg)
 	case MSG_INIT:
 		// bind adc channel and register callback pointer
 
-		ker_adc_proc_bindPort(MTS310_MAG_0_SID, MTS310_MAG_0_HW_CH, MAG_SENSOR_PID, SENSOR_DATA_READY_FID);
-		ker_adc_proc_bindPort(MTS310_MAG_1_SID, MTS310_MAG_1_HW_CH, MAG_SENSOR_PID, SENSOR_DATA_READY_FID);
+		sys_adc_proc_bindPort(MTS310_MAG_0_SID, MTS310_MAG_0_HW_CH, MAG_SENSOR_PID, SENSOR_DATA_READY_FID);
+		sys_adc_proc_bindPort(MTS310_MAG_1_SID, MTS310_MAG_1_HW_CH, MAG_SENSOR_PID, SENSOR_DATA_READY_FID);
 		// register with kernel sensor interface
 		s->magnet_0_state = MAG_0_SENSOR_ID;
-		ker_sensor_register(MAG_SENSOR_PID, MTS310_MAG_0_SID, SENSOR_CONTROL_FID, (void*)(&s->magnet_0_state));
+		sys_sensor_register(MAG_SENSOR_PID, MTS310_MAG_0_SID, SENSOR_CONTROL_FID, (void*)(&s->magnet_0_state));
 		s->magnet_1_state = MAG_1_SENSOR_ID;
-		ker_sensor_register(MAG_SENSOR_PID, MTS310_MAG_1_SID, SENSOR_CONTROL_FID, (void*)(&s->magnet_1_state));
+		sys_sensor_register(MAG_SENSOR_PID, MTS310_MAG_1_SID, SENSOR_CONTROL_FID, (void*)(&s->magnet_1_state));
+
+		sys_led(LED_YELLOW_ON);
 
 		s->callibrate_mode = 0;
-
-		ker_timer_init(MAG_SENSOR_PID, 0, TIMER_ONE_SHOT); //max callibration timer
-		ker_timer_init(MAG_SENSOR_PID, 1, TIMER_ONE_SHOT); //timer to allow adc value to settle
 
 		break;
 
@@ -288,23 +289,24 @@ int8_t magnet_msg_handler(void *state, Message *msg)
 		// shutdown sensor
 		magnet_off();
 		//  unregister ADC port
-		ker_adc_proc_unbindPort(MAG_SENSOR_PID, MTS310_MAG_0_SID);
-		ker_adc_proc_unbindPort(MAG_SENSOR_PID, MTS310_MAG_1_SID);
+		sys_adc_proc_unbindPort(MAG_SENSOR_PID, MTS310_MAG_0_SID);
+		sys_adc_proc_unbindPort(MAG_SENSOR_PID, MTS310_MAG_1_SID);
 		// unregister sensor
-		ker_sensor_deregister(MAG_SENSOR_PID, MTS310_MAG_0_SID);
-		ker_sensor_deregister(MAG_SENSOR_PID, MTS310_MAG_1_SID);
+	  sys_sensor_deregister(MAG_SENSOR_PID, MTS310_MAG_0_SID);
+		sys_sensor_deregister(MAG_SENSOR_PID, MTS310_MAG_1_SID);
 		break;
 
 	case MSG_I2C_SEND_DONE:
 
 		LED_DBG(LED_RED_TOGGLE);
 
-		ker_free(s->i2c_data_ptr);
+		sys_free(s->i2c_data_ptr);
 
-		ker_i2c_release_bus(MAG_SENSOR_PID);
+		sys_i2c_release_bus(MAG_SENSOR_PID);
 			
 		if(s->callibrate_timeout == 0) {// only continue getting data if we have not reached to callibration timeout
-			ker_timer_start(MAG_SENSOR_PID, 1, 50);
+			// FIXME: again, is this the right timer type?
+			sys_timer_start(1, 50, TIMER_ONE_SHOT);
 		}
 		else {
 			s->callibrate_mode = 0;
@@ -320,9 +322,9 @@ int8_t magnet_msg_handler(void *state, Message *msg)
 			
 		case 1:
 			if (s->current_axis == 0)
-				ker_adc_proc_getData(MTS310_MAG_0_SID, MAG_0_SENSOR_ID);
+				sys_adc_proc_getData(MTS310_MAG_0_SID, MAG_0_SENSOR_ID);
 			else
-				ker_adc_proc_getData(MTS310_MAG_1_SID, MAG_1_SENSOR_ID);
+				sys_adc_proc_getData(MTS310_MAG_1_SID, MAG_1_SENSOR_ID);
 			
 			break;
 			
