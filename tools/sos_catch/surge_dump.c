@@ -6,9 +6,15 @@
 
 #include <stdio.h>
 
+#include "sos_catch.h"
+
 #include <message_types.h>
 #include <tree_routing.h>
 #include <surge.h>
+
+// Where to connect to the sos server:
+const char *ADDRESS="127.0.0.1";
+const char *PORT="7915";
 
 /*
  * Catches surge messages and dumps them into surge.dat.
@@ -16,7 +22,7 @@
 int catch(Message* msg) {
   int i; // Loop variable.
   char tree_routing_header[sizeof(tr_hdr_t)];
-  char surge_message[sizeof(tr_hdr_t)];
+  char surge_message[sizeof(SurgeMsg)];
   FILE *fout; // The file we'll be writing to.
   const char* FILENAME = "surge.dat";
 
@@ -69,9 +75,11 @@ int catch(Message* msg) {
 
       fclose(fout);
     }
+  }
   // There are no else cases: messages which aren't Surge messages just go
   // right on by without being touched. If you want to be able to see what
-  // else is going on, uncomment the following lines:
+  // else is going on, uncomment the following lines (and comment the line
+  // above):
 /*
     else {
       printf("Message destination (%d) is not the Surge module (%d).\n",
@@ -83,4 +91,23 @@ int catch(Message* msg) {
            msg->type, MSG_TR_DATA_PKT);
   }
 */
+}
+
+// Subscribe the catch function and let it do it's thing.
+int main(int argc, char **argv)
+{
+  int ret; // Did subscription succeed?
+
+  ret = sos_subscribe(ADDRESS, PORT, (recv_msg_func_t)catch);
+
+  if (ret) {
+    return ret;
+  }
+
+  // Let things run:
+  while (1){
+    sleep(1);
+  }
+
+  return 0;
 }

@@ -1,6 +1,7 @@
 # -*-Makefile-*- #
 
-PROJ = sos_catch
+PROJ = surge_dump
+OBJS = sos_catch.o
 ROOTDIR = ../..
 
 SRCS += $(PROJ).c
@@ -11,7 +12,7 @@ INCDIR += -I$(ROOTDIR)/modules/routing/tree_routing/
 # The path to the surge header:
 INCDIR += -I$(ROOTDIR)/modules/demos/surge/
 
-# Library and search path for sqlite3:
+# Library for sqlite3:
 LDFLAGS += -lsqlite3
 
 # If the sqlite3 library isn't in the right place on your system, you'll need to
@@ -25,4 +26,4 @@ include ../sos_server/lib/Makesossrvlib
 # is necessary because setup_db.exe is not an SOS program, but is in the
 # same directory as sos_catch.c because they are part of the same system.
 setup_db.exe: setup_db.c
-	$(CC) $(CFLAGS) $(INCDIRS) $(LDFLAGS) $(LIBS) setup_db.c -o setup_db.exe
+	$(CC) $(CFLAGS) $(INCDIRS) $(LDFLAGS) $(LIBS) $< -o $@ 

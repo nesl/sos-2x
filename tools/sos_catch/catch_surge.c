@@ -6,12 +6,17 @@
 
 #include <stdio.h>
 
+#include "sos_catch.h"
+
 /*
  * The relevant message structures are defined here:
  */
 #include <message_types.h>
 #include <tree_routing.h>
 #include <surge.h>
+
+const char *ADDRESS="127.0.0.1";
+const char *PORT="7915";
 
 /*
  * This function is set up to recieve sos messages by sos_dump.c
@@ -80,4 +85,23 @@ int catch(Message* msg) {
 
   printf("   CRC: %X %X\n", msg->data[msg->len], msg->data[msg->len+1]);
   printf("\n");
+}
+
+// Subscribe the catch function and let it do it's thing.
+int main(int argc, char **argv)
+{
+  int ret; // Did subscription succeed?
+
+  ret = sos_subscribe(ADDRESS, PORT, (recv_msg_func_t)catch);
+
+  if (ret) {
+    return ret;
+  }
+
+  // Let things run:
+  while (1){
+    sleep(1);
+  }
+
+  return 0;
 }

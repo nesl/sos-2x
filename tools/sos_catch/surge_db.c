@@ -6,6 +6,8 @@
 
 #include <stdio.h>
 
+#include "sos_catch.h"
+
 #include <sqlite3.h>
 
 #include <message_types.h>
@@ -17,6 +19,10 @@
 #define OVERFLOW_ERROR 3
 
 const char* FILENAME = "messages.sql";
+
+// Where to connect to the sos server:
+const char *ADDRESS="127.0.0.1";
+const char *PORT="7915";
 
 /*
  * An sqlite3 callback function that sets the given variable to 1 when executed.
@@ -77,7 +83,7 @@ int catch(Message* msg) {
   int tm = time(NULL); // Timestamp.
   const int COMMAND_SIZE=150; // Size of sqlite command.
   char tree_routing_header[sizeof(tr_hdr_t)];
-  char surge_message[sizeof(tr_hdr_t)];
+  char surge_message[sizeof(SurgeMsg)];
   char command[COMMAND_SIZE]; // The sqlite 3 command we'll be using.
   char *err; // Place for sqlite error messages.
   sqlite3* connection; // The sqlite 3 database object.
@@ -239,3 +245,21 @@ int catch(Message* msg) {
 */
 }
 
+// Subscribe the catch function and let it do it's thing.
+int main(int argc, char **argv)
+{
+  int ret; // Did subscription succeed?
+
+  ret = sos_subscribe(ADDRESS, PORT, (recv_msg_func_t)catch);
+
+  if (ret) {
+    return ret;
+  }
+
+  // Let things run:
+  while (1){
+    sleep(1);
+  }
+
+  return 0;
+}

@@ -4,13 +4,7 @@
  * @author Peter Mawhorter (pmawhorter@cs.hmc.edu)
  */
 
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#include <sossrv_client.h>
+#include "sos_catch.h"
 
 /**
  * Connects to sossrv.exe and subscribes the catch function to all messages.
@@ -19,61 +13,30 @@
  * file instead of catch_surge.c (see below).
  */
 
-/*
- * Implements the function used to catch messages. Redefine that function
- * in order to change the behavior of sos_catch:
- */
-
-#include "catch_surge.c"
+// Funciton pre-declaration:
+int sos_msg_dispatcher();
 
 /*
- * Don't ask me why: this is from test_sossrv_client.c
- * It's used for posting a message to sos_serve that initiates message
- * handling.
+ * Subscribe a funciton to sos messages. pass it an address and port for
+ * sos_srv and a function to handle incomming messages.
  */
-#define MSG_PC_TO_MOTE  32
 
-extern char* optarg;
-extern int connected;
-
-int main(int argc, char *argv[])
+int sos_subscribe(const char *address, const char *port, recv_msg_func_t catch)
 {
-  char* ADDRESS = "127.0.0.1"; // Default is localhost
-  char* PORT = "7915";         // This is the default port
-  char c;
-
-  /*
-   * Parse the options using getopt:
-   */
-  while(-1 != (c = getopt(argc, argv, "c:hr:"))) {
-    switch (c) {
-      case 'c': PORT=optarg; break;
-      case 'h': { printf("Usage: sos_dump [-h] [-c PORT] [-r HOST]\n");
-                  printf("Flag summary:\n");
-                  printf("  -c [PORT]      Connect  Connect to sossrv on port PORT. Default is 7915.\n");
-                  printf("  -h           Help       Display this message and quit.");
-                  printf("  -r [ADDRESS]   Remote   Connect to sossrv at ADDRESS (a dotted-decimal IP\n");
-                  printf("                          address). Default is localhost.\n");
-                exit(EXIT_SUCCESS);
-              } break; // technically unnecessary
-      case 'r': ADDRESS=optarg; break;
-    }
-  }
-
   /*
    * Connect to sossrv and give an error if we can't:
    */
-  if (sossrv_connect(ADDRESS, PORT) < 0 || connected != 1) {
-    printf("Could not connect to sossrv at %s on port %s.", ADDRESS, PORT);
+  if (sossrv_connect((char*)address, (char*)port) < 0 || connected != 1) {
+    printf("Could not connect to sossrv at %s on port %s.", address, port);
     exit(EXIT_FAILURE);
   }
 
   /*
-   * Set up the catch() function (from catch.c) to receive messages.
+   * Set up the catch() function to receive messages.
    * sossrv_recv_msg closes the socket after starting a new thread, so we
    * don't have to worry about cleanup.
    */
-  if (sossrv_recv_msg((recv_msg_func_t)&catch) < 0) {
+  if (sossrv_recv_msg(catch) < 0) {
     printf("Could not subscribe to sossrv messages.");
     exit(EXIT_FAILURE);
   }
@@ -101,8 +64,5 @@ int sos_msg_dispatcher()
 			NULL, 
 			65534, 
 			65535); 
-  while (1){
-    sleep(1);
-  }
   return 0;
 }

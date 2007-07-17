@@ -10,55 +10,61 @@ mail to pmawhworter@cs.hmc.edu or the sos-users mailing list.
 
 USAGE
 -----
-./sos_catch.exe [-h] [-cPORT] [-rADDRESS]
+import "sos_catch.h"
 
-Flag summary:
-  -cPORT      Connect  Connect to sossrv on port PORT. Default is 7915.
-  -h          Help     Display this message and quit.
-  -rADDRESS   Remote   Connect to sossrv at ADDRESS (a dotted-decimal IP
-                       address). Default is localhost.
+...
+
+sos_subscribe(char *ADDRESS, char *PORT, recv_msg_func_t FUNCTION)
 
 ABOUT
 -----
-This code is a simplification of the sos_server API. At the moment, it is
-configured to subscribe to messages from a running sossrv.exe and print the
-data contained within Surge messages recieved. Running it while you have a
-newtork of motes sending Surge data to the base station should allow you to see
-the actual Surge data. The tool's purpose is to simplify the writing of C code
-for handling SOS messages: just write a function called "catch" that has the
-same specs as the catch function in the catch_surge.c file. Then change the
-include statement in sos_catch.c to include your custom code instead of
-catch_surge.c. You may have to alter the makefile so that your code will be
-able to find the headers it needs. Finally, recompile sos_catch. Then new
-executable should subscribe your function to all SOS messages. If you only want
-to process a certain type of message, use conditionals in your catch function.
+This code is a simplification of the sos_server API. The tool's purpose is to
+simplify the writing of C code for handling SOS messages: just write a function
+that has the same specs as the catch function in the catch_surge.c file and
+call the sos_subscribe method on it. You need to give sos_subscribe an address
+and port to connect to. If you're running sos_srv on the same machine you will
+run your code on, these will probably be "127.0.0.1" and "7915". To build your
+code, simply change the first like of the Makefile that declares "PROJ =
+catch_surge" to use your code instead of catch_surge. You may have to alter the
+Makefile further so that your code will be able to find the headers it needs.
+Once this is done, 'make x86' (or 'make ppc' if you're using a PowerPC Mac)
+should turn your code into an executable. In your code after the call to
+sos_subscribe you'll probably need to do something like:
 
-ALTERNATE SETUPS
+while (1) {
+  sleep(1);
+}
+
+So that the process keeps running (a seperate thread is spawned by the
+sos_server API to handle catching messages, but it dies if the main thread
+returns).
+
+INCLUDED PROGRAMS
 ----------------
-Also included is surge_dump.c. This is an alternate implementation of
-catch_surge.c which writes message information into a file instead of printing
-it to the console. To use it, just change the line in sos_catch.c that includes
-catch_surge.c to include surge_dump.c instead. Feel free to use surge_dump.c as
-a model for writing your own message recording functionality.
+Included in this directory is catch_surge.c, a simple application which uses
+sos_catch to print out detailed information on surge messages. It is set up as
+the default target, so you can compile it using 'make x86' (or 'make ppc' if
+you're on a PowerPC Mac). See the directions under "TESTING" below for how to
+run it.
 
-For those interested in databases, there is also a file surge_db.c which works
-just like catch_surge.c and surge_dump.c but wrties to a database instead of
-the screen or a file. It uses the freely available SQLite3 database software
-which creates a database in a single file. To use surge_db as the catching
-function, you'll need to first set up a database. This can be accomplished by
-typing "make setup_db.exe" and then running the resulting "setup_db.exe" file.
-The name of the database file must be set the same in both setup_db.c and
-surge_db.c, but it can be changed from the default "messages.sql". If the
-make command for setup_db.exe fails with a linker error, you'll need to change
-the library search path in the make file: see the comments in the make file
-about that. Once the database file has been created, you can compile using
-"make ppc" just like normal, assuming that you've changed the #include line
-in sos_catch.c to include surge_db.c instead of catch_surge.c, and running
-sos_catch.exe should then put messages into the database. You can use the
-sqlite3 command-line tool to look at the database or write your own programs
-to read it (Python has built-in sqlite3 support as of version 2.5). As with
-surge_dump.c, feel free to write your own database code using this as a starting
-point.
+Also included are surge_dump.c and surge_db.c. These are alternate
+implementations of catch_surge.c which write message information into a file
+and to a database respectively. To build them, just change the PROJ line at the
+top of the Makefile.
+
+surge_db.c uses the freely available SQLite3 database software which creates a
+database in a single file. To use surge_db as the catching function, you'll
+need to first set up a database. This can be accomplished by typing "make
+setup_db.exe" and then running the resulting "setup_db.exe" file.  The name of
+the database file must be set the same in both setup_db.c and surge_db.c, but
+it can be changed from the default "messages.sql". If the make command for
+setup_db.exe fails with a linker error, you'll need to change the library
+search path in the make file: see the comments in the make file about that.
+Once the database file has been created, you can compile using "make ppc" just
+like normal, assuming that you've changed the PROJ line in the Makefile.
+Running surge_db.exe should then put messages into the database. You can use
+the sqlite3 command-line tool to look at the database or write your own
+programs to read it (Python has built-in sqlite3 support as of version 2.5).
 
 TESTING
 -------
@@ -67,11 +73,11 @@ Run the SOS Surge tutorial at:
 https://projects.nesl.ucla.edu/public/sos-2x/doc/tutorial/surge_mica2.html
 
 Once you're getting messages at the base station (you'll see them appear in the
-sos_server terminal), run sos_catch.exe in another terminal. For each message
-printed to the sos_server screen, a message should be printed to the sos_catch
-screen. The sos_catch printout should look similar, and if the message is a
-Surge message (type 34), the sos_catch window should display a detailed listing
-of the entire message contents, including a line for Reading which contains the
-sensor reading. Now cover up the photosensor on the MTS310 and watch the
-reading number change in the Surge packets.
+sos_server terminal), run catch_surge.exe in another terminal. For each message
+printed to the sos_server screen, a message should be printed to the
+catch_surge screen. The catch_surge printout should look similar, and if the
+message is a Surge message (type 34), the catch_surge window should display a
+detailed listing of the entire message contents, including a line for Reading
+which contains the sensor reading. Now cover up the photosensor on the MTS310
+and watch the reading number change in the Surge packets.
 
