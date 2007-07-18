@@ -38,6 +38,14 @@
 // Ram: As of Feb 9, 2007, Changing func_cb_t requires
 // changing harbor_sos_func_cb_t structure in tools/harbor/lib/sos_mod_header_patch.c
 /*
+ * proto[4] Semantic
+ * The first character is a character representing the return type.
+ * The second character is a character representing the type of the first 
+ * argument. 
+ * The third character is a character representing the type of the second 
+ * argument.
+ * The fourth character is a character representing the number of arguments.
+ * 
  * proto[4] Encoding rules
  * Valid types are: char, short, long, double, float, void, and other.
  * Types are encoded based on the first letter of the type with the
