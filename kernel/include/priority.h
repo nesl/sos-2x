@@ -27,7 +27,7 @@ uint8_t preemption_status;
  * The following group of preemption macros can
  * only be used for SIGNALS. Please notice that 
  * SIGNALS and INTERRUPTS are different. SIGNALS
- * disable interrupts
+ * disable interrupts and INTERRUPTS don't
  */
 #define HAS_PREEMPTION_SECTION register uint8_t _prem_prev_
 #define DISABLE_PREEMPTION()                    \

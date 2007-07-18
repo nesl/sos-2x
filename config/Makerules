@@ -49,11 +49,6 @@ OBJS_FIRST =
 ##################################################
 # MEMORY PROTECTION OPTIONS
 #################################################
-ifeq ($(MODE), safe)
-DEFS += -DFAULT_TOLERANT_SOS
-SRCS += malloc_domains.c
-endif
-
 ifeq ($(MODE), sfi)
 DEFS += -DSOS_SFI
 #SRCS += malloc_sfi.c memmap.c

@@ -67,8 +67,11 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 HINT: The compilation process requires the `elftomini.exe` tool in
 `$SOSROOT/tools/elfloader/utils/elftomini/`. If the compilation process
-fails due to the absence of `elftomini.exe`, please follow the installation
-procedure in link:XXX[XXX].
+fails due to the absence of `elftomini.exe`, this indicates that you have
+not ran the installation scripts properly or there was an error in executing 
+the scripts. Please refer back to the installation section to verify that
+elftomini installed properly.
+
 
 Building the Blank Kernel
 ~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -959,6 +959,7 @@ timer_interrupt()
 	  uint8_t tid = h->tid;
 	  MsgParam *p;
 	  Message *msg;
+	  pri_t pid_pri = get_module_priority(pid);
 
 	  list_remove_head(&deltaq);
 	  
@@ -974,16 +975,16 @@ timer_interrupt()
 		list_insert_tail(&timer_pool, (list_link_t*)h);
 	  }
 
-	  // If priority is higher than current, msg_queue and preemption point is ok
+	  // If priority is higher than current, msg_queue and preemption point is ok,
 	  // dispatch now
-	  if((get_module_priority(pid) > curr_pri) && 
-		 ((schedpq.head == NULL) || (get_module_priority(pid) > schedpq.head->priority)) &&
+	  if((pid_pri > curr_pri) &&
+		 ((schedpq.head == NULL) || (pid_pri > schedpq.head->priority)) &&
 		 (preemption_point(pid) == 1)) {
-	  sched_dispatch_short_message(pid, TIMER_PID, MSG_TIMER_TIMEOUT, 
+		sched_dispatch_short_message(pid, TIMER_PID, MSG_TIMER_TIMEOUT,
 								   tid, 0, 0);
 	  }
 	  else {
-		// Create a msg
+		// Queue the msg
 		msg = msg_create();
 		if (msg != NULL) {
 		  msg->did = pid;
