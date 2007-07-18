@@ -37,6 +37,26 @@
 // changing the same structure in tools/elfloader/minielf/minielf.h
 // Ram: As of Feb 9, 2007, Changing func_cb_t requires
 // changing harbor_sos_func_cb_t structure in tools/harbor/lib/sos_mod_header_patch.c
+/*
+ * proto[4] Encoding rules
+ * Valid types are: char, short, long, double, float, void, and other.
+ * Types are encoded based on the first letter of the type with the
+ * exception of double which is encoded based on the letter 'o' and any
+ * other data type is encoded as 'y'. This is the base letter of the type.
+ * 
+ * Signed types use lowercase letters and unsigned types use uppercase
+ * letters.
+ * 
+ * Pointers use the letter one past the base letter in alphabetical
+ * order.
+ *
+ * Dynamically allocated memory (assumed to be a pointer) uses the 
+ * letter two past the base letter in alphabetical order. The type 
+ * letters can wrap around i.e. dynamically allocated memory of any
+ * user-defined type will be represented by the letter 'a'.
+ * NOTE: the ownership of the dyanmic memory is NOT transferred during 
+ * SOS_CALL.  
+ */
 typedef struct func_cb {
 	void *ptr;        //! function pointer                    
 	uint8_t proto[4]; //! function prototype                  
