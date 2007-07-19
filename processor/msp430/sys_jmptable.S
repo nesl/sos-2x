@@ -17,7 +17,7 @@ br #ker_hw_type
 br #ker_id 
 br #ker_rand 
 br #ker_systime32 
-br #ker_sys_sensor_get_data 
+br #ker_sensor_get_data 
 br #ker_led 
 br #ker_sys_get_module_state 
 br #ker_sys_fntable_subscribe    ; 18
@@ -39,8 +39,8 @@ br #ker_adc_proc_getData
 br #ker_sensor_register         ; 34
 br #ker_sensor_deregister
 br #ker_sensor_data_ready       ; 36
-br #ker_sys_sensor_enable
-br #ker_sys_sensor_disable     ;38
+br #ker_sensor_enable
+br #ker_sensor_disable     ;38
 ;br 0
 ;br #ker_adc_proc_getPeriodicData	; 34
 ;br #ker_adc_proc_stopPeriodicData
