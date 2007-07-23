@@ -15,6 +15,7 @@ sos_group = '0'
 number_of_nodes = 1
 number_of_prog = 1
 tests_to_run = 'test.lst'
+depend_list = 'depend.lst'
 
 class Test:
     ''' a small object to hold all the important information regarding a test
@@ -70,6 +71,7 @@ def configure_setup():
     global number_of_nodes
     global number_of_prog
     global tests_to_run
+    global depend_list
 
     home = '/home/test'
     sos_root = home + '/sos-2x/trunk'
@@ -80,6 +82,10 @@ def configure_setup():
 	words = re.match(r'test_list = (\S+)\n', line)
 	if words:
 	    tests_to_run = words.group(1)
+	    continue
+	words = re.match(r'depend_list= (\S+)\n', line)
+	if words:
+	    depend_list = words.group(1)
 	    continue
 	words = re.match(r'number_of_nodes = (\d+)\n', line)
 	if words:
@@ -232,8 +238,6 @@ def install_on_mica(platform, address, port):
     global prog
     global sos_group
 
-    print sos_group
-
     if platform == 0:
         cmd_install = ["make", "-C", "config/blank", "install", "PROG=" + prog, "PORT=" + install_port[port], "SOS_GROUP=" + sos_group, "ADDRESS=" + str(address)] 
     elif platform == 1:
@@ -286,6 +290,16 @@ def run_sossrv(target):
     time.sleep(10)
     return ret
 
+def run_and_log(name, dir, platform, outfile= "/dev/null"):
+    out_f = open(outfile, 'w')
+
+    cmd_make = ['make', '-C', dir]
+    cmd_install = ['sos_tool.exe', '--insmod=' + dir + '/' + name + '.mlf']
+
+    clean(dir)
+    subprocess.call(cmd_make, stderr=out_f, stdout=out_f)
+    subprocess.call(cmd_install, stderr=out_f, stdout=out_f)
+
 def install_dependency(dep_list, dep_dict, target):
     if len(dep_list) == 0:
 	return
@@ -304,15 +318,8 @@ def install_dependency(dep_list, dep_dict, target):
 	if len(current_dep.sub_dep) > 0:
 	    install_dependency(current_dep.sub_dep, dep_dict,target)
 	 
-	 
-        cmd_make = ['make', '-C', os.environ['SOSROOT'] + current_dep.source, plat]
-	cmd_install = ['sos_tool.exe', '--insmod=' + os.environ['SOSROOT'] + current_dep.source+'/' + current_dep.name + '.mlf']
+	run_and_log(current_dep.name, os.environ['SOSROOT'] + current_dep.source, plat)
 
-	print cmd_make
-	print cmd_install
-	clean(os.environ['SOSROOT'] + current_dep.source)
-        subprocess.call(cmd_make)
-        subprocess.call(cmd_install)
 	time.sleep(5)
 
 def run_tests(test_list, target, dep_dict):
@@ -342,19 +349,11 @@ def run_tests(test_list, target, dep_dict):
 	install_dependency(test.dep_list, dep_dict,target)
 
 	#first install the sensor driver
-        cmd_make = ["make", "-C",driver_location, platform]
-	cmd_install = ["sos_tool.exe", "--insmod=" + driver_location +'/' + test.driver_name + ".mlf"]
-	clean(driver_location)
-	subprocess.call(cmd_make)
-	subprocess.call(cmd_install)
+	run_and_log(test.driver_name, driver_location, platform)
 	time.sleep(5)
 
         # next install the test driver for the sensor
-	cmd_make = ['make', '-C', test_location, platform]
-	cmd_install = ['sos_tool.exe', '--insmod=' + test_location + '/' + test.test_name + '.mlf']
-	clean(test_location)
-	subprocess.call(cmd_make)
-	subprocess.call(cmd_install)
+	run_and_log(test.test_name, test_location, platform)
 
         #now run the python script to verify the output 
 	# and wait for the specified amount of time
@@ -374,7 +373,7 @@ if __name__ == '__main__':
     
     configure_setup()
 
-    dep_dict = gather_dependencies("depend.lst")
+    dep_dict = gather_dependencies(depend_list)
 
     test_list = configure_tests(tests_to_run)
     

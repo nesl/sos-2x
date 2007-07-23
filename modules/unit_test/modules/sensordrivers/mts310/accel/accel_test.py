@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.append(os.environ['SOSROOT'] + '/modules/unit_test/pysos/')
 import socket
 import signal
 import struct
@@ -59,7 +62,7 @@ if __name__ == "__main__":
     msg = srv.listen()
 
 
-    srv.register_trigger(accel_test, type=MSG_DATA_READY)
+    srv.register_trigger(accel_test, did=TEST_MODULE, type=MSG_DATA_READY)
 
     signal.signal(signal.SIGALRM, panic_handler)
     signal.alarm(60)

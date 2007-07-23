@@ -1,8 +1,14 @@
+#test:
+phototemp_sensor
+/modules/sensordrivers/mts310/photo_temp
+photo_temp_test
+/sensordrivers/mts310/photo_temp
+3
 #test0:
 accel_sensor
 /modules/sensordrivers/h34c/accel
 accel_test
-/sensordrivers/h34c/modules
+/sensordrivers/h34c/accel
 1
 surge
 #test1:

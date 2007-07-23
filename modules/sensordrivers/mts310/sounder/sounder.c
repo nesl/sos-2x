@@ -5,23 +5,36 @@
 #include <sys_module.h>
 #include <sensor.h>
 
+#define LED_DEBUG
+#include <led_dbg.h>
+
 #include <mts310sb.h>
 
-#define PHOTO_0_SENSOR_ID 0
+#define SOUNDER_SENSOR_ID 0
 
-static int8_t sounder_control(func_cb_ptr cb, uint8_t cmd, uint8_t options);
+typedef struct{
+	uint8_t sounder_state;
+} sounder_state_t;
+
+static int8_t sounder_control(func_cb_ptr cb, uint8_t cmd, void* data);
+
+static int8_t sounder_data_ready_cb(uint8_t port, uint16_t value, uint8_t status);
 
 static int8_t sounder_msg_handler(void *state, Message *msg);
 
 static const mod_header_t mod_header SOS_MODULE_HEADER = {
-  mod_id : BUZZER_SENSOR_PID,
-  state_size : 0,
+  mod_id : SOUNDER_PID,
+  state_size : sizeof(sounder_state_t),
   num_timers : 0,
   num_sub_func : 0,
-  num_prov_func : 1,
+  num_prov_func : 2,
+	platform_type : HW_TYPE,
+	processor_type : MCU_TYPE,
+	code_id : ehtons(SOUNDER_PID),
   module_handler : sounder_msg_handler,
 	funct : {
-		{sounder_control, "cCC2", BUZZER_SENSOR_PID, SENSOR_CONTROL_FID},
+		{sounder_control, "cCC2", SOUNDER_PID, SENSOR_CONTROL_FID},
+		{sounder_data_ready_cb, "cCS3", SOUNDER_PID, SENSOR_DATA_READY_FID},
 	},
 };
 
@@ -30,6 +43,7 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
  * adc call back
  * not a one to one mapping so not SOS_CALL
  * why does this currently do nothing?
+ * A: there is no sensor to get data from for the sounder
  */
 int8_t sounder_data_ready_cb(uint8_t port, uint16_t value, uint8_t status) {
 	return -EINVAL;
@@ -40,37 +54,29 @@ static inline void buzzer_on() {
 	SET_SOUNDER_EN();
 	SET_SOUNDER_EN_DD_OUT();
 }
-static inline void photo_off() {
+
+static inline void buzzer_off() {
 	SET_SOUNDER_EN_DD_IN();
 	CLR_SOUNDER_EN();
 }
 
-
 static int8_t sounder_control(func_cb_ptr cb, uint8_t cmd, void* data) {
+
 
 	uint8_t options = *(uint8_t*) data;
 
 	switch (cmd) {
 		case SENSOR_GET_DATA_CMD:
 			// get ready to read sounder sensor
-			return sys_adc_proc_getData(MTS310_PHOTO_SID, PHOTO_0_SENSOR_ID);
+			// but there is no sounder sensor
 			break;
 
 		case SENSOR_ENABLE_CMD:
-			if (options & PHOTO_SENSOR_FLAG) {
-			  // FIXME: these functions don't exist, what should they do?
-				photo_on();
-			} else {
-				temp_on();
-			}
+			buzzer_on();
 			break;
 
 		case SENSOR_DISABLE_CMD:
-			if (options & PHOTO_SENSOR_FLAG) {
-				photo_off();
-			} else {
-				temp_off();
-			}
+			buzzer_off();
 			break;
 
 		default:
@@ -82,25 +88,17 @@ static int8_t sounder_control(func_cb_ptr cb, uint8_t cmd, void* data) {
 
 int8_t sounder_msg_handler(void *state, Message *msg)
 {
+  sounder_state_t *s = (sounder_state_t *) state;
+	
   switch (msg->type) {
 
 		case MSG_INIT:
-			// bind adc channel and register callback pointer
-			sys_adc_proc_bindPort(MTS310_PHOTO_SID, MTS310_PHOTO_ADC, BUZZER_SENSOR_PID, &sounder_data_ready_cb);
-			// register with kernel sensor interface
-			sys_sensor_register(BUZZER_SENSOR_PID, MTS310_PHOTO_SID, SENSOR_CONTROL_FID, PHOTO_SENSOR_FLAG);
-			sys_sensor_register(BUZZER_SENSOR_PID, MTS310_TEMP_SID, SENSOR_CONTROL_FID, TEMP_SENSOR_FLAG);
+			s->sounder_state = SOUNDER_SENSOR_ID;
+      sys_sensor_register(SOUNDER_PID, MTS310_SOUNDER_SID, SENSOR_CONTROL_FID, (void*)(&s->sounder_state));
 			break;
 
 		case MSG_FINAL:
-			// shutdown sensor
-			photo_off();
-			temp_off();
-			//  unregister ADC port
-			sys_adc_proc_unbindPort(BUZZER_SENSOR_PID, MTS310_PHOTO_SID);
-			// unregister sensor
-			sys_sensor_deregister(BUZZER_SENSOR_PID, MTS310_PHOTO_SID);
-			sys_sensor_deregister(BUZZER_SENSOR_PID, MTS310_TEMP_SID);
+			sys_sensor_deregister(SOUNDER_PID, MTS310_SOUNDER_SID);
 			break;
 
 		default:
