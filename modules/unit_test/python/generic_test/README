@@ -1,5 +1,14 @@
 this directory includes the 3 needed files for any test.  included are a Makefile, a .c file which should be loaded onto the node, and a python script which will be run on the server.
 
+a simply python script is provided which will copy the filles, and modify the default test.lst file to include your new test.
+
+to use it simply do:
+  -- python make_new.py sensor_name_here sensor_location_here test_name_here test_location_here test_duration_here
+       .. it requires 5 arguements, which are essentially the items you would enter into the test.lst file
+          if the test location directories don't exist already, the script will make them for you
+          it then will copy the needed files into the directory and modify the test.lst file as needed
+
+
 in each file is a template which you are reccomended to follow, and make any needed changes to based on the specific driver you are testing.  It is assumed you have the basic knowledge of how to write a SOS module, since the purpose of these files is to simply facilitate the writing of sensor tests that you or other associates have written already.
 
 It is recomended that you place all three of your new test driver files in:

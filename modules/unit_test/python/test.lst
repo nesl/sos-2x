@@ -23,3 +23,9 @@ mag_sensor
 mag_test
 /sensordrivers/mts310/mag
 1
+#generic_test:
+sensor
+/modules/sensor
+test
+/sensordrivers/mts310/sht123
+1

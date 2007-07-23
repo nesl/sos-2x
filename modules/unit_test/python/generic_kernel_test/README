@@ -1,0 +1,25 @@
+these set of files will provide a generic kernel test.  Much like the generic sensor test provided, one simply needs to run the make_new.py script with a set of arguements, and a new empty test will be copied, and the test list will be modified correctly. 
+
+There is one significant change though, since the kernel tests don't require a sensor driver to be installed, you should not specify one in the argument list.  Instead, one can specify two test names and directories to be created (this can be useful to testing sys_post and what not)
+
+the arguements work as follows:
+ -- for 3 arguements
+    1) test name 
+    2) test location
+    3) test durration
+    this option will create a single new test in in the specified location with the name given
+    since no sensor driver is specified, a dummy one is used and added to the test list file for you
+
+ -- for 5 arguements
+    1) test 1 name
+    2) test 1 location
+    3) test 2 name
+    4) test 2 location
+    5) test durration
+
+    this option will create two tests, each in their own specified directory, with the given names.
+    it will then add both to the test list as a single test ment to be run at the same time.  although, be aware that only the python script for the second test will actualy be run.  
+
+the generic kernel test will automaticly provide a basic test of a few standard sos system functionalities.  Specificly, it tests the correct loading of a module, the unloading of a module, sys_id, and the sys_post_uart and sys_post_net commands with the SOS_RELEASE type.  This simply provides a basic initialization, and finalization  and wireless communication set up, more advanced test will need to be added for the system calls you wish to test.
+
+
