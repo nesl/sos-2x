@@ -17,12 +17,12 @@ def setup_dir(loc):
 def modify_list(sensor_name, sensor_loc, test_name, test_loc, test_time):
     test_f = open ("python/test.lst", 'a')
 
-    test_f.write("#generic_kernel_test:\n%s\n%s\n%s\n%s\n%s" %(sensor_name, sensor_loc, test_name, test_loc, test_time))
+    test_f.write("#generic_kernel_test:\n%s\n/modules/unit_test%s\n%s\n%s\n%s\n" %(sensor_name, sensor_loc, test_name, test_loc, test_time))
 
     test_f.close()
 
 def create_new_test(test_name):
-    base_file = os.environ['SOSROOT'] + '/modules/unit_test/python/generic_test/'
+    base_file = os.environ['SOSROOT'] + '/modules/unit_test/python/generic_kernel_test/'
 
     move_cmd = ['cp', base_file + 'generic_kernel_test.c', test_name+'.c']
 
@@ -37,12 +37,12 @@ def create_new_test(test_name):
     subprocess.call(move_cmd)
 
 if __name__ == "__main__":
-    if (len(sys.argv) == 3):
+    if (len(sys.argv) == 4):
 	test_name = sys.argv[1]
 	test_loc = sys.argv[2]
 	test_time = sys.argv[3]
-	sensor_name = 'accel'
-	sensor_loc = 'modules/sensordrivers/mts310/accel'
+	sensor_name = 'accel_sensor'
+	sensor_loc = '/modules/sensordrivers/mts310/accel'
     elif (len(sys.argv) < 6):
 	print "requires three or five arugments"
 	sys.exit(1)
@@ -53,7 +53,7 @@ if __name__ == "__main__":
 	test_loc = sys.argv[4]
 	test_time = sys.argv[5]
 
-	os.chdir(os.environ['SOSROOT'] + "/modules")
+	os.chdir(os.environ['SOSROOT'] + "/modules/unit_test/modules")
 	setup_dir(sensor_loc)
 	create_new_test(sensor_name)
 

@@ -11,6 +11,8 @@ TEST_MODULE = 0x80
 MSG_TEST_DATA= 33
 ALARM_LEN = 60
 
+START_DATA = 100
+FINAL_DATA = 200
 # variables holding new and old sensor values
 # this can be replaces with whatever you want since this is specific to
 # what the test driver expects for data
@@ -38,25 +40,22 @@ def generic_test(msg):
 
     #unpack the values we are expecting, in this case it is a node id, the acclerometer id,
     # and a value from the sensor
-    (node_id, accelid, value) = pysos.unpack("<BBH", msg['data'])
+    (node_id, node_state, data) = pysos.unpack("<BBB", msg['data'])
 
     if node_id not in state.keys():
 	state[node_id] = 0
 	oldstate[node_id] = 0
 
-    print accelid
-    print value
     # these are some simple calculations to test the sensor value we have gotten
-    # this is the part which you need to fill in in order to verify that the driver is working
-    g = (value-512)/1024.0*3000/333.0
-    if abs(g)>0.8:
-	if g > 0:
-	    state[node_id] = accelid
-	else:
-	    state[node_id] = 7-accelid
-    if oldstate[node_id] != state[node_id]:
-	print "For Node %d	Side %d is up"%(node_id, state[node_id],)
-	oldstate[node_id] = state[node_id]
+    # this is the part which you need to fill in in order to verify that the function is working
+    if (node_state == START_DATA):
+	print "initialization began correctly"
+    if (node_state == 0):
+	state[node_id] = data
+    if (node_state == 1 and state[node_id] != data):
+	print " a message was lost somewhere"
+    if (node_state == FINAL_DATA):
+	print "finalization worked correctly"
 
 if __name__ == "__main__":
 

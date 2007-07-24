@@ -293,12 +293,12 @@ def run_sossrv(target):
 def run_and_log(name, dir, platform, outfile= "/dev/null"):
     out_f = open(outfile, 'w')
 
-    cmd_make = ['make', '-C', dir]
+    cmd_make = ['make', '-C', dir, platform]
     cmd_install = ['sos_tool.exe', '--insmod=' + dir + '/' + name + '.mlf']
 
     clean(dir)
-    subprocess.call(cmd_make, stderr=out_f, stdout=out_f)
-    subprocess.call(cmd_install, stderr=out_f, stdout=out_f)
+    subprocess.call(cmd_make)#, stderr=out_f, stdout=out_f)
+    subprocess.call(cmd_install)#, stderr=out_f, stdout=out_f)
 
 def install_dependency(dep_list, dep_dict, target):
     if len(dep_list) == 0:

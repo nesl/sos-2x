@@ -17,7 +17,7 @@ def setup_dir(loc):
 def modify_list(sensor_name, sensor_loc, test_name, test_loc, test_time):
     test_f = open ("python/test.lst", 'a')
 
-    test_f.write("#generic_test:\n%s\n%s\n%s\n%s\n%s" %(sensor_name, sensor_loc, test_name, test_loc, test_time))
+    test_f.write("#generic_test:\n%s\n%s\n%s\n%s\n%s\n" %(sensor_name, sensor_loc, test_name, test_loc, test_time))
 
     test_f.close()
 

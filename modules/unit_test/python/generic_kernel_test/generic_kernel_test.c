@@ -7,6 +7,7 @@
 #define LED_DEBUG
 #include <led_dbg.h>
 
+#define TEST_PID DFLT_APP_ID0
 /* this is a new message type which specifies our test driver's packet type
  * both the python test script, and the message handler will need to handle messages of this type
  */
@@ -16,6 +17,11 @@
 /* this is the timer specifications */
 #define TEST_APP_TID 0
 #define TEST_APP_INTERVAL 50
+
+/* messagees for when MSG_INIT and MSG_FINAL are sent
+ */
+#define START_DATA 100
+#define FINAL_DATA 200
 
 /* if your driver has more than one sensor, or device, which can be polled
  * include more states here
@@ -82,7 +88,7 @@ static int8_t send_new_data(uint8_t state, uint8_t data){
 			 */
 			if (sys_id() == 0){
 				sys_post_uart ( 
-						s->pid,
+						TEST_PID,
 						MSG_TEST_DATA,
 						sizeof(data_msg_t),
 						data_msg,
@@ -90,7 +96,7 @@ static int8_t send_new_data(uint8_t state, uint8_t data){
 						BCAST_ADDRESS);
 			} else {
 				sys_post_net (
-						s->pid, 
+						TEST_PID, 
 						MSG_TEST_DATA,
 						sizeof(data_msg_t),
 						data_msg,
@@ -119,16 +125,17 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 			sys_led(LED_RED_OFF);
 
 			s->state = TEST_APP_INIT;
+			s->count = 0;
 			s->pid = msg->did;
 
 			sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
-      send_new_data(s->state, 0);
+      send_new_data(START_DATA, 0);
 			break;
 
 		case MSG_FINAL:
-			sys_time_stop(TEST_APP_TID);
+			sys_timer_stop(TEST_APP_TID);
 			s->state = TEST_APP_FINAL;
-			send_new_data(s->state, 1);
+			send_new_data(FINAL_DATA, 1);
 			break;
 
 	  /* here we handle messages of type MSG_TEST_DATA
