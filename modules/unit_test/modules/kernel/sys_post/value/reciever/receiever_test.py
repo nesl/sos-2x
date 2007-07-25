@@ -53,7 +53,11 @@ def generic_test(msg):
     if (node_state == 0):
 	state[node_id] = data
     if (node_state == 1 and state[node_id] != data):
-	print >> sys.stderr, " a message was lost somewhere on node %d before count %d" %(node_id,data)
+	print >> sys.stderr, ' a message was lost somewhere for node %d' %(node_id, )
+    if (node_state == 155):
+	print >> sys>stderr, "a message was not transfered correctly on node %d for count %d" %(node_id, data)
+    if (node_state == 255):
+        print "message transfered correct on node %d for count %d" %(node_id, data)
     if (node_state == FINAL_DATA):
 	print "finalization worked correctly"
 

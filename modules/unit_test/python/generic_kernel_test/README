@@ -18,6 +18,7 @@ the arguements work as follows:
     5) test durration
 
     this option will create two tests, each in their own specified directory, with the given names.
+    also note that when specifying the test 1 location, it's root will be in $SOSROOT/modules/unit_test, the same as test 2's root location
     it will then add both to the test list as a single test ment to be run at the same time.  although, be aware that only the python script for the second test will actualy be run.  
     please note that if you use this option, you will have to change the mod id of one of the tests
 

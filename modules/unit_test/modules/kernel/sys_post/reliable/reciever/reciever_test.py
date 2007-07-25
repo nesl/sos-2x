@@ -13,6 +13,8 @@ ALARM_LEN = 60
 
 START_DATA = 100
 FINAL_DATA = 200
+TRANS_FAIL = 155
+TRANS_GOOD = 255
 # variables holding new and old sensor values
 # this can be replaces with whatever you want since this is specific to
 # what the test driver expects for data
@@ -50,10 +52,14 @@ def generic_test(msg):
     # this is the part which you need to fill in in order to verify that the function is working
     if (node_state == START_DATA):
 	print "initialization began correctly"
+    if (node_state == TRANS_GOOD):
+	print "transmission worked for node %d with count %d" %(node_id, data)
+    if (node_state == TRANS_FAIL):
+	print >> sys.stderr, "transmission failed for node %d with count %d" %(node_id, data)
     if (node_state == 0):
 	state[node_id] = data
     if (node_state == 1 and state[node_id] != data):
-	print >> sys.stderr, " a message was lost somewhere on node %d before count %d" %(node_id,data)
+	print >> sys.stderr, " a message was lost somewhere"
     if (node_state == FINAL_DATA):
 	print "finalization worked correctly"
 

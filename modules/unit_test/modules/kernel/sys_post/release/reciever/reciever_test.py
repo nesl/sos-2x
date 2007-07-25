@@ -35,7 +35,6 @@ def generic_test(msg):
     global oldstate
     global state
 
-    print "message recieved"
     signal.alarm(ALARM_LEN)
 
     #unpack the values we are expecting, in this case it is a node id, the acclerometer id,
@@ -45,6 +44,7 @@ def generic_test(msg):
     if node_id not in state.keys():
 	state[node_id] = 0
 	oldstate[node_id] = 0
+    print "message recieved for node %d" %node_id
 
     # these are some simple calculations to test the sensor value we have gotten
     # this is the part which you need to fill in in order to verify that the function is working
@@ -53,7 +53,7 @@ def generic_test(msg):
     if (node_state == 0):
 	state[node_id] = data
     if (node_state == 1 and state[node_id] != data):
-	print >> sys.stderr, " a message was lost somewhere on node %d before count %d" %(node_id,data)
+	print >> sys.stderr,  " a message was lost somewhere for node %d" %node_id
     if (node_state == FINAL_DATA):
 	print "finalization worked correctly"
 

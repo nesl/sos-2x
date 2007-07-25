@@ -2,6 +2,11 @@ import subprocess
 import sys
 import os
 
+makefile_cont = ["#change the project name to reflect the test you have created\n",
+		"",
+		"ROOTDIR = $(SOSROOT)\n",
+		"include $(ROOTDIR)/modules/Makerules\n"]
+
 def setup_dir(loc):
     
     file_dirs = loc.split('/')
@@ -17,7 +22,7 @@ def setup_dir(loc):
 def modify_list(sensor_name, sensor_loc, test_name, test_loc, test_time):
     test_f = open ("python/test.lst", 'a')
 
-    test_f.write("#generic_kernel_test:\n%s\n/modules/unit_test%s\n%s\n%s\n%s\n" %(sensor_name, sensor_loc, test_name, test_loc, test_time))
+    test_f.write("#generic_kernel_test:\n%s\n%s\n%s\n%s\n%s\n" %(sensor_name, sensor_loc, test_name, test_loc, test_time))
 
     test_f.close()
 
@@ -32,9 +37,13 @@ def create_new_test(test_name):
     move_cmd[2] = test_name + '.py'
     subprocess.call(move_cmd)
 
-    move_cmd[1] = base_file +'Makefile'
-    move_cmd[2] = 'Makefile'
-    subprocess.call(move_cmd)
+    make_f = open("Makefile", "w")
+
+    makefile_cont[1] = "PROJ = %s\n" %test_name
+    for line in makefile_cont:
+        make_f.write(line)
+
+    make_f.close()
 
 if __name__ == "__main__":
     if (len(sys.argv) == 4):
@@ -56,6 +65,8 @@ if __name__ == "__main__":
 	os.chdir(os.environ['SOSROOT'] + "/modules/unit_test/modules")
 	setup_dir(sensor_loc)
 	create_new_test(sensor_name)
+
+	sensor_loc = "/modules/unit_test" + sensor_loc
 
     os.chdir(os.environ['SOSROOT'] + "/modules/unit_test")
 
