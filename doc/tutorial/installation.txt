@@ -50,11 +50,11 @@ These instructions have been tested on the following systems:
 - <<mac, Intel based Mac (Mac OS X 10.4.*)>>
 - <<windows, Windows XP>>
 
-NOTE: *Advanced users* who wish to use AVR gdb and JTAG to debug their code directly 
+NOTE: *Advanced users* who wish to use gdb and JTAG to debug their code directly 
 on the hardware should follow the instructions <<advanced, here>>. It is suggested
 that you first go through the instructions for installing a basic toolchain for SOS
 for your system so that you setup the necessary environment variables that are also
-used for installing AVR gdb and Avarice.
+used for installing the debug toolchain.
 
 [[linux]]
 
@@ -459,8 +459,141 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Advanced Users
 --------------
 
+With SOS, you can use gdb and JTAG to debug your code while executing on the hardware
+node. Follow the steps according to the platform that you are using:
+
+- <<tmote, Tmote Sky>> 
+- <<mica, MicaZ/Mica2 motes>> 
+
+[[tmote]]
+
+Debugging Tmote Sky with GDB
+----------------------------
+
+This link:http://www.eecs.harvard.edu/~mdw/proj/tmote-gdb/[website] serves as a good
+starting point on how to set up a debugging environment in linux. Go through this
+to understand the hardware and software tools required, but follow the exact 
+instructions given below as the instructions given there seem to be tested on
+an older version of Fedora Core linux.
+
+The instructions given below are for using MSP-430FETUIF USB debugging
+interface (JTAG) available from 
+link:http://focus.ti.com/docs/toolsw/folders/print/msp-fet430uif.html[TI].
+
+To get it working, you will need to install the following toolchain: 
+
+- msp430-gdb
+- libHIL.so for JTAG
+- msp430-gdbproxy
+
+The following instructions have only been tested on Ubuntu, but will most probably work 
+on latest Redhat/Fedora Core distributions as well. The drivers for the TI USB-serial chip
+are already included in the kernel versions >= 2.6.20 
+(link:http://www.moteiv.com/community/Debugging_Tmote_Sky_with_GDB[source]).
+
+- GDB 6.0: The instructions are taken from this German 
+link:http://www.mikrocontroller.net/articles/MSPGCC#gdb[website].
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ wget http://mirrors.redwire.net/pub/sources.redhat.com/gdb/old-releases/gdb-6.0.tar.bz2
+$ tar xjvf gdb-6.0.tar.bz2
+ 
+$ cvs -d:pserver:anonymous@mspgcc.cvs.sourceforge.net:/cvsroot/mspgcc login
+$ cvs -z3 -d:pserver:anonymous@mspgcc.cvs.sourceforge.net:/cvsroot/mspgcc co gdb/gdb-current
+$ cp -r gdb/gdb-current/* gdb-6.0/
+
+$ cd gdb-6.0
+$ CC=gcc-3.4 ./configure --prefix=$SOSMSPTOOLDIR --target=msp430
+$ make
+$ make install
+$ cd ..
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Create .gdbinit in your $HOME directory and add the following lines to it. 
+It is assumed that you will use port 2000 for msp430-gdbproxy as shown 
+link:http://www.eecs.harvard.edu/~mdw/proj/tmote-gdb/[here].
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+set remoteaddresssize 16
+set remotetimeout 999999
+set download-write-size 512
+target remote localhost:2000
+set remote memory-write-packet-size 512
+set remote memory-write-packet-size fixed
+set remote memory-read-packet-size 512
+set remote memory-read-packet-size fixed
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- JTAG
+	* The instructions are taken from this 
+	link:http://www.mikrocontroller.net/articles/MSPGCC#JTAG[website] again.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ cvs -d:pserver:anonymous@mspgcc.cvs.sourceforge.net:/cvsroot/mspgcc login
+$ cvs -z3 -d:pserver:anonymous@mspgcc.cvs.sourceforge.net:/cvsroot/mspgcc co jtag
+$ cd jtag/hardware_access
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+WARNING: Make sure to modify the CFLAGS and LNOPTS as shown if you are
+using 64-bit Linux.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+CFLAGS  += -fPIC -m32
+LNOPTS   = -fPIC -shared -m32
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Finally, execute
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ make
+$ mv libHIL.so /usr/local/lib
+$ ldconfig
+$ cd ../..
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- msp430-gdbproxy
+	* It uses libMSP430.so. Download msp430-gdbproxy and libMSP430.so from 
+	link:http://www.soft-switch.org/downloads/mspgcc[here]. Execute the following
+	commands taken from 
+	link:http://www.mikrocontroller.net/articles/MSPGCC#gdbproxy[here]. 
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ chmod +x msp430-gdbproxy
+$ mv msp430-gdbproxy $SOSMSPTOOLDIR/bin
+$ mv libMSP430.so /usr/local/lib/
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Add a rule to udev to select an appropriate configuration of TI USB-serial 
+converter. Look link:http://www.moteiv.com/community/Debugging_Tmote_Sky_with_GDB[here]
+for exact details.
+
+- Follow the usage of msp430-gdbproxy and msp430-gdb given 
+link:http://www.eecs.harvard.edu/~mdw/proj/tmote-gdb/[here] to debug your code.
+Add CFLAGS += -g to $SOSROOT/processor/msp430/Makerules before compiling
+your code. Use .elf extension intead of .exe as described in that website.
+
+- msp430-gdbproxy might complain of older/incompatible firmware version on the 
+TI USB FET when you first connect it to your computer. Follow instructions
+link:http://www.moteiv.com/community/Debugging_Tmote_Sky_with_GDB#Updating_the_USB_FET_firmware[here]
+to update the firmware.
+
+- References:
+	* link:http://www.mikrocontroller.net/articles/MSPGCC[http://www.mikrocontroller.net/articles/MSPGCC]
+	* link:http://www.moteiv.com/community/Debugging_Tmote_Sky_with_GDB[Moteiv]
+	* link:http://www.eecs.harvard.edu/~mdw/proj/tmote-gdb/[Matt Welsh]
+
+[[mica]]
+
+Debugging MicaZ/Mica2 motes with GDB
+------------------------------------
+
 With SOS, you can use AVR gdb to debug your code while executing on the hardware node. 
-Needless to say, this only supports platforms based on AVR Atmega 128 micro-controller.
 AVR gdb uses Avarice to interface with the JTAG. In this section, we assume that 
 
 - you have installed the necessary drivers for your JTAG device.
