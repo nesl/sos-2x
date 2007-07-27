@@ -27,7 +27,7 @@ state = {}
 def panic_handler(signum, frame):
     print "it is highly likely that your node has entered panic mode"
     print "please reset the node"
-    os.exit(1)
+    sys.exit(1)
 
 # message handler for messages of type MSG_DATA_READY
 def generic_test(msg):

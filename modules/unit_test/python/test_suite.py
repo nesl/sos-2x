@@ -6,6 +6,7 @@ import os
 import sys
 import subprocess
 import re
+import stat
 
 global number_of_nodes
 prog = 'mib510'
@@ -37,16 +38,17 @@ class Dependency:
 	self.sub_dep = []
 
 
-def run_and_redirect(run_cmd, outfile):
+def run_and_redirect(run_cmd, outfile='', error='/dev/null'):
     ''' redirect the output to outfile, if a file is specified
         and create change the programming running to the one specified in run_cmd
 	if for some reason that returns, we exit with status 1
 	'''
     if outfile != '':
 	out = open(outfile, 'w')
-	out2 = os.dup(out.fileno())
 	os.dup2(out.fileno(), 1)
-	os.dup2(out2, 2)
+
+    err_f = open(error, 'w')
+    os.dup2(err_f.fileno(), 2)
 
     os.execvp(run_cmd[0], run_cmd)
     os._exit(1)
@@ -290,15 +292,18 @@ def run_sossrv(target):
     time.sleep(10)
     return ret
 
-def run_and_log(name, dir, platform, outfile= "/dev/null"):
-    out_f = open(outfile, 'w')
+def run_and_log(name, dir, platform, good_file='', error_file=''):
+    if good_file != '':
+        out_f = open(good_file, 'w')
+    if error_file != '':
+        err_f = open(error_file, 'w')
 
     cmd_make = ['make', '-C', dir, platform]
     cmd_install = ['sos_tool.exe', '--insmod=' + dir + '/' + name + '.mlf']
 
     clean(dir)
-    subprocess.call(cmd_make)#, stderr=out_f, stdout=out_f)
-    subprocess.call(cmd_install)#, stderr=out_f, stdout=out_f)
+    subprocess.call(cmd_make)#, stderr=err_f, stdout=out_f)
+    subprocess.call(cmd_install)#, stderr=err_f, stdout=out_f)
 
 def install_dependency(dep_list, dep_dict, target):
     if len(dep_list) == 0:
@@ -335,6 +340,8 @@ def run_tests(test_list, target, dep_dict):
     elif target == 1 or target == 2:
 	platform = 'mica2'
 
+    failed_tests = []
+
     print "starting tests"
 
     cmd_erase = ["sos_tool.exe", "--rmmod=0"]
@@ -361,11 +368,15 @@ def run_tests(test_list, target, dep_dict):
 	if child == 0:
 	    print "running python test"
 	    cmd_test = ['python', test_location + '/' + test.test_name + '.py']
-	    run_and_redirect(cmd_test, '')
+	    run_and_redirect(cmd_test, error="%s/%s.bad" %(test_location, test.test_name)) 
 	else:
 	    time.sleep(test.time)
 	    os.kill(child, signal.SIGKILL)
 	    os.waitpid(child, 0)
+	    if (os.stat("%s/%s.bad" %(test_location, test.test_name))[stat.ST_SIZE] > 0):
+		failed_tests.append(test)
+	    
+    return failed_tests
 
 if __name__ == '__main__':
     avrora_child = 0
@@ -426,7 +437,10 @@ if __name__ == '__main__':
 	    
     sos_child = run_sossrv(target)
 
-    run_tests(test_list, target, dep_dict)
+    failed_tests = run_tests(test_list, target, dep_dict)
+
+    for test in failed_tests:
+	print "test %s had failures, please check the .bad file for it" %test.name
 
     # killing any child processes that are running
     if (sos_child > 0):

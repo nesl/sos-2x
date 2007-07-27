@@ -17,7 +17,7 @@ total = {}
 def panic_handler(signum, frame):
     print "it is likely that your base station node has entered panic mode"
     print "please reset the node"
-    os.exit(1)
+    sys.exit(1)
 
 def accel_test(msg):
     """ Small example of accelerometer usage. It simulates a virtual

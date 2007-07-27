@@ -23,9 +23,9 @@ state = {}
 # it is highly suggested that you use this since it is the easiest way to test if your
 # node has entered panic mode via the script
 def panic_handler(signum, frame):
-    print "it is highly likely that your node has entered panic mode"
-    print "please reset the node"
-    os.exit(1)
+    print >> sys.stderr, "it is highly likely that your node has entered panic mode"
+    print >> sys.stderr, "please reset the node"
+    sys.exit(1)
 
 # message handler for messages of type MSG_DATA_READY
 def generic_test(msg):
