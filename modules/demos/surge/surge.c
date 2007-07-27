@@ -137,7 +137,7 @@ int8_t surge_module_handler(void *state, Message *msg)
 		  if (s->timer_ticks % TIMER_GETADC_COUNT == 0){
 			if(sys_sensor_get_data(MTS310_PHOTO_SID) < 0){
 			  LED_DBG(LED_RED_TOGGLE);
-			  sys_post_value(SURGE_MOD_PID, MSG_DATA_READY, 0xffff, 0);
+			  sys_post_value(SURGE_MOD_PID, MSG_DATA_READY, 0x00ffff00, 0);
 			}
 		  }
 		  return SOS_OK;
