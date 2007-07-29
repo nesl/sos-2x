@@ -47,6 +47,28 @@ uint8_t ker_hw_type();
 uint16_t ker_id();
 uint16_t ker_rand();
 uint32_t ker_systime32();
+
+int8_t ker_sensor_get_data(uint8_t sensor_id);
+int8_t ker_sensor_register(sos_pid_t calling_id, 
+        uint8_t sensor_id, 
+        uint8_t sensor_fid, void *ctx);
+int8_t ker_sensor_deregister(sos_pid_t calling_id, uint8_t sensor_id);
+int8_t ker_sensor_get_data(uint8_t sensor_id);
+int8_t ker_sensor_enable(uint8_t sensor_id);
+int8_t ker_sensor_disable(uint8_t sensor_id);
+int8_t ker_sensor_data_ready(uint8_t sensor_id, uint16_t sensor_data, uint8_t status);
+
+
+int8_t ker_i2c_reserve_bus(uint8_t calling_id, uint8_t ownAddress, uint8_t flags);
+int8_t ker_i2c_release_bus(uint8_t calling_id);
+int8_t ker_i2c_send_data(
+		uint8_t dest_addr,
+		uint8_t *buff,
+		uint8_t msg_size,
+		uint8_t calling_id);
+int8_t ker_i2c_read_data(uint8_t dest_addr, uint8_t read_size, uint8_t calling_id);
+
+
 int8_t ker_led(uint8_t op);
 void* ker_sys_get_module_state( void );
 int8_t ker_sys_fntable_subscribe( sos_pid_t pub_pid, uint8_t fid, uint8_t table_index );
