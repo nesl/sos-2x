@@ -9,11 +9,12 @@ the things which might need to be modified are:
 1) enviroment variables
   -  variables such as SOSROOT, SOSTOOLDIR, HOME, and SOSTESTDIR which specifies where the unit test files are located.
      if not specified each of these have defaults as such 
+     -  HOME = /home/test
      -  SOSROOT = $HOME/sos-2x/trunk
      -  SOSTOOLDIR = $HOME/local
-     -  HOME = /home/test
      -  SOSTESTDIR = $SOSROOT/modules/unit_test/modules
      - test_list = the list of test which you want to perform, by default this is test.lst
+     - depend_list = the list of dependencies you want registered
 
 2) settings for the nodes.  
   -  this is to automate the installation of a blank kernel.
@@ -24,30 +25,31 @@ the things which might need to be modified are:
      - SOS_GROUP, the group id you which to nodes to have
   -  addition, and more advanced options are:
      - number_of_nodes, change this if you whish to install a blank kernel on several nodes, and then have a "basestation" node distrubute the drivers through the network.
-     - install_portX, where X is an integer more than 0.  This specifies ports where additional programming boards are connected too.  the X value is not important, and the order of installation might not match the way you delcare the ports
+     - install_portX, where X is an integer more than 0.  This specifies ports where additional programming boards are connected too.  the X value is not important, and the order of installation might not match the way you delcare the ports.  also to note, specifying additonal install ports will overide the number of nodes you specify
 
-next a set of tests needs to be specified.  To do this you will be modifying test.lst, or by modifying the config.sys file to point to your file of choice
+next a set of tests needs to be specified.  To do this you will be modifying test.conf, or by modifying the config.sys file to point to your file of choice
 
-each test has a very specific format of 5 lines.
+each test has a very specific format of 6 lines that are required. Comments can be added in between any line with a #.  
 example layout for a test:
 
-    #test0:
+    @test0:
     accel_sensor
     /modules/sensordrivers/h34c/accel
     accel_test
     /sensordrivers/h34c/modules
     1
 
-1) the first line is simply a title for the test, this line should always start with a # (think of it as just a comment in python), the : is not really neccesary but looks nice.
+1) the first line is simply a title for the test, this line should always start with a @ (this is really just a place holder to specify a new test is being declared), the : is not really neccesary but looks nice.
 2) the next line should be the name of the .c file for the driver code.  
 3) the third line will be location driver which you wish to test, in our case it is the h34c accelerometer sensor driver.  This folder needs to include a make file for compilation, and a file wuch as accel_sensor.c which is specified by the previous line.  this folder should be in $SOSROOT.
 4) this line works much like the second line, except it specifies the name of test drivers name.  Both the .c file and .py file should start with this name.  for example there should be a accel_test.c and accel_test.py
 5) the location of the test driver files.  this must include a make file in it, and a python script.  the path you give should be from $SOSTOOLDIR, as specified in config.sys.  so in our case /sensordrivers/h34c/modules is located in $SOSROOT/modules/unit_test/modules/
 6) the number of minutes you want the test to run for, in our example, it is just 1 minute
+7) any additional lines that are not comments or do not start with @ will be considered as dependencies.  
 
 One last file needs to be modified now, the dependency list
 
-by default this is depend.lst, and will contain a list of modules, and the modules that each one depends on
+by default this is depend.conf , and will contain a list of modules, and the modules that each one depends on
 
 already included is the dependency list for the Surge module, to give you an idea of how to add more dependencies
 specificly, each dependency should look like this:
@@ -62,10 +64,25 @@ in addition, the dependency list is modular, so surge does not need to declare n
 finally, now that you have set up the configuration, and the tests you want to run, the test_suite is quite easy to use.
 
 to run simply type:
-    python test_suite.py 2
+    python test_suite.py -p 2
 where the last arguement is either 0, 1, or 2.  this specifies which target you wish to run the target on.
 0 is for micaz
 1 is for mica2
 2 is for avrora
 
 if not specified, the default is for micaz
+
+additional arugments for the test_suite are as follows:
+
+  -h, --help		display propper usage
+  -d, --debug		display additional output which is normall redirected to files for logging
+  -n, --no_make		tells the test_suite not to recompile and install a blank kernel
+  -p, --platform	specify the platform, as explained above
+
+About the additional files that are specified:
+
+while running the test_suite a number of additional files will be created.  Most of these are log files which contain the build and install information for each step of running a test.  
+
+a log file will be made for: the building of the blank kernel, the running of avrora, the running of sossrv.  These logs files will be placed in $SOSROOT/modules/unit_test/python and are named: kernel.log, avrora.log, sossrv.log.
+
+additonally, if the -d option is not set, for each module that is compiled for a test, the compliation output, and installation output from sos_tool will be logged.  this will be saved in the modules source location with the names install_source_name.bad and install_source_name.good for stderr and stdout outputs respectivly.  

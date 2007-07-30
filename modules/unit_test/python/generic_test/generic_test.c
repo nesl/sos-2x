@@ -94,17 +94,21 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 
 			s->state = TEST_APP_INIT;
 			s->pid = msg->did;
-			sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
-			if(sys_sensor_enable(DRIVER_0_ID) != SOS_OK) {
-				sys_timer_stop(TEST_APP_TID);
+			if (sys_id() != 0){
+				sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
+				if(sys_sensor_enable(DRIVER_0_ID) != SOS_OK) {
+					sys_timer_stop(TEST_APP_TID);
+				}
 			}
 			break;
 
 		/* disable and sensors your enables previously, and stop any timers which you started here
 		 */
 		case MSG_FINAL:
-			sys_sensor_disable(DRIVER_0_ID);
-			sys_timer_stop( TEST_APP_TID);
+			if (sys_id() != 0){
+				sys_sensor_disable(DRIVER_0_ID);
+				sys_timer_stop( TEST_APP_TID);
+			}
 			break;
 
 		/* be sure to have a case statement for each of your states that you have made 

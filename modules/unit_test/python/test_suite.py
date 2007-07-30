@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+import getopt
 import signal
 import time
 import os
@@ -15,8 +15,8 @@ listen_port = '/dev/ttyUSB1'
 sos_group = '0'
 number_of_nodes = 1
 number_of_prog = 1
-tests_to_run = 'test.lst'
-depend_list = 'depend.lst'
+tests_to_run = 'test.conf'
+depend_list = 'depend.conf'
 
 class Test:
     ''' a small object to hold all the important information regarding a test
@@ -28,6 +28,14 @@ class Test:
 	self.test_name = t
 	self.test_location = tl
 	self.time = dur * 60 
+	self.dep_list = dep
+    def __init__(self, test_list, dep):
+	self.name = test_list[0]
+	self.driver_name = test_list[1]
+	self.driver_location = test_list[2]
+	self.test_name = test_list[3]
+	self.test_location = test_list[4]
+	self.time = test_list[5] *60
 	self.dep_list = dep
 
 class Dependency:
@@ -101,15 +109,15 @@ def configure_setup():
 	if words:
 	    home = words.group(1)
 	    continue
-	words = re.match(r'SOSROOT = (\S+)\n', line)
+	words = re.match(r'SOSROOT = HOME(\S+)\n', line)
 	if words:
 	    sos_root = words.group(1)
 	    continue
-        words = re.match(r'SOSTOOLDIR = (\S+)\n', line)
+        words = re.match(r'SOSTOOLDIR = HOME(\S+)\n', line)
         if words:
 	    sos_tool_dir = words.group(1)
             continue
-        words = re.match(r'TESTS = (\S+)\n', line)
+        words = re.match(r'TESTS = SOSROOT(\S+)\n', line)
         if words:
 	    test_dir = words.group(1)
 	    continue
@@ -147,7 +155,7 @@ def gather_dependencies(dep_list_name):
     dep_dict = {}
 
     for line in dep_f:
-	if line[0] == '#':
+	if line[0] == '@':
 	    if current_name != '':
 		dep_dict[current_name] = current_dep
 	    current_dep = Dependency()
@@ -155,7 +163,7 @@ def gather_dependencies(dep_list_name):
      	    current_name = line[1:-1]
 	elif line[0] == '/':
 	    current_dep.source = line[:-1]
-	else:
+	elif line[0] != '#':
 	    current_dep.sub_dep.append(line[:-1])
 
     if current_name != '':
@@ -175,34 +183,27 @@ def configure_tests(test_list_name):
         '''
     test_f = open(test_list_name, "r")
     
-    name = ''
-    driver_name = ''
-    driver_location = ''
-    test_name = ''
-    test_location = ''
-    time = 0
+    req_count = 0
+    new_test = ['','','','','','']
     dep_list = []
     test_list = []
 
-    line = test_f.readline()
-    while (line != ''):
-        if line[0] == '#':
-	    if name != '': 
-	        new_test = Test(name, driver_name, driver_location, test_name, test_location, time, dep_list)
+    for line in test_f:
+        if line[0] == '@':
+	    if new_test[0] != '': 
+	        new_test = Test(new_test,dep_list)
 	        test_list.append(new_test)
 		dep_list = []
-	    name = line[:-1]
-	    driver_name = test_f.readline()[:-1]
-	    driver_location = test_f.readline()[:-1]
-	    test_name = test_f.readline()[:-1]
-	    test_location = test_f.readline()[:-1]
-	    time = int(test_f.readline()[:-1])
-	else:
+	    new_test[0] = line[:-1]
+            req_count = 1
+        elif req_count < 6 and line[0] != '#':
+	    new_test[req_count] = line[:-1]
+	    req_count += 1
+	elif line[0] != '#':
 	    dep_list.append(line[:-1])
-	line = test_f.readline()
 
-    if name != '':
-	new_test = Test(name, driver_name, driver_location, test_name, test_location, time, dep_list)
+    if new_test[0] != '':
+	new_test = Test(new_test, dep_list)
 	test_list.append(new_test)
 
     return test_list
@@ -224,6 +225,13 @@ def make_kernel(platform):
 
     try:
       subprocess.check_call(cmd_make, stderr=kernel_f, stdout=kernel_f)
+      kernel_f.close()
+
+      if (_debug == 1):
+	  kernel_f = open(os.environ['SOSTESTDIR'] + '/../python/kernel.log', 'r')
+	  print "printing the output for making the kernel"
+	  for line in kernel_f:
+	      print lin
     except subprocess.CalledProcessError:
       print "compiling the kernel ran into some issues, please check the kernel.log file to see the error"
       sys.exit(1)
@@ -281,7 +289,6 @@ def run_sossrv(target):
     elif target == 2:
 	cmd_run = ['sossrv.exe', '-n', '127.0.0.1:2390']
 
-    print "starting sossrv"
     print cmd_run
     time.sleep(10)
 
@@ -292,18 +299,24 @@ def run_sossrv(target):
     time.sleep(10)
     return ret
 
-def run_and_log(name, dir, platform, good_file='', error_file=''):
-    if good_file != '':
-        out_f = open(good_file, 'w')
-    if error_file != '':
-        err_f = open(error_file, 'w')
+def run_and_log(name, dir, platform, base_file='test_run'):
+    out_f = open(base_file+'.good', 'w')
+    err_f = open(base_file+'.bad', 'w')
 
     cmd_make = ['make', '-C', dir, platform]
     cmd_install = ['sos_tool.exe', '--insmod=' + dir + '/' + name + '.mlf']
 
     clean(dir)
-    subprocess.call(cmd_make)#, stderr=err_f, stdout=out_f)
-    subprocess.call(cmd_install)#, stderr=err_f, stdout=out_f)
+
+    if (_debug == 1):
+	subprocess.call(cmd_make)
+	subprocess.call(cmd_install)
+    else:
+    	subprocess.call(cmd_make, stderr=err_f, stdout=out_f)
+    	subprocess.call(cmd_install, stderr=err_f, stdout=out_f)
+
+    out_f.close()
+    err_f.close()
 
 def install_dependency(dep_list, dep_dict, target):
     if len(dep_list) == 0:
@@ -323,7 +336,8 @@ def install_dependency(dep_list, dep_dict, target):
 	if len(current_dep.sub_dep) > 0:
 	    install_dependency(current_dep.sub_dep, dep_dict,target)
 	 
-	run_and_log(current_dep.name, os.environ['SOSROOT'] + current_dep.source, plat)
+        dep_loc = os.environ['SOSROOT'] + current_dep.source
+	run_and_log(current_dep.name, dep_loc, plat, "%s/install_%s" %(dep_loc, current_dep.name))
 
 	time.sleep(5)
 
@@ -342,8 +356,6 @@ def run_tests(test_list, target, dep_dict):
 
     failed_tests = []
 
-    print "starting tests"
-
     cmd_erase = ["sos_tool.exe", "--rmmod=0"]
     for test in test_list:
 	subprocess.call(cmd_erase)
@@ -356,11 +368,11 @@ def run_tests(test_list, target, dep_dict):
 	install_dependency(test.dep_list, dep_dict,target)
 
 	#first install the sensor driver
-	run_and_log(test.driver_name, driver_location, platform)
+	run_and_log(test.driver_name, driver_location, platform, "%s/install_%s" %(driver_location, test.driver_name))
 	time.sleep(5)
 
         # next install the test driver for the sensor
-	run_and_log(test.test_name, test_location, platform)
+	run_and_log(test.test_name, test_location, platform, '%s/install_%s' %(test_location, test.test_name))
 
         #now run the python script to verify the output 
 	# and wait for the specified amount of time
@@ -375,77 +387,118 @@ def run_tests(test_list, target, dep_dict):
 	    os.waitpid(child, 0)
 	    if (os.stat("%s/%s.bad" %(test_location, test.test_name))[stat.ST_SIZE] > 0):
 		failed_tests.append(test)
+
+	    if (_debug == 1):
+		test_out_f = open("$s/$s.bad" %(test_location, test.test_name), 'r')
+		print "printing the error output from the python script"
+		for line in test_out_f:
+		    print line
 	    
     return failed_tests
+
+def usage():
+    print "test_suite options:\n\
+    		-h, --help:	print this usage display\n\
+		-n, --no_make:	do not build or reinstall a blank kernel on the node\n\
+		-d, --debug:	print all output to log files, and consol\n\
+		-p, --platform:	set the platform as either 0, 1, or 2 corresponding to micaz, mica2, and avrora respectively"
+
+def process_args(argv):
+    try:
+	opts, args = getopt.getopt(argv, "hndp", ["help", "no_make", "debug", "platform"])
+    except getopt.GetoptError:
+	usage()
+	sys.exit(2)
+    global _debug 
+    _debug=0
+    build_kernel = True
+    platform = 0
+
+    for opt, arg in opts:
+	if opt in ("-h", "--help"):
+	    usage()
+	    sys.exit()
+	elif opt in ('-d', '--debug'):
+	    _debug = 1
+	elif opt in ('-n', '--no_make'):
+	    build_kernel = False;
+	elif opt in ('-p', '--platform'):
+	    platform = arg
+
+    return (build_kernel, platform)
 
 if __name__ == '__main__':
     avrora_child = 0
     sossrv_child = 0
-    
+    build_kernel = True
+       
+    (build_kernel, target) = process_args(sys.argv[1:])
+    if target > 2:
+	print "invalid target type, exiting"
+	sys.exit(1)
+
+    print "reading the config file"
     configure_setup()
 
+    print "gathering dependencies"
     dep_dict = gather_dependencies(depend_list)
 
+    print "gathering all the tests to run"
     test_list = configure_tests(tests_to_run)
     
     os.chdir(os.environ['SOSROOT'])
     
-    #get the arguement for the node type, if not available, assume it is for micaz
-    if (len(sys.argv) == 2):
-	target = int(sys.argv[1])
-    else:
-	target = 0
+    if (build_kernel):
+	print "building the kernel"
+	make_kernel(target)
 
-    if target > 2:
-	print "invalid target type, exiting"
-	os.exit(0)
-    
-    make_kernel(target)
+	if target == 2:
+	    #install on avrora with the approriate number of nodes
+	    avrora_child = install_on_avrora(number_of_nodes)
+	elif number_of_prog == 1: 
+	    # installing several nodes via the same programming board
+	    # it will install one node at a time, and wait for the user to switch nodes before continuing
+	    print "installing several nodes via the same board, please pay attention"
+	    while (number_of_nodes > 1):
+		install_on_mica(target, number_of_nodes - 1, 0)
 
-    if target == 2:
-	#install on avrora with the approriate number of nodes
-	avrora_child = install_on_avrora(number_of_nodes)
-    elif number_of_prog == 1: 
-	# installing several nodes via the same programming board
-	# it will install one node at a time, and wait for the user to switch nodes before continuing
-	print "installing several nodes via the same board, please pay attention"
-	while (number_of_nodes > 1):
-	    install_on_mica(target, number_of_nodes - 1, 0)
+		print "this current nodes address is: %d" %(number_of_nodes - 1)
+		print "please remove the current node and place another on the programming board"
+		print "press any key when ready to install on the next node"
+		
+		raw_input()
 
-	    print "this current nodes address is: %d" %(number_of_nodes - 1)
-	    print "please remove the current node and place another on the programming board"
-	    print "press any key when ready to install on the next node"
-	    
-	    raw_input()
+		number_of_nodes -= 1
 
-	    number_of_nodes -= 1
+	    install_on_mica(target, 0, 0)
+	    print "this is the base station node, please leave it connected to the programming board"
+	else:
+	    # installing on several programming boards, serially
+	    # we assume that for each port assigned, there is a programming board and node connected
+	    print "installing through multiple programming boards, your reaction is not required"
 
-	install_on_mica(target, 0, 0)
-	print "this is the base station node, please leave it connected to the programming board"
-    else:
-	# installing on several programming boards, serially
-	# we assume that for each port assigned, there is a programming board and node connected
-	print "installing through multiple programming boards, your reaction is not required"
+	    while (number_of_prog > 0):
+		install_on_mica(target, number_of_prog -1, number_of_prog-1)
 
-	while (number_of_prog > 0):
-	    install_on_mica(target, number_of_prog -1, number_of_prog-1)
-
-	    print "this nodes address is: %d" %(number_of_prog-1)
-	    print "the next node will be installed automatically"
+		print "this nodes address is: %d" %(number_of_prog-1)
+		print "the next node will be installed automatically"
 
 	    number_of_prog -= 1
 	    
+    print "starting sossrv"
     sos_child = run_sossrv(target)
 
+    print "now running tests"
     failed_tests = run_tests(test_list, target, dep_dict)
+    print "tests now completed"
 
     for test in failed_tests:
 	print "test %s had failures, please check the .bad file for it" %test.name
 
     # killing any child processes that are running
     if (sos_child > 0):
-        print "killing sossrv"
-        os.kill(sos_child, signal.SIGTERM)
+	print "killing sossrv"
+	os.kill(sos_child, signal.SIGTERM)
     if (avrora_child > 0):
 	print "killing avrora"
 	os.kill(avrora_child, signal.SIGTERM)
