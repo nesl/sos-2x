@@ -1080,12 +1080,16 @@ int8_t ker_query_task(uint8_t pid)
 
 void sched_msg_alloc(Message *m)
 {
-	DEBUG("sched_msg_alloc\n");
 #ifdef SOS_USE_PREEMPTION
+	HAS_CRITICAL_SECTION;
+#endif
+
+	DEBUG("sched_msg_alloc\n");
   if(flag_msg_release(m->flag)){
 		ker_change_own(m->data, KER_SCHED_PID);
   }
 
+#ifdef SOS_USE_PREEMPTION
 	// If preemption is disabled, simply queue the msg
 	if (GET_PREEMPTION_STATUS() == DISABLED) {
 		mq_enqueue(&schedpq, m);
@@ -1095,21 +1099,23 @@ void sched_msg_alloc(Message *m)
 	// dispatch msg if of higher priority and no race conditions
 	if ((m->priority > curr_pri) && (preemption_point(m->did) == 1)) {
 		do_dispatch(m);
-		
+
+		ENTER_CRITICAL_SECTION();
 		// if dispatched msg, need to check the queue for any other high priority msgs
 		while((schedpq.head != NULL) && (schedpq.head->priority > curr_pri) &&
 					(preemption_point(schedpq.head->did) == 1)) {
-			do_dispatch(mq_dequeue(&schedpq));
+			Message *q_msg = mq_dequeue(&schedpq);
+			LEAVE_CRITICAL_SECTION();
+			do_dispatch(q_msg);
+			ENTER_CRITICAL_SECTION();
 		}
+		LEAVE_CRITICAL_SECTION();
 	}
 	else {
 		// if msg is not higher priority, queue up and return
 		mq_enqueue(&schedpq, m);
 	}
 #else
-  if(flag_msg_release(m->flag)){
-		ker_change_own(m->data, KER_SCHED_PID);
-  }	
   mq_enqueue(&schedpq, m);
 #endif
 }

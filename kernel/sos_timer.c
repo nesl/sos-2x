@@ -943,15 +943,9 @@ static uint16_t timer_update_realtime_clock(uint8_t cnt)
 timer_interrupt()
 {
 #ifdef SOS_USE_PREEMPTION
-  HAS_CRITICAL_SECTION;
   uint8_t cnt = timer_getInterval();
 
-  // The ISR is not reentrant
-  timer_disable_interrupt();
-  ENABLE_GLOBAL_INTERRUPTS();
-
   timer_update_delta(cnt);
-
   while(list_empty(&deltaq) == false) {
 	sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);         
 	if(h->delta <= 0) {
@@ -977,13 +971,15 @@ timer_interrupt()
 
 	  // If priority is higher than current, msg_queue and preemption point is ok,
 	  // dispatch now
-	  if((pid_pri > curr_pri) &&
+	  if((GET_PREEMPTION_STATUS() == ENABLED) && (pid_pri > curr_pri) &&
 		 ((schedpq.head == NULL) || (pid_pri > schedpq.head->priority)) &&
 		 (preemption_point(pid) == 1)) {
+		ENABLE_GLOBAL_INTERRUPTS();
 		sched_dispatch_short_message(pid, TIMER_PID, MSG_TIMER_TIMEOUT,
 								   tid, 0, 0);
 	  }
 	  else {
+		ENABLE_GLOBAL_INTERRUPTS();
 		// Queue the msg
 		msg = msg_create();
 		if (msg != NULL) {
@@ -998,6 +994,7 @@ timer_interrupt()
 		  mq_enqueue(&schedpq, msg);
 		}
 	  }
+	  DISABLE_GLOBAL_INTERRUPTS();
 	} else {
 	  break;
 	}
@@ -1012,22 +1009,14 @@ timer_interrupt()
   if(list_empty(&deltaq) == false) {
 	sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);
 	int32_t hw_cnt;
-	ENTER_CRITICAL_SECTION();
 	hw_cnt = -(timer_hardware_get_counter());
-	LEAVE_CRITICAL_SECTION();
 	if( h->delta - hw_cnt > 0) {
 	  timer_set_hw_top(h->delta - hw_cnt, true);
 	}
   } 
   else {
-	ENTER_CRITICAL_SECTION();
 	timer_set_hw_top(MAX_SLEEP_INTERVAL, false);
-	LEAVE_CRITICAL_SECTION();
   }
-
-  // Enable timer interrupts which was disable to make 
-  // the ISR non-reentrant
-  timer_enable_interrupt();
 
 #else
 	uint8_t cnt = timer_getInterval();
