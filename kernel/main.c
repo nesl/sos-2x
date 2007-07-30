@@ -54,6 +54,9 @@
 #include <sos_info.h>
 #include <sos_shm.h>
 #include <message.h>
+#ifdef SOS_USE_PREEMPTION
+#include <priority.h>
+#endif
 //#include <version_sync.h>
 
 #ifdef SOS_SFI
@@ -132,7 +135,7 @@ int sos_main(uint8_t cond){
 
 #ifdef SOS_USE_PREEMPTION
 	// Enable preemption
-	preemption_status = ENABLED;	
+	MAIN_ENABLE_PREEMPTION();
 #endif
 	DEBUG("SOS booted\n");
     //! start application

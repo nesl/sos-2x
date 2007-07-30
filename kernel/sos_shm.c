@@ -2,6 +2,9 @@
 #include <sos.h>
 #include <slab.h>
 #include <sos_shm.h>
+#ifdef SOS_USE_PREEMPTION
+#include <priority.h>
+#endif
 
 enum {
 	SHM_NUM_POOL_ITEMS = 4,     // number of items in one pool (MUST be less than 8)

@@ -25,6 +25,9 @@
 #include <sos_sched.h>
 #include <random.h>
 #include <sos_logging.h>
+#ifdef SOS_USE_PREEMPTION
+#include <priority.h>
+#endif
 #ifdef SOS_HAS_EXFLASH
 #include <exflash.h>
 #endif

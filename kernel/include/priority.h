@@ -3,20 +3,16 @@
 
 #include <sos_types.h>
 #include <pid.h>
-
-//----------------------------------------------------------------------------------
-// Typedefs
-//
-typedef uint8_t pri_t;       //!< priority type
-
-enum {
-  DISABLED = 0,
-  ENABLED,
-};
+#include <module.h>
+#include <priority_common.h>
 
 //----------------------------------------------------------------------------------
 // Global to maintain if preemption is enabled or disabled
 //
+enum {
+  DISABLED = 0,
+  ENABLED,
+};
 uint8_t preemption_status;
 
 //----------------------------------------------------------------------------------
@@ -62,12 +58,31 @@ uint8_t preemption_status;
     sched_queue(NULL);} while(0)
 
 #define GET_PREEMPTION_STATUS() preemption_status
+#define MAIN_ENABLE_PREEMPTION() preemption_status = ENABLED
 
 // Returns the priority of the module with pid id
 pri_t get_module_priority(sos_pid_t id);
+/*
+{
+  sos_module_t *module = ker_get_module(id);
+  if (module != NULL) {
+    return module->priority;
+  }
+  else {
+    return 0;
+  }
+}
+*/
 // Set the given priority for the module with pid id
 void set_module_priority(sos_pid_t id, pri_t priority);
-
+/*
+{
+  sos_module_t *module = ker_get_module(id);
+  if (module != NULL) {
+    module->priority = priority;
+  }
+}
+*/
 //----------------------------------------------------------------------------------
 // Profiler
 //

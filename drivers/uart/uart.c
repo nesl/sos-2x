@@ -20,6 +20,9 @@
 #include <uart_hal.h>
 #include <uart.h>
 #include <sos_uart.h>
+#ifdef SOS_USE_PREEMPTION
+#include <priority.h>
+#endif
 
 //#define LED_DEBUG
 #include <led_dbg.h>

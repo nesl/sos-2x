@@ -38,7 +38,9 @@
 #include <sos.h>
 #include <fntable_types.h>
 #include <message.h>
-
+#ifdef SOS_USE_PREEMPTION
+#include <priority.h>
+#endif
 #include "sensor.h"
 
 #ifndef SOS_DEBUG_SENSOR_API

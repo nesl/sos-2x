@@ -4,7 +4,7 @@
 #include <fntable_types.h>
 #include <message_types.h>
 #include <hardware_types.h>
-#include <priority.h>
+#include <priority_common.h>
 
 typedef uint16_t sos_code_id_t;
 /**

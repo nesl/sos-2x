@@ -6,6 +6,9 @@
  */
 #include <adc_proc_hw.h>
 #include <adc_proc.h>
+#ifdef SOS_USE_PREEMPTION
+#include <priority.h>
+#endif
 
 /**
  * the avr ADC is a 12 bit sucessive approximation ADC

@@ -48,7 +48,7 @@
 #include <sos_info.h>
 
 #ifdef SOS_USE_PREEMPTION
-#include <priority.h>
+#include <priority_common.h>
 #endif
 
 #define SOS_MSG_PAYLOAD_LENGTH 4

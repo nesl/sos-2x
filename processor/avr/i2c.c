@@ -22,6 +22,9 @@
 #include <i2c_const.h>
 #include <i2c.h>
 #include <i2c_system.h>
+#ifdef SOS_USE_PREEMPTION
+#include <priority.h>
+#endif
 
 
 #ifndef I2C_ADDRESS
