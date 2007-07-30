@@ -698,76 +698,65 @@ int8_t ker_timer_restart(sos_pid_t pid, uint8_t tid, int32_t interval)
   return SOS_OK;
 }
 
-#ifdef SOS_USE_PREEMPTION
 int8_t ker_sys_timer_start(uint8_t tid, int32_t interval, uint8_t type)
 {
+#ifdef SOS_USE_PREEMPTION
   HAS_ATOMIC_PREEMPTION_SECTION;
+#endif
   sos_pid_t my_id = ker_get_current_pid();
-
+#ifdef SOS_USE_PREEMPTION
   ATOMIC_DISABLE_PREEMPTION();
+#endif
   if( (ker_timer_init(my_id, tid, type) != SOS_OK) ||       
 	  (ker_timer_start(my_id, tid, interval) != SOS_OK)) {
+#ifdef SOS_USE_PREEMPTION
 	ATOMIC_ENABLE_PREEMPTION();
+#endif
 	return ker_mod_panic(my_id);                                 
   }                                                         
+#ifdef SOS_USE_PREEMPTION
   ATOMIC_ENABLE_PREEMPTION();
+#endif
   return SOS_OK;                                            
 }
+
 int8_t ker_sys_timer_restart(uint8_t tid, int32_t interval)       
 {                                                             
+#ifdef SOS_USE_PREEMPTION
   HAS_ATOMIC_PREEMPTION_SECTION;
+#endif
   sos_pid_t my_id = ker_get_current_pid();                  
-
+#ifdef SOS_USE_PREEMPTION
   ATOMIC_DISABLE_PREEMPTION();
+#endif
   if( ker_timer_restart(my_id, tid, interval) != SOS_OK ) { 
+#ifdef SOS_USE_PREEMPTION
 	ATOMIC_ENABLE_PREEMPTION();
+#endif
 	return ker_mod_panic(my_id);                                 
   }
+#ifdef SOS_USE_PREEMPTION
   ATOMIC_ENABLE_PREEMPTION();
+#endif
   return SOS_OK;                                            
 }                                                             
 
 int8_t ker_sys_timer_stop(uint8_t tid)              
 {                                                             
+#ifdef SOS_USE_PREEMPTION
   HAS_ATOMIC_PREEMPTION_SECTION;
+#endif
   sos_pid_t my_id = ker_get_current_pid();                  
-  
+#ifdef SOS_USE_PREEMPTION
   ATOMIC_DISABLE_PREEMPTION();
+#endif
   ker_timer_stop(my_id, tid);
   ker_timer_release(my_id, tid);
+#ifdef SOS_USE_PREEMPTION
   ATOMIC_ENABLE_PREEMPTION();
-  return SOS_OK;                                            
-}                   	
-#else
-int8_t ker_sys_timer_start(uint8_t tid, int32_t interval, uint8_t type)
-{                                                             
-	sos_pid_t my_id = ker_get_current_pid();                  
-
-	if( (ker_timer_init(my_id, tid, type) != SOS_OK) ||       
-			(ker_timer_start(my_id, tid, interval) != SOS_OK)) {  
-		return ker_mod_panic(my_id);                                 
-	}                                                         
-	return SOS_OK;                                            
-}
-
-int8_t ker_sys_timer_restart(uint8_t tid, int32_t interval)       
-{                                                             
-	sos_pid_t my_id = ker_get_current_pid();                  
-	if( ker_timer_restart(my_id, tid, interval) != SOS_OK ) { 
-		return ker_mod_panic(my_id);                                 
-	}                                                         
-	return SOS_OK;                                            
-}                                                             
-
-int8_t ker_sys_timer_stop(uint8_t tid)              
-{                                                             
-	sos_pid_t my_id = ker_get_current_pid();                  
-
-	ker_timer_stop(my_id, tid);
-	ker_timer_release(my_id, tid);
-	return SOS_OK;                                            
-}                   	
 #endif
+  return SOS_OK;                                            
+}
 
 #ifndef SOS_USE_PREEMPTION
 // called from scheduler
