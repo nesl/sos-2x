@@ -921,11 +921,10 @@ void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
 
 #ifdef SOS_USE_PREEMPTION
 static void do_dispatch(Message *e)
+{
 #else 
 static void do_dispatch()
-#endif
 {
-#ifndef SOS_USE_PREEMPTION
 	Message *e;                                // Current message being dispatched
 #endif
 	sos_module_t *handle;                      // Pointer to the control block of the destination module
