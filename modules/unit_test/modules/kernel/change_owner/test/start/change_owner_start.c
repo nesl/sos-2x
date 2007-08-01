@@ -8,11 +8,15 @@
 #include <led_dbg.h>
 
 #define TEST_PID DFLT_APP_ID0
+#define OTHER_PID DFLT_APP_ID1
+
 /* this is a new message type which specifies our test driver's packet type
  * both the python test script, and the message handler will need to handle messages of this type
  */
 
 #define MSG_TEST_DATA (MOD_MSG_START + 1)
+#define MSG_TEST_READY (MOD_MSG_START + 2)
+#define MSG_TEST_ADDR (MOD_MSG_START + 3)
 
 /* this is the timer specifications */
 #define TEST_APP_TID 0
@@ -37,8 +41,6 @@ enum {
 typedef struct {
 	uint8_t pid;
 	uint8_t count;
-	void* pt;
-	void* pt2;
 	uint8_t state;
 } app_state_t;
 
@@ -53,6 +55,10 @@ typedef struct {
 	uint8_t state;
 	uint8_t data;
 } data_msg_t;
+
+typedef struct {
+	uint8_t *pt;
+} addr_msg_t;
 
 static int8_t generic_test_msg_handler(void *state, Message *msg);
 
@@ -78,7 +84,7 @@ static int8_t send_new_data(uint8_t state, uint8_t data){
 		data_msg = (data_msg_t *) sys_malloc ( sizeof(data_msg_t) );
 
 		if ( data_msg ) {
-			sys_led(LED_GREEN_TOGGLE);
+			//sys_led(LED_GREEN_TOGGLE);
 
 			// copy all the data you wish to send
 			data_msg->id = sys_id();
@@ -130,13 +136,12 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 			s->count = 0;
 			s->pid = msg->did;
 
-			sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
       send_new_data(START_DATA, 0);
 			break;
 
 		case MSG_FINAL:
-			sys_timer_stop(TEST_APP_TID);
 			s->state = TEST_APP_FINAL;
+			sys_led(LED_YELLOW_OFF);
 			send_new_data(FINAL_DATA, 1);
 			break;
 
@@ -162,33 +167,29 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
     	}
 			break;
 
-		case MSG_TIMER_TIMEOUT:
+		case MSG_TEST_READY:
 			{
-				switch(s->state){
-				  case TEST_APP_INIT:
-					  {
-							s->count++;
-              s->pt = sys_malloc(sizeof(uint8_t) * s->count);
-							s->pt2 = sys_malloc(sizeof(uint8_t) * s->count);
-							send_new_data(s->state, s->count);
-							s->state = TEST_APP_FINAL;
-						}
-						break;
+			  addr_msg_t *address;
+				uint8_t *test_array;
+        uint8_t i;
+				
+				sys_led(LED_YELLOW_ON);
 
-					case TEST_APP_FINAL:
-						{
-							sys_free(s->pt);
-							sys_free(s->pt2);
-							send_new_data(s->state, s->count);
-							s->state = TEST_APP_INIT;
-						}
-						break;
+				test_array = (uint8_t *) sys_malloc(sizeof(uint8_t) * 10);
 
-					default:
-						return -EINVAL;
-						break;
-				}
-			} 
+				for (i=0; i < 10; i++)
+					test_array[i] = i;
+
+        address = (addr_msg_t*) sys_malloc(sizeof(addr_msg_t));
+				address->pt = test_array;
+
+				sys_post(
+						OTHER_PID,
+						MSG_TEST_ADDR,
+					  sizeof(addr_msg_t),
+					  address,
+					  SOS_MSG_RELEASE);
+			}
 			break;
 
 		default:

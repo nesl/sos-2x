@@ -1,0 +1,11 @@
+Test for SOS_MSG_HIGH_PRIORITY msg used in sys_post:
+====================================================
+
+this test verfies that messages sent with the SOS_MSG_HIGH_PRIORITY flag will be sent before messages sent without the flag.
+
+to run this test:
+1) install a blank kernel on the mote
+2) use sos_tool to install modules/unit_test/modules/kernel/sys_post/high_priority/sender/sender_test.mlf
+3) use sos_tool to install modules/unit_test/modules/kernel/sys_post/high_priority/reciever/reciever_test.mlf
+4) run the python script modules/unit_test/modules/kernel/sys_post/high_priority/reciever/reciever_test.py to observer the output
+

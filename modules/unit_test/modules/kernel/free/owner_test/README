@@ -1,0 +1,11 @@
+Test for sys_free:
+==================
+
+This is a simple test to ensure that one module can free memory that has been allocated in another module
+
+to run the test:
+
+1) install a blank kernel
+2) use sos_tool to install modules/unit_test/modules/kernel/free/owner_test/sender/free_sender_test.mlf
+3) use sos_tool to install modules/unit_test/modules/kernel/free/owner_test/reciever/free_reciever_test.mlf
+4) run the python script modules/unit_test/modules/kernel/free/ownder_test/reciever/free_reciever_test.py to observer the results of the test

@@ -1,0 +1,11 @@
+Test for SOS_MSG_RELIABLE msg used in sys_post:
+===============================================
+
+this test will verify that a module that sends a message with the SOS_MSG_RELIABLE flag will recieve a notification upon the success or fail of the messages delivery.  
+
+to run this test:
+1) install a blank kernel on the mote
+2) use sos_tool to install modules/unit_test/modules/kernel/sys_post/reliable/sender/sender_test.mlf
+3) use sos_tool to install modules/unit_test/modules/kernel/sys_post/reliable/reciever/reciever_test.mlf
+4) run the python script modules/unit_test/modules/kernel/sys_post/reliable/reciever/reciever_test.py to observer the output
+

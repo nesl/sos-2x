@@ -23,8 +23,8 @@ state = {}
 # it is highly suggested that you use this since it is the easiest way to test if your
 # node has entered panic mode via the script
 def panic_handler(signum, frame):
-    print >> sys.stderr, "it is highly likely that your node has entered panic mode"
-    print >> sys.stderr, "please reset the node"
+    print "it is highly likely that your node has entered panic mode"
+    print "please reset the node"
     sys.exit(1)
 
 # message handler for messages of type MSG_DATA_READY
@@ -35,7 +35,7 @@ def generic_test(msg):
     global oldstate
     global state
 
-    print "message recieved"
+    #print "message recieved"
     signal.alarm(ALARM_LEN)
 
     #unpack the values we are expecting, in this case it is a node id, the acclerometer id,
@@ -50,10 +50,15 @@ def generic_test(msg):
     # this is the part which you need to fill in in order to verify that the function is working
     if (node_state == START_DATA):
 	print "initialization began correctly"
-    if (node_state == 0):
-	state[node_id] = data
-    if (node_state == 1 and state[node_id] != data):
-	print >> sys.stderr, " a message was lost somewhere on node %d before count %d" %(node_id, data)
+	state[node_id] = 0
+    if (node_state == 0 and data == 200):
+	state[node_id] = 1
+    if (node_state == 0 and data == 255):
+	if (state[node_id] != 1):
+	    print >> sys.stderr, "something has gone wrong and is out of order"
+	state[node_id] = 0
+    if (node_state == 155):
+	print >> sys.stderr, "realloc failed to correctly copy the %dth value" %data
     if (node_state == FINAL_DATA):
 	print "finalization worked correctly"
 

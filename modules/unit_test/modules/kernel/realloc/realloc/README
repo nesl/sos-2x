@@ -1,0 +1,9 @@
+Test for sys_realloc:
+====================
+
+a simple test to ensure that realloc will allocate additional memory for a module, and copy the previously assigned data correctly.
+
+to run this test:
+1) install a blank kernel on the mote
+2) use sos_tool to install: modules/unit_test/modules/kernel/realloc/realloc/realloc.mlf
+3) run the python script modules/unit_test/modules/kernel/realloc/realloc/realloc.py to observe the results

@@ -37,8 +37,9 @@ enum {
 typedef struct {
 	uint8_t pid;
 	uint8_t count;
-	void* pt;
 	uint8_t state;
+	uint8_t array_size[10];
+	uint8_t pos;
 } app_state_t;
 
 /* struct specifying how the data will be sent throug the network and the uart.  
@@ -121,22 +122,29 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 		 * also be sure to start and enable any timers which your driver might need 
 		 */
 		case MSG_INIT:
-			sys_led(LED_GREEN_OFF);
-			sys_led(LED_YELLOW_OFF);
-			sys_led(LED_RED_OFF);
+			{
+				uint8_t i;
 
-			s->state = TEST_APP_INIT;
-			s->count = 0;
-			s->pid = msg->did;
+				for (i=0; i< 10;i++)
+					s->array_size[i] = (i+1)*10;
 
-			sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
-      send_new_data(START_DATA, 0);
+				sys_led(LED_GREEN_OFF);
+				sys_led(LED_YELLOW_OFF);
+				sys_led(LED_RED_OFF);
+
+				s->state = TEST_APP_INIT;
+				s->count = 0;
+				s->pos = 0;
+				s->pid = msg->did;
+
+				sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
+				send_new_data(START_DATA, 0);
+			}
 			break;
 
 		case MSG_FINAL:
 			sys_timer_stop(TEST_APP_TID);
 			s->state = TEST_APP_FINAL;
-			sys_malloc(1000*sizeof(uint8_t));
 			send_new_data(FINAL_DATA, 1);
 			break;
 
@@ -167,18 +175,25 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 				switch(s->state){
 				  case TEST_APP_INIT:
 					  {
-              s->pt = sys_malloc(sizeof(uint8_t) * s->count);
-							s->count++;
-							send_new_data(s->state, s->count);
-							s->state = TEST_APP_FINAL;
-						}
-						break;
+							uint8_t i;
+							uint8_t *array;
 
-					case TEST_APP_FINAL:
-						{
-						  sys_free(s->pt);
-							send_new_data(s->state, s->count);
-							s->state = TEST_APP_INIT;
+							send_new_data(s->state, 200);
+
+							array = (uint8_t*)sys_malloc(sizeof(uint8_t)*s->array_size[s->pos]);
+							for (i = 0;i < 10; i++)
+								array[i] = i;
+
+							array = (uint8_t *)sys_realloc(array, sizeof(uint8_t) *s->array_size[s->pos+1]);
+							for (i = 0; i < 10; i++)
+								if (array[i] != i)
+									send_new_data(155, i);
+
+							sys_free(array);
+
+							send_new_data(s->state, 255);
+							s->count++;
+							s->pos = (s->pos + 2) % 10;
 						}
 						break;
 

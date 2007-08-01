@@ -1,0 +1,11 @@
+Test for SOS_MSG_RELEASE msg types for sys_post:
+================================================
+
+this test ensures that when a module sends a message with the SOS_MSG_RELEASE flag, it is no longer the owner of the memory
+
+to run this test:
+1) install a blank kernel on the mote
+2) use sos_tool to install modules/unit_test/modules/kernel/sys_post/release/sender/sender_test.mlf
+3) use sos_tool to install modules/unit_test/modules/kernel/sys_post/release/reciever/reciever_test.mlf
+4) run the python script modules/unit_test/modules/kernel/sys_post/release/reciever/reciever_test.py to observer the output
+

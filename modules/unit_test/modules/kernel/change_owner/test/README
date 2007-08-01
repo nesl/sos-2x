@@ -1,0 +1,17 @@
+Test for sys_change_own:
+========================
+
+to use this test:
+
+1)install a blank kernel
+2) use sos_tool to install modules/unit_test/modules/kernel/change_owner/test/start/change_owner_start.mlf
+3) use sos_tool to install modules/unit_test/modules/kernel/change_owner/test/end/change_owner_end.mlf
+4) run the python script modules/unit_test/modules/kernel/change_owner/test/end/change_owner_end.py to observer the output, and perform part of the test
+
+this test will test sys_change_own by doing the following actions:
+ 1) start module will get some memory by calling sys_malloc and fill it with values
+ 2) start module will then send the address of the memory to the end module
+ 3) end module will take ownership of the memory via sys_change_own
+ 4) end module will ask the python script to remove the start module
+ 4) once the start module has been removed, the end module will repeated check the memory to ensure that the data is correct
+
