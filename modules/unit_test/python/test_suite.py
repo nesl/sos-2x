@@ -21,21 +21,21 @@ depend_list = 'depend.conf'
 class Test:
     ''' a small object to hold all the important information regarding a test
     '''
-    def __init__(self, n, d, dl, t, tl, dur, dep):
-	self.name = n
-	self.driver_name = d
-	self.driver_location = dl
-	self.test_name = t
-	self.test_location = tl
-	self.time = dur * 60 
-	self.dep_list = dep
+#    def __init__(self, n, d, dl, t, tl, dur, dep):
+#	self.name = n
+#	self.driver_name = d
+#	self.driver_location = dl
+#	self.test_name = t
+#	self.test_location = tl
+#	self.time = dur * 60 
+#	self.dep_list = dep
     def __init__(self, test_list, dep):
 	self.name = test_list[0]
 	self.driver_name = test_list[1]
 	self.driver_location = test_list[2]
 	self.test_name = test_list[3]
 	self.test_location = test_list[4]
-	self.time = test_list[5] *60
+	self.time = float(test_list[5]) *60
 	self.dep_list = dep
 
 class Dependency:
@@ -46,7 +46,7 @@ class Dependency:
 	self.sub_dep = []
 
 
-def run_and_redirect(run_cmd, outfile='', error='/dev/null'):
+def run_and_redirect(run_cmd, outfile='/dev/null', error='/dev/null'):
     ''' redirect the output to outfile, if a file is specified
         and create change the programming running to the one specified in run_cmd
 	if for some reason that returns, we exit with status 1
@@ -189,10 +189,12 @@ def configure_tests(test_list_name):
     test_list = []
 
     for line in test_f:
+	if line == '':
+	    continue
         if line[0] == '@':
 	    if new_test[0] != '': 
-	        new_test = Test(new_test,dep_list)
-	        test_list.append(new_test)
+	        test_to_add= Test(new_test,dep_list)
+	        test_list.append(test_to_add)
 		dep_list = []
 	    new_test[0] = line[:-1]
             req_count = 1
