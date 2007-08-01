@@ -61,8 +61,7 @@ uint8_t preemption_status;
 #define MAIN_ENABLE_PREEMPTION() preemption_status = ENABLED
 
 // Returns the priority of the module with pid id
-pri_t get_module_priority(sos_pid_t id);
-/*
+static inline pri_t get_module_priority(sos_pid_t id)
 {
   sos_module_t *module = ker_get_module(id);
   if (module != NULL) {
@@ -72,17 +71,16 @@ pri_t get_module_priority(sos_pid_t id);
     return 0;
   }
 }
-*/
+
 // Set the given priority for the module with pid id
-void set_module_priority(sos_pid_t id, pri_t priority);
-/*
+static inline void set_module_priority(sos_pid_t id, pri_t priority)
 {
   sos_module_t *module = ker_get_module(id);
   if (module != NULL) {
     module->priority = priority;
   }
 }
-*/
+
 //----------------------------------------------------------------------------------
 // Profiler
 //

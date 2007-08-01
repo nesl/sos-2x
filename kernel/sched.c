@@ -625,8 +625,10 @@ static int8_t do_register_module(mod_header_ptr h, sos_module_t *handle,
  * @param pid task id to be removed
  * Note that this function cannot be used inside interrupt handler
  */
-#ifdef SOS_USE_PREEMPTION
 
+int8_t ker_deregister_module(sos_pid_t pid)
+{
+#ifdef SOS_USE_PREEMPTION
 /**
  * Making ker_deregister_module split phase for preemption. 
  * The msg_final is sent in the first phase and the other 
@@ -635,14 +637,27 @@ static int8_t do_register_module(mod_header_ptr h, sos_module_t *handle,
  * is on the stack when the loader tries to remove it. 
  * This will cause the msg_final to get queued up and not delivered.
  */
-
-int8_t ker_deregister_module(sos_pid_t pid)
-{
+	Message *msg;
+	msg = msg_create();
+	if(msg == NULL) {
+		return ker_mod_panic(pid);
+	}
+	msg->did = pid;
+	msg->sid = KER_SCHED_PID;
+	msg->type = MSG_FINAL;
+	msg->len = 0;
+	msg->data = NULL;
+	msg->flag = 0;
+	// assign priority based on priority of id
+	msg->priority = get_module_priority(pid);
+	sched_msg_alloc(msg);
+	return 0;
+#else
+  HAS_CRITICAL_SECTION;
   uint8_t bins = hash_pid(pid);
-	sos_module_t *handle;
-	sos_module_t *prev_handle = NULL;
+  sos_module_t *handle;
+  sos_module_t *prev_handle = NULL;
   msg_handler_t handler;
-	prev_handle = NULL;
 
   /**
    * Search the bins while save previous node
@@ -663,33 +678,70 @@ int8_t ker_deregister_module(sos_pid_t pid)
 		return -EINVAL;
 	}
 	handler = (msg_handler_t)sos_read_header_ptr(handle->header,
-			offsetof(mod_header_t,
-				module_handler));
+																							 offsetof(mod_header_t,
+																												module_handler));
 
 	if(handler != NULL) {
-		Message *msg;
-		msg = msg_create();
-		if(msg == NULL) {
-			return ker_mod_panic(pid);
-		}		
-		msg->did = handle->pid;
-		msg->sid = KER_SCHED_PID;
-		msg->type = MSG_FINAL;
-		msg->len = 0;
-		msg->data = NULL;
-		msg->flag = 0;
-		// assign priority based on priority of id
-		msg->priority = get_module_priority(msg->did);
-		sched_msg_alloc(msg);
+		void *handler_state = handle->handler_state;
+		Message msg;
+		sos_pid_t prev_pid = curr_pid;
+
+		curr_pid = handle->pid;
+		msg.did = handle->pid;
+		msg.sid = KER_SCHED_PID;
+		msg.type = MSG_FINAL;
+		msg.len = 0;
+		msg.data = NULL;
+		msg.flag = 0;
+
+		// Ram - If the handler does not write to the message, all is fine
+#ifdef SOS_SFI
+		ker_cross_domain_call_mod_handler(handler_state, &msg, handler);
+#else
+		handler(handler_state, &msg);
+#endif
+		curr_pid = prev_pid;
 	}
-	return 0;
+
+	// First remove handler from the list.
+	// link the bin back
+	ENTER_CRITICAL_SECTION();
+	if(prev_handle == NULL) {
+		mod_bin[bins] = handle->next;
+	} else {
+		prev_handle->next = handle->next;
+	}
+	LEAVE_CRITICAL_SECTION();
+
+	// remove the thread pid allocation
+	if(handle->pid >= SCHED_MIN_THREAD_PID) {
+		uint8_t i = handle->pid - SCHED_MIN_THREAD_PID;
+		pid_pool[i/8] &= ~(1 << (i % 8));
+  }
+
+  // remove system services
+  timer_remove_all(pid);
+  sensor_remove_all(pid);
+  ker_timestamp_deregister(pid);
+	monitor_remove_all(pid);
+  fntable_remove_all(handle);
+
+  // free up memory
+  // NOTE: we can only free up memory at the last step
+  // because fntable is using the state
+  if((SOS_KER_STATIC_MODULE & (handle->flag)) == 0) {
+		ker_slab_free( &sched_slab, handle );
+  }
+  mem_remove_all(pid);
+
+  return 0;
+#endif
 }
 
-
+#ifdef SOS_USE_PREEMPTION
 void ker_deregister_module_split(sos_pid_t pid)
 {
 	HAS_CRITICAL_SECTION;
-
   uint8_t bins = hash_pid(pid);
 	sos_module_t *handle;
 	sos_module_t *prev_handle = NULL;
@@ -744,95 +796,6 @@ void ker_deregister_module_split(sos_pid_t pid)
 		ker_slab_free( &sched_slab, handle );
   }
   mem_remove_all(pid);
-
-}
-
-#else
-int8_t ker_deregister_module(sos_pid_t pid)
-{
-  HAS_CRITICAL_SECTION;
-  uint8_t bins = hash_pid(pid);
-  sos_module_t *handle;
-  sos_module_t *prev_handle = NULL;
-  msg_handler_t handler;
-
-  /**
-   * Search the bins while save previous node
-   * Once found the module, connect next module to previous one
-   * put module back to freelist
-   */
-  handle = mod_bin[bins];
-  while(handle != NULL) {
-		if(handle->pid == pid) {
-			break;
-		} else {
-			prev_handle = handle;
-			handle = handle->next;
-		}
-	}
-	if(handle == NULL) {
-		// unable to find the module
-		return -EINVAL;
-	}
-	handler = (msg_handler_t)sos_read_header_ptr(handle->header,
-			offsetof(mod_header_t,
-				module_handler));
-
-	if(handler != NULL) {
-		void *handler_state = handle->handler_state;
-		Message msg;
-		sos_pid_t prev_pid = curr_pid;
-
-		curr_pid = handle->pid;
-		msg.did = handle->pid;
-		msg.sid = KER_SCHED_PID;
-		msg.type = MSG_FINAL;
-		msg.len = 0;
-		msg.data = NULL;
-		msg.flag = 0;
-
-		// Ram - If the handler does not write to the message, all is fine
-#ifdef SOS_SFI
-		ker_cross_domain_call_mod_handler(handler_state, &msg, handler);
-#else
-		handler(handler_state, &msg);
-#endif
-		curr_pid = prev_pid;
-	}
-
-	// First remove handler from the list.
-	// link the bin back
-	ENTER_CRITICAL_SECTION();
-	if(prev_handle == NULL) {
-		mod_bin[bins] = handle->next;
-	} else {
-		prev_handle->next = handle->next;
-	}
-	LEAVE_CRITICAL_SECTION();
-
-	// remove the thread pid allocation
-	if(handle->pid >= SCHED_MIN_THREAD_PID) {
-		uint8_t i = handle->pid - SCHED_MIN_THREAD_PID;
-		pid_pool[i/8] &= ~(1 << (i % 8));
-  }
-
-
-  // remove system services
-  timer_remove_all(pid);
-  sensor_remove_all(pid);
-  ker_timestamp_deregister(pid);
-	monitor_remove_all(pid);
-  fntable_remove_all(handle);
-
-  // free up memory
-  // NOTE: we can only free up memory at the last step
-  // because fntable is using the state
-  if((SOS_KER_STATIC_MODULE & (handle->flag)) == 0) {
-		ker_slab_free( &sched_slab, handle );
-  }
-  mem_remove_all(pid);
-
-  return 0;
 }
 #endif
 
@@ -992,7 +955,7 @@ static void do_dispatch()
 			curr_pid = handle->pid;
 #ifdef SOS_USE_PREEMPTION
 			// set the current priority
-			curr_pri = get_module_priority(curr_pid);
+			curr_pri = handle->priority;
 #endif
 #ifdef SOS_USE_EXCEPTION_HANDLING
 			if( do_setjmp() == 0 ) 

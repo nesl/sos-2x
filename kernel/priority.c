@@ -2,25 +2,6 @@
 #include <module.h>
 #include <systime.h>
 
-pri_t get_module_priority(sos_pid_t id) 
-{
-  sos_module_t *module = ker_get_module(id);
-  if (module != NULL) {
-    return module->priority;
-  }
-  else {
-    return 0;
-  }
-}
-
-void set_module_priority(sos_pid_t id, pri_t priority)
-{
-  sos_module_t *module = ker_get_module(id);
-  if (module != NULL) {
-    module->priority = priority;
-  }
-}
-
 #ifdef USE_PREEMPTION_PROFILER
 void preemption_profile(sos_pid_t id) 
 {

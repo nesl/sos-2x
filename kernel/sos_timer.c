@@ -976,7 +976,7 @@ timer_interrupt()
 		  msg->sid = TIMER_PID;
 		  msg->type = MSG_TIMER_TIMEOUT;
 		  msg->flag = 0;
-		  msg->priority = get_module_priority(pid);
+		  msg->priority = pid_pri;
 		  p = (MsgParam*)(msg->data);
 		  p->byte = tid;
 		  p->word = 0;
