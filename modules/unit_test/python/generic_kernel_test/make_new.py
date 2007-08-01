@@ -8,9 +8,11 @@ makefile_cont = ["#change the project name to reflect the test you have created\
 		"include $(ROOTDIR)/modules/Makerules\n"]
 
 def setup_dir(loc):
-    ''' Setup the direcotry structure for a test, if any of the folders in the pathname do not exist, reate them
+    ''' Setup the directory structure for a test, if any of the folders in the pathname do not exist, create them
         this will also change the current working directory to where the new files should be placed
     '''
+
+    print "setting up directories for: %s" %loc
     file_dirs = loc.split('/')
     for dir in file_dirs:
 	if dir == '':
@@ -25,6 +27,8 @@ def modify_list(sensor_name, sensor_loc, test_name, test_loc, test_time):
     ''' modify the test.conf file so that it has a new entry reflecting this test
         by default, all tests added using this script will have the name generic_kernel_test
 	'''
+
+    print "modifying test.conf"
     test_f = open ("python/test.conf", 'a')
 
     test_f.write("@generic_kernel_test:\n%s\n%s\n%s\n%s\n%s\n" %(sensor_name, sensor_loc, test_name, test_loc, test_time))
@@ -37,6 +41,9 @@ def create_new_test(test_name):
 	the .c and .py files are simply copied from the provided templates, whereas the Makefile is created
 	from scratch with the correct value assigned to PROJ
 	'''
+
+    print "creating a new test for %s" %test_name
+
     base_file = os.environ['SOSROOT'] + '/modules/unit_test/python/generic_kernel_test/'
 
     move_cmd = ['cp', base_file + 'generic_kernel_test.c', test_name+'.c']
@@ -54,6 +61,8 @@ def create_new_test(test_name):
         make_f.write(line)
 
     make_f.close()
+
+    print "a new test has been created in %s" %os.getcwd()
 
 if __name__ == "__main__":
     #get the arguements, depending on if there are 3, or 5
@@ -74,10 +83,8 @@ if __name__ == "__main__":
 	test_time = sys.argv[5]
 
 	os.chdir(os.environ['SOSROOT'] + "/modules/unit_test/modules")
-	print "setting up the directories for test1"
 	setup_dir(sensor_loc)
 
-	print "copying the files for test1"
 	create_new_test(sensor_name)
 
 	sensor_loc = "/modules/unit_test" + sensor_loc
@@ -85,15 +92,12 @@ if __name__ == "__main__":
     #change the cwd
     os.chdir(os.environ['SOSROOT'] + "/modules/unit_test")
 
-    print "modifing test.conf"
     modify_list(sensor_name, sensor_loc, test_name, test_loc, test_time)
 
     os.chdir('modules')
 
-    print "setting up the drictories for test2"
     setup_dir(test_loc)
 
-    print "copying the files for test2"
     create_new_test(test_name)
     
 

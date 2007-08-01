@@ -1,13 +1,14 @@
-this directory includes the 3 needed files for any test.  included are a Makefile, a .c file which should be loaded onto the node, and a python script which will be run on the server.
+this directory includes the 3 needed files for any test.  included are a Makefile, a .c file which should be loaded onto the node, and a python script which will be run on the server and check the output from sossrv.
 
-a simply python script is provided which will copy the filles, and modify the default test.lst file to include your new test.
+a simple python script is provided which will copy the filles, and modify the default test.lst file to include your new test.
 
 to use it simply do:
   -- python make_new.py sensor_name_here sensor_location_here test_name_here test_location_here test_duration_here
        .. it is assumed that the sensor driver location is correct and already exists with the given file names
        .. it requires 5 arguements, which are essentially the items you would enter into the test.conf file
-          if the test location directories don't exist already, the script will make them for you
-          it then will copy the needed files into the directory and modify the test.conf file as needed
+	    -- please be sure to read how to properly edit the test.conf file before using this
+       .. if the test location directories don't exist already, the script will make them for you
+       .. it then will copy the needed files into the directory and modify the test.conf file as needed
        .. also, the script can be run from any directory without modifying the arguements 
 
 for example, running with:
@@ -24,9 +25,7 @@ will do the following:
   3) next, the .c and .py files will be copied to the given test folder with the names accel_test.c and accel_test.py
   4) finall, a Makefile will be created with accel_test as the PROJ value.
 
-in each file is a template which you are reccomended to follow, and make any needed changes to based on the specific driver you are testing.  It is assumed you have the basic knowledge of how to write a SOS module, since the purpose of these files is to simply facilitate the writing of sensor tests that you or other associates have written already.
+this is simply a template test that provides the basics for most tests.  It is recomended that you make use of these since it will allow you to focus on driver specific details rather than setting up the module correctly.  
 
-It is recomended that you place all three of your new test driver files in:
- $SOSROOT/modules/unit_test/test_type/board_type_here/driver_name_here/
-
+It is also recomended that you place all test files under $SOSROOT/modules/unit_test/modules, since that is the location the test_suite will be rooted from for finding tests.
 

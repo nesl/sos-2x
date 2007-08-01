@@ -10,7 +10,7 @@ make_cont = ['#change the project name to reflect the test you have created\n',
 	     'include $(ROOTDIR)/modules/Makerules\n']
 	     
 def setup_dir(loc):
-    ''' Setup the direcotry structure for a test, if any of the folders in the pathname do not exist, reate them
+    ''' Setup the directory structure for a test, if any of the folders in the pathname do not exist, create them
         this will also change the current working directory to where the new files should be placed
     '''
 
@@ -80,3 +80,6 @@ if __name__ == "__main__":
 
     print "copying the files needed for the test"
     create_new_test(test_name)
+
+    cwd = os.getcwd()
+    print "a new test has been created in %s" %cwd
