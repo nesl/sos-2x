@@ -17,7 +17,7 @@ jmp ker_hw_type            ; 11
 jmp ker_id                 ; 12
 jmp ker_rand               ; 13
 jmp ker_systime32          ; 14
-jmp ker_sensor_get_data
+jmp ker_sensor_get_data    ; 15
 jmp ker_led                ; 16
 jmp ker_sys_get_module_state ; 17
 jmp ker_sys_fntable_subscribe ; 18
@@ -49,4 +49,5 @@ jmp ker_i2c_reserve_bus     ; 39
 jmp ker_i2c_release_bus     ; 40
 jmp ker_i2c_send_data       ; 41
 jmp ker_i2c_read_data       ; 42
-jmp 0                      ; 43
+jmp post_longer             ; 43
+jmp 0                      ; 44

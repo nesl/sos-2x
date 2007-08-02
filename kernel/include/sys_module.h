@@ -43,6 +43,8 @@ int8_t ker_sys_post_link(sos_pid_t dst_mod_id, uint8_t type,
     uint8_t size, void *data, uint16_t flag, uint16_t dst_node_addr);
 int8_t ker_sys_post_value(sos_pid_t dst_mod_id,
                 uint8_t type, uint32_t data, uint16_t flag);
+int8_t post_longer(sos_pid_t did, sos_pid_t sid, uint8_t type, uint8_t len,
+				   void *data, uint16_t flag, uint16_t saddr);
 uint8_t ker_hw_type();
 uint16_t ker_id();
 uint16_t ker_rand();
@@ -395,9 +397,60 @@ static inline int8_t sys_post( sos_pid_t dst_mod_id, uint8_t type, uint8_t size,
 #endif  //SYS_JUMP_TBL_START
 }             
 
+
+/// \cond NOTYPEDEF                                             
+typedef int8_t (* sys_post_raw_t)(sos_pid_t dst_mod_id,
+        sos_pid_t src_mod_id, 
+        uint8_t type, 
+        uint8_t size,
+        void *data, 
+        uint16_t flag, 
+        uint16_t saddr);
+/// \endcond         
+
+
+/** System call providing full control over message posting.
+ *
+ * \param dst_mod_id ID of the destination module
+ * 
+ * \param src_mod_id ID of the destination module
+ *
+ * \param type Unique message identifier. Kernel message types are defined
+ * in message_types.h
+ *
+ * \param size Size of the payload (in bytes) that is being dispatched as a
+ * part of the message
+ *
+ * \param *data Pointer to the payload buffer that is dispatched in the
+ * message.
+ *
+ * \param flag Control scheduler priority, memory management properties of
+ * payload.  Check message_types.h
+ *
+ * \param saddr Explicitly list the source address that should be set for
+ * this message.
+ *
+ * \note This call is used primarily by routing layers presenting the view
+ * that a message came directly from an arbritrary node.  General messaging
+ * can use the simpler sys_post API.
+ *
+ * \return SOS_OK on success, -ENOMEM on failure
+ */
+
+static inline int8_t sys_post_raw( sos_pid_t dst_mod_id, sos_pid_t src_mod_id, uint8_t type, uint8_t size, void *  data, uint16_t flag, uint16_t saddr)
+{
+#ifdef SYS_JUMP_TBL_START                                              
+  return ((sys_post_raw_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*43))( dst_mod_id, src_mod_id, type, size, data, flag, saddr);          
+#else  //SYS_JUMP_TBL_START
+  return post_longer( dst_mod_id, src_mod_id, type, size, data, flag, saddr );
+#endif  //SYS_JUMP_TBL_START
+}             
+
+
 /// \cond NOTYPEDEF
 typedef int8_t (* sys_post_link_ker_func_t)( sos_pid_t dst_mod_id, uint8_t type, uint8_t size, void *  data, uint16_t flag, uint16_t dst_node_addr );
 /// \endcond
+
 
 /**
  * Post message with paylaod over different network link.
