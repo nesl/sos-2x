@@ -6,7 +6,7 @@ import signal
 import struct
 import pysos
 
-ACCELEROMETER_MODULE = 0x80
+TEST_MODULE = 0x80
 CENTROID = 512
 MSG_DATA_READY = 33 
 oldstate = -1
