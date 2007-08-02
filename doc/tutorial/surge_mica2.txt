@@ -135,27 +135,30 @@ nigh-incomprehensible hex. To see the actual data, you'll need to use the
 sos_server API to subscribe a function to receive messages, and then use that
 function to print the messages in a more human-readable form. Luckily, both of
 these things have already been done. You'll need to go to the sos_catch
-directory and build sos_catch. sos_catch is a tool that subscribes a function
-called "catch" to the messages that sos_server receives. It gets this function
-from whatever module it includes: normally, it uses the default module
-(catch_surge.c) which is designed to work with Surge messages that arrive via
-the tree_routing module, but it can be reconfigured to use a different module
-by simply changing the include statement (although the Makefile might also need
-some work). To build and run sos_catch, run the lines below:
+directory and build catch_surge.exe. sos_catch is a simplification of the
+sos_server API that provides a simple subscribe() function. catch_surge is one
+example of the use of sos_catchwhich is designed to work with Surge messages
+that arrive via the tree_routing module.  To build and run catch_surge, run the
+lines below:
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/sos_catch/
-make x86
-./sos_catch.exe
+make ppc
+./catch_surge.exe
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Of course, if you're working on a different architecture, (like a PowerPC)
 you'd want to replace "x86" with the appropriate architecture designation (such
-as "ppc"). If the sos_server is running, sos_catch should start and begin
+as "ppc"). If the sos_server is running, catch_surge should start and begin
 printing packets. It follows almost the same format as sos_server, except that
 when a Surge message is received, it will print the tree routing information
 and Surge information instead of just printing the message data in hex. All of
 the printing is implemented in catch_surge.c, sos_catch.c just subscribes it to
-sos_server. If everything is working, you will see some packets that have an entry for "Surge message type:" and "Reading:". The "Reading:" entry is the sensor value. As a final test, cover the photo sensor with your finger. The reading in subsequent packets should change dramatically, and then change back when the sensor is uncovered (assuming that you have a reasonable light source hitting the sensor normally).
+sos_server. If everything is working, you will see some packets that have an
+entry for "Surge message type:" and "Reading:". The "Reading:" entry is the
+sensor value. As a final test, cover the photo sensor with your finger. The
+reading in subsequent packets should change dramatically, and then change back
+when the sensor is uncovered (assuming that you have a reasonable light source
+hitting the sensor normally).
 
