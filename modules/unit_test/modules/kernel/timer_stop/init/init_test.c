@@ -8,7 +8,6 @@
 #include <led_dbg.h>
 
 #define TEST_PID DFLT_APP_ID0
-#define OTHER_PID DFLT_APP_ID1
 /* this is a new message type which specifies our test driver's packet type
  * both the python test script, and the message handler will need to handle messages of this type
  */
@@ -168,9 +167,18 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 				switch(s->state){
 				  case TEST_APP_INIT:
 					  {
+							uint8_t i;
+							for (i = 1; i < 11; i++)
+								sys_timer_start(i, TEST_APP_INTERVAL, TIMER_REPEAT);
+
+							for (i = 1; i < 11; i++)
+								if (sys_timer_stop(i) != SOS_OK)
+									send_new_data(TEST_FAIL, i);
+							  else
+									send_new_data(TEST_PASS, i);
+
 							send_new_data(s->state, s->count);
 							s->count++;
-							s->state = TEST_APP_FINAL;
 						}
 						break;
 

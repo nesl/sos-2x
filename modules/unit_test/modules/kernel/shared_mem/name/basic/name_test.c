@@ -168,9 +168,15 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 				switch(s->state){
 				  case TEST_APP_INIT:
 					  {
-							send_new_data(s->state, s->count);
+							sos_shm_t new_name;
+
+							new_name = sys_shm_name(TEST_PID, s->count);
+
+							if ((new_name >> 8) != TEST_PID || (new_name & 0x00FF) != s->count)
+								send_new_data(TEST_FAIL, s->count);
+							else
+								send_new_data(TEST_PASS, s->count);
 							s->count++;
-							s->state = TEST_APP_FINAL;
 						}
 						break;
 

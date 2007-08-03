@@ -14,6 +14,7 @@
  */
 
 #define MSG_TEST_DATA (MOD_MSG_START + 1)
+#define MSG_TRANS_DATA (MOD_MSG_START + 2)
 
 /* this is the timer specifications */
 #define TEST_APP_TID 0
@@ -168,9 +169,23 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 				switch(s->state){
 				  case TEST_APP_INIT:
 					  {
-							send_new_data(s->state, s->count);
+							data_msg_t *d;
+							d = (data_msg_t*) sys_malloc(sizeof(data_msg_t));
+
+							d->id = sys_id();
+							d->state = s->state;
+							d->data = s->count;
+
+							sys_post_raw(
+									OTHER_PID,
+									101,
+									MSG_TRANS_DATA,
+									sizeof(data_msg_t),
+									d,
+									SOS_MSG_RELEASE,
+									s->count);
+
 							s->count++;
-							s->state = TEST_APP_FINAL;
 						}
 						break;
 

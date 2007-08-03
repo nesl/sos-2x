@@ -167,9 +167,9 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 					  {
 							uint8_t i;
 
-							for (i=0; i < 8;i++)
+							for (i=1; i < 11;i++)
 							{
-								if (sys_timer_start(i<<i, TEST_APP_INTERVAL, TIMER_REPEAT) != SOS_OK)
+								if (sys_timer_start(i, TEST_APP_INTERVAL, TIMER_REPEAT) != SOS_OK)
 									send_new_data(155, s->count);
 							  else
 									send_new_data(255, s->count);

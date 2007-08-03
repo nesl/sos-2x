@@ -52,6 +52,10 @@ def generic_test(msg):
 	print "initialization began correctly"
     if (node_state == 0):
 	state[node_id] = data
+    if (node_state == 155):
+	print >> sys.stderr, "initialization for timer %d failed" %data
+    if (node_state == 255):
+	print "initialization for timer %d succeded" %data
     if (node_state == 1 and state[node_id] != data):
 	print >> sys.stderr, " a message was lost somewhere on node %d before count %d" %(node_id,data)
     if (node_state == FINAL_DATA):

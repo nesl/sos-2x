@@ -7,13 +7,14 @@
 #define LED_DEBUG
 #include <led_dbg.h>
 
-#define TEST_PID DFLT_APP_ID0
-#define OTHER_PID DFLT_APP_ID1
+#define TEST_PID DFLT_APP_ID1
+#define OTHER_PID DFLT_APP_ID0
 /* this is a new message type which specifies our test driver's packet type
  * both the python test script, and the message handler will need to handle messages of this type
  */
 
 #define MSG_TEST_DATA (MOD_MSG_START + 1)
+#define MSG_TRANS_DATA (MOD_MSG_START + 2)
 
 /* this is the timer specifications */
 #define TEST_APP_TID 0
@@ -131,12 +132,10 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 			s->count = 0;
 			s->pid = msg->did;
 
-			sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
       send_new_data(START_DATA, 0);
 			break;
 
 		case MSG_FINAL:
-			sys_timer_stop(TEST_APP_TID);
 			s->state = TEST_APP_FINAL;
 			send_new_data(FINAL_DATA, 1);
 			break;
@@ -163,29 +162,20 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
     	}
 			break;
 
-		case MSG_TIMER_TIMEOUT:
+		case MSG_TRANS_DATA:
 			{
-				switch(s->state){
-				  case TEST_APP_INIT:
-					  {
-							send_new_data(s->state, s->count);
-							s->count++;
-							s->state = TEST_APP_FINAL;
-						}
-						break;
+				data_msg_t *d;
+				d = (data_msg_t *) sys_msg_take_data(msg);
 
-					case TEST_APP_FINAL:
-						{
-							send_new_data(s->state, s->count);
-							s->state = TEST_APP_INIT;
-						}
-						break;
+				if (d->data != msg->saddr ||
+						msg->sid != 101)
+					send_new_data(TEST_FAIL, s->count);
+				else
+					send_new_data(TEST_PASS, s->count);
 
-					default:
-						return -EINVAL;
-						break;
-				}
-			} 
+				s->count++;
+				sys_free(d);
+			}
 			break;
 
 		default:
