@@ -42,4 +42,5 @@ char mod_pid_name[][256] = {
 	"DVM Module       ",           // 165
 	"ADC Sensor       ",           // 166
     "Temperature      ",           // 167
+    "Battery Volatage ",           // 168
 };
