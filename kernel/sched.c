@@ -808,15 +808,17 @@ static uint8_t do_setjmp( void )
  * @brief dispatch short message
  * This is used by the callback that was register by interrupt handler
  */
-void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
-		uint8_t type, uint8_t byte,
-		uint16_t word, uint16_t flag)
+void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src, uint8_t type, uint8_t byte,
+																	uint16_t word, uint16_t flag)
 {
 	sos_module_t *handle;
 	msg_handler_t handler;
 	void *handler_state;
-
 	MsgParam *p;
+#ifdef SOS_USE_PREEMPTION
+	sos_pid_t prev_pid;
+	pri_t prev_pri;
+#endif
 
 	handle = ker_get_module(dst);
 	if( handle == NULL ) { return; }
@@ -836,16 +838,15 @@ void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
 	short_msg.flag = flag;
 
 #ifdef SOS_USE_PREEMPTION
-	// push the curr_pid on to the stack
-	*pid_sp = curr_pid;
-	pid_sp++;
+	// save the old pid
+	prev_pid = curr_pid;
+	// save the old priority
+	prev_pri = curr_pri;
+	// set the current priority
+	curr_pri = get_module_priority(curr_pid);
 #endif
 	// Update current pid
 	curr_pid = dst;
-#ifdef SOS_USE_PREEMPTION
-			// set the current priority
-			curr_pri = get_module_priority(curr_pid);
-#endif
 
 #ifdef SOS_USE_EXCEPTION_HANDLING
 	if( do_setjmp() != 0 )
@@ -861,11 +862,10 @@ void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
 #endif
 	ker_log( SOS_LOG_HANDLE_MSG_END, curr_pid, type );
 #ifdef SOS_USE_PREEMPTION
-	// pop the pid from the stack
-	pid_sp--;
-	curr_pid = *pid_sp;
+	// restore the old pid
+	curr_pid = prev_pid;
 	// set the current priority
-	curr_pri = get_module_priority(curr_pid);
+	curr_pri = prev_pri;
 #endif
 }
 
@@ -878,6 +878,8 @@ void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src,
 #ifdef SOS_USE_PREEMPTION
 static void do_dispatch(Message *e)
 {
+	sos_pid_t prev_pid;                        // To store the previous pid
+	pri_t prev_pri;                            // To store the previous priority
 #else 
 static void do_dispatch()
 {
@@ -907,7 +909,7 @@ static void do_dispatch()
 		senddone_dst_pid = e->sid;	
 	}
 	// Deliver message to the monitor
-	// Ram - Modules might access kernel domain here
+// Ram - Modules might access kernel domain here
 	monitor_deliver_incoming_msg_to_monitor(e);
 
 #ifdef SOS_USE_EXCEPTION_HANDLING
@@ -918,16 +920,16 @@ static void do_dispatch()
 			int8_t ret;
 			msg_handler_t handler;
 			void *handler_state;
-
+			
 			DEBUG("###################################################################\n");
-				DEBUG("MESSAGE FROM %d TO %d OF TYPE %d\n", e->sid, e->did, e->type);
-				DEBUG("###################################################################\n");
-
-
-				// Get the function pointer to the message handler
-				handler = (msg_handler_t)sos_read_header_ptr(handle->header,
-						offsetof(mod_header_t,
-						module_handler));
+			DEBUG("MESSAGE FROM %d TO %d OF TYPE %d\n", e->sid, e->did, e->type);
+			DEBUG("###################################################################\n");
+			
+			
+			// Get the function pointer to the message handler
+			handler = (msg_handler_t)sos_read_header_ptr(handle->header,
+																									 offsetof(mod_header_t,
+																														module_handler));
 			// Get the pointer to the module state
 			handler_state = handle->handler_state;
 			// Change ownership if the release flag is set
@@ -938,18 +940,17 @@ static void do_dispatch()
 
 
 			DEBUG("RUNNING HANDLER OF MODULE %d \n", handle->pid);
-
+			
 #ifdef SOS_USE_PREEMPTION
-			// push the curr_pid on to the stack
-			*pid_sp = curr_pid;
-			pid_sp++;
-#endif
-
-			curr_pid = handle->pid;
-#ifdef SOS_USE_PREEMPTION
+			// save the old pid
+			prev_pid = curr_pid;
+			// save the old priority
+			prev_pri = curr_pri;
 			// set the current priority
-			curr_pri = get_module_priority(curr_pid);
+			curr_pri = get_module_priority(handle->pid);
 #endif
+			// set the current pid
+			curr_pid = handle->pid;
 #ifdef SOS_USE_EXCEPTION_HANDLING
 			if( do_setjmp() == 0 ) 
 #endif
@@ -961,13 +962,12 @@ static void do_dispatch()
 				ret = handler(handler_state, e);
 #endif
 #ifdef SOS_USE_PREEMPTION
-				// pop the pid from the stack
-				pid_sp--;
-				curr_pid = *pid_sp;
-				// set the current priority
-				curr_pri = get_module_priority(curr_pid);
+				// restore the old pid
+				curr_pid = prev_pid;
+				// restore the old priority
+				curr_pri = prev_pri;
 				
-				// need to call the split phase of deregister if final message
+				// if final msg, call the split phase
 				if(e->type == MSG_FINAL) {
 					ker_deregister_module_split(e->did);
 				}

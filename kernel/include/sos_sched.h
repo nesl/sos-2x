@@ -182,7 +182,7 @@ extern sos_pid_t*   pid_sp;                        //!< pid stack pointer
 
 #ifdef SOS_USE_PREEMPTION
 /**
- * Expose curr_pri just like curr_pid so timer interrupt in sos_timer can use it.
+ * Expose curr_pri just like curr_pid
  */
 extern pri_t curr_pri;
 extern uint8_t preemption_point (sos_pid_t pid);

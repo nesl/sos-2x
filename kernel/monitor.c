@@ -5,6 +5,9 @@
 #include <sos_info.h>
 #include <sos_sched.h>
 #include <hardware_types.h>
+#ifdef SOS_USE_PREEMPTION
+#include <priority.h>
+#endif
 
 //----------------------------------------------------------------------------
 //  Typedefs
@@ -101,6 +104,11 @@ void monitor_deliver_incoming_msg_to_monitor(Message *m)
 {
 	uint8_t type;
 	monitor_cb *curr;
+#ifdef SOS_USE_PREEMPTION
+	sos_pid_t prev_pid;
+	pri_t prev_pri;
+#endif
+
 #ifdef MSG_TRACE
 #ifdef PC_PLATFORM
 	msg_trace(m, false);
@@ -136,8 +144,20 @@ void monitor_deliver_incoming_msg_to_monitor(Message *m)
 							curr->mod_handle->header,
 							offsetof(mod_header_t,module_handler));
 			void *handler_state = curr->mod_handle->handler_state;
+#ifdef SOS_USE_PREEMPTION
+			// save the old pid and priority
+			prev_pid = curr_pid;
+			prev_pri = curr_pri;
+			// set the new priority
+			curr_pri = get_module_priority(curr->mod_handle->pid);
+#endif
 			curr_pid = curr->mod_handle->pid;
 			handler(handler_state, m);
+#ifdef SOS_USE_PREEMPTION
+			// restore the old pid and priority
+			curr_pid = prev_pid;
+			curr_pri = prev_pri;
+#endif
 		}
 		curr = curr->next;
 	}
@@ -147,6 +167,9 @@ void monitor_deliver_outgoing_msg_to_monitor(Message *m)
 {
 	monitor_cb *curr;
 	sos_pid_t prev_pid;
+#ifdef SOS_USE_PREEMPTION
+	pri_t prev_pri;
+#endif
 #ifdef MSG_TRACE
 #ifdef PC_PLATFORM
 	msg_trace(m, true);
@@ -169,7 +192,14 @@ void monitor_deliver_outgoing_msg_to_monitor(Message *m)
 			void *handler_state = curr->mod_handle->handler_state;
 			prev_pid = curr_pid;
 			curr_pid = curr->mod_handle->pid;
+#ifdef SOS_USE_PREEMPTION
+			prev_pri = curr_pri;
+			curr_pri = get_module_priority(curr_pid);
+#endif
 			handler(handler_state, m);
+#ifdef SOS_USE_PREEMPTION
+			curr_pri = prev_pri;
+#endif
 			curr_pid = prev_pid;
 		}
 		curr = curr->next;
