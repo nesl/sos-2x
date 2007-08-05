@@ -118,21 +118,20 @@ static mod_header_t mod_header SOS_MODULE_HEADER =
   };
 
 #ifdef SOS_USE_PREEMPTION
-//! message queue
-mq_t schedpq NOINIT_VAR;
+pri_t curr_pri;                            //!< current executing task's priority
 #else
-//! message queue
-mq_t schedpq NOINIT_VAR;
-#endif
-
-#ifndef SOS_USE_PREEMPTION
 //! module data structure
 static sos_module_t sched_module;
+//! for handling soft interrupts
+static uint8_t int_ready = 0;
+static sched_int_t  int_array[SCHED_NUM_INTS];
+uint8_t sched_stalled = false;
 #endif
 
+//! message queue
+mq_t schedpq NOINIT_VAR;
 //! slab 
 static slab_t sched_slab;
-
 /*
  * NOTE: all three variables below are used by the assembly routine 
  * to optimize the performance
@@ -142,21 +141,8 @@ sos_pid_t    curr_pid;                      //!< current executing pid
 static sos_pid_t    pid_stack[SOS_PID_STACK_SIZE]; //!< pid stack
 sos_pid_t*   pid_sp;                        //!< pid stack pointer
 
-#ifdef SOS_USE_PREEMPTION
-pri_t curr_pri;                            //!< current executing task's priority
-#endif
-
-#ifndef SOS_USE_PREEMPTION
-static uint8_t int_ready = 0;
-static sched_int_t  int_array[SCHED_NUM_INTS];
-
-uint8_t sched_stalled = false;
-#endif
-
 // this is for dispatch short message directly
 static Message short_msg;
-
-
 /**
  * @brief module bins
  * we hash pid into particular bin, and store the handle of next module
@@ -218,6 +204,8 @@ void sched_init(uint8_t cond)
 	ker_slab_init( KER_SCHED_PID, &sched_slab, sizeof(sos_module_t), 4, SLAB_LONGTERM);
 	// register the module
 	ker_register_module(sos_get_header_address(mod_header));
+	// initialize curr_pri
+	curr_pri = 0;
 #else
   sched_register_kernel_module(&sched_module, sos_get_header_address(mod_header), mod_bin);
 	sched_stalled = false;
@@ -625,10 +613,10 @@ static int8_t do_register_module(mod_header_ptr h, sos_module_t *handle,
  * @param pid task id to be removed
  * Note that this function cannot be used inside interrupt handler
  */
-
 int8_t ker_deregister_module(sos_pid_t pid)
 {
 #ifdef SOS_USE_PREEMPTION
+
 /**
  * Making ker_deregister_module split phase for preemption. 
  * The msg_final is sent in the first phase and the other 
@@ -652,7 +640,9 @@ int8_t ker_deregister_module(sos_pid_t pid)
 	msg->priority = get_module_priority(pid);
 	sched_msg_alloc(msg);
 	return 0;
+
 #else
+
   HAS_CRITICAL_SECTION;
   uint8_t bins = hash_pid(pid);
   sos_module_t *handle;
@@ -678,8 +668,8 @@ int8_t ker_deregister_module(sos_pid_t pid)
 		return -EINVAL;
 	}
 	handler = (msg_handler_t)sos_read_header_ptr(handle->header,
-																							 offsetof(mod_header_t,
-																												module_handler));
+			offsetof(mod_header_t,
+				module_handler));
 
 	if(handler != NULL) {
 		void *handler_state = handle->handler_state;
@@ -719,6 +709,7 @@ int8_t ker_deregister_module(sos_pid_t pid)
 		pid_pool[i/8] &= ~(1 << (i % 8));
   }
 
+
   // remove system services
   timer_remove_all(pid);
   sensor_remove_all(pid);
@@ -733,7 +724,7 @@ int8_t ker_deregister_module(sos_pid_t pid)
 		ker_slab_free( &sched_slab, handle );
   }
   mem_remove_all(pid);
-
+	
   return 0;
 #endif
 }
@@ -742,6 +733,7 @@ int8_t ker_deregister_module(sos_pid_t pid)
 void ker_deregister_module_split(sos_pid_t pid)
 {
 	HAS_CRITICAL_SECTION;
+
   uint8_t bins = hash_pid(pid);
 	sos_module_t *handle;
 	sos_module_t *prev_handle = NULL;
@@ -796,6 +788,7 @@ void ker_deregister_module_split(sos_pid_t pid)
 		ker_slab_free( &sched_slab, handle );
   }
   mem_remove_all(pid);
+
 }
 #endif
 
@@ -955,7 +948,7 @@ static void do_dispatch()
 			curr_pid = handle->pid;
 #ifdef SOS_USE_PREEMPTION
 			// set the current priority
-			curr_pri = handle->priority;
+			curr_pri = get_module_priority(curr_pid);
 #endif
 #ifdef SOS_USE_EXCEPTION_HANDLING
 			if( do_setjmp() == 0 ) 
