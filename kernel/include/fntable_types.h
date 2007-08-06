@@ -27,6 +27,9 @@
  */
 #include <hardware_proc.h>
 #include <error_type.h>
+#ifdef SOS_USE_PREEMPTION
+#include <priority_common.h>
+#endif
 
 #define RUNTIME_FID    255
 #define RUNTIME_PID    NULL_PID  // Please make sure this value is 255
@@ -66,10 +69,14 @@
  * SOS_CALL.  
  */
 typedef struct func_cb {
-	void *ptr;        //! function pointer                    
-	uint8_t proto[4]; //! function prototype                  
-	uint8_t pid;      //! function PID                                    
-	uint8_t fid;      //! function ID                         
+  void *ptr;        //! function pointer                    
+  uint8_t proto[4]; //! function prototype                  
+  uint8_t pid;      //! function PID                                    
+  uint8_t fid;      //! function ID                         
+#ifdef SOS_USE_PREEMPTION
+  pri_t pri;        //! module priority
+  uint8_t padding;  //! this struct has to be word alligned
+#endif
 } func_cb_t;
 
 /**

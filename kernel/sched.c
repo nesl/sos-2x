@@ -118,7 +118,10 @@ static mod_header_t mod_header SOS_MODULE_HEADER =
   };
 
 #ifdef SOS_USE_PREEMPTION
+#define SOS_PRI_STACK_SIZE SOS_PID_STACK_SIZE
 pri_t curr_pri;                            //!< current executing task's priority
+static pri_t pri_stack[SOS_PRI_STACK_SIZE]; //! priority stack
+pri_t* pri_sp;
 #else
 //! module data structure
 static sos_module_t sched_module;
@@ -206,6 +209,8 @@ void sched_init(uint8_t cond)
 	ker_register_module(sos_get_header_address(mod_header));
 	// initialize curr_pri
 	curr_pri = 0;
+	// initialize the priority stack
+	pri_sp = pri_stack;
 #else
   sched_register_kernel_module(&sched_module, sos_get_header_address(mod_header), mod_bin);
 	sched_stalled = false;
@@ -909,7 +914,7 @@ static void do_dispatch()
 		senddone_dst_pid = e->sid;	
 	}
 	// Deliver message to the monitor
-// Ram - Modules might access kernel domain here
+	// Ram - Modules might access kernel domain here
 	monitor_deliver_incoming_msg_to_monitor(e);
 
 #ifdef SOS_USE_EXCEPTION_HANDLING

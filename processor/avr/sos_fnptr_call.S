@@ -40,6 +40,17 @@ ker_sys_fnptr_call:
 		lds  xptr_l, (curr_pid);
 label_store_curr_pid:
 		sts  (curr_pid), xptr_l ;  update curr_pid to destination PID
+#ifdef SOS_USE_PREEMPTION
+                adiw zptr_l, 2 ; move Z pointer to the location of priority
+                lds temp_reg1, (curr_pri); load the current priority
+                lds xptr_l, (pri_sp) ; load the priority stack pointer
+                lds xptr_h, (pri_sp+1);
+                st X+, temp_reg1 ; save curr_pri to the priority stack
+                sts pri_sp, xptr_l; update the priority stack pointer
+                sts pri_sp, xptr_h;
+                elpm xptr_l, Z; load the destination priority
+                lds xptr_l, (curr_pri); store it to current priority
+#endif
 		out  __SREG__, temp_reg0 ;  leave critical section
 	;movw zptr_l, xptr_l ; move to Z register for iCall
 	pop  zptr_h         ; get the function location from the stack
@@ -58,6 +69,14 @@ label_store_curr_pid:
 		sts  pid_sp, xptr_l ;
 		sts  (pid_sp+1), xptr_h ;
 		sts  (curr_pid), temp_reg1;
+#ifdef SOS_USE_PREEMPTION
+                lds xptr_l, (pri_sp) ; load the priority stack pointer
+                lds xptr_h, (pri_sp+1);
+                ld  temp_reg1, -X    ; pop the previous priority value
+                sts pid_sp, xptr_l   ; update the priority stack pointer
+                sts (pid_sp+1), xptr_h ;
+                sts (curr_pri), temp_reg1 ; store the popped value to current priority
+#endif
 		out  __SREG__, temp_reg0 ;  leave critical section
 	clr  temp_reg1      ; clear R1 for gcc 
 	ret
