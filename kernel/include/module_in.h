@@ -114,7 +114,7 @@
 
 /* 23 */ int8_t ker_timer_stop(sos_pid_t pid, uint8_t tid) ;
 
-/* 24 */ int8_t ker_timer_release(sos_pid_t pid, uint8_t tid) ;
+/* 24 */ int8_t ker_timer_stop_and_release(sos_pid_t pid, uint8_t tid) ;
 
 /* 25 */ int8_t post_link(sos_pid_t did, sos_pid_t sid, uint8_t type, uint8_t arg, void *larg, uint16_t flag, uint16_t daddr);
 

@@ -41,7 +41,7 @@
       /* 21 */ (void*)ker_timer_start,					\
       /* 22 */ (void*)ker_timer_restart,				\
       /* 23 */ (void*)ker_timer_stop,					\
-      /* 24 */ (void*)ker_timer_release,				\
+      /* 24 */ (void*)ker_timer_stop_and_release,				\
       /* 25 */ (void*)post_link,					\
       /* 26 */ (void*)post,						\
       /* 27 */ (void*)post_short,					\

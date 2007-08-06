@@ -637,7 +637,7 @@ int8_t ker_timer_stop(sos_pid_t pid, uint8_t tid)
 }
 
 //! Free the first timer block beloning to pid in the timer_pool
-int8_t ker_timer_release(sos_pid_t pid, uint8_t tid)
+int8_t ker_timer_stop_and_release(sos_pid_t pid, uint8_t tid)
 {
   sos_timer_t* tt;
 
@@ -743,6 +743,7 @@ int8_t ker_sys_timer_restart(uint8_t tid, int32_t interval)
 
 int8_t ker_sys_timer_stop(uint8_t tid)              
 {                                                             
+  int8_t ret;
 #ifdef SOS_USE_PREEMPTION
   HAS_ATOMIC_PREEMPTION_SECTION;
 #endif
@@ -750,12 +751,11 @@ int8_t ker_sys_timer_stop(uint8_t tid)
 #ifdef SOS_USE_PREEMPTION
   ATOMIC_DISABLE_PREEMPTION();
 #endif
-  ker_timer_stop(my_id, tid);
-  ker_timer_release(my_id, tid);
+  ret = ker_timer_stop_and_release(my_id, tid);
 #ifdef SOS_USE_PREEMPTION
   ATOMIC_ENABLE_PREEMPTION();
 #endif
-  return SOS_OK;                                            
+  return ret;                                            
 }
 
 #ifndef SOS_USE_PREEMPTION

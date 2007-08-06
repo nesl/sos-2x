@@ -166,7 +166,7 @@ extern int8_t ker_timer_stop(sos_pid_t pid, uint8_t tid);
  * @return -EINVAL If no such timer exists
  * @note This call does not free UNINITIALIZED PRE-ALLOCATED timers
  */
-extern int8_t ker_timer_release(sos_pid_t pid, uint8_t tid);
+extern int8_t ker_timer_stop_and_release(sos_pid_t pid, uint8_t tid);
 
 
 //------------------------------------------------------------------------
