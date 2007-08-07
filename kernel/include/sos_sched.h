@@ -185,6 +185,8 @@ extern sos_pid_t*   pid_sp;                        //!< pid stack pointer
  * Expose curr_pri just like curr_pid
  */
 extern pri_t curr_pri;
+extern sos_pid_t    curr_pri;                      //!< current executing pid's priority
+extern sos_pid_t*   pri_sp;                        //!< priority stack pointer
 extern uint8_t preemption_point (sos_pid_t pid);
 
 /**

@@ -60,6 +60,9 @@
 #include <led_dbg.h>
 #include <sys_module.h>
 #include <module.h>
+#ifdef SOS_USE_PREEMPTION
+#include <priority.h>
+#endif
 
 #define VMAC_SEND_STATE_IDLE         0
 #define VMAC_SEND_STATE_BACKOFF      1
