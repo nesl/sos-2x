@@ -21,7 +21,7 @@
 
 /* this is the timer specifications */
 #define TEST_APP_TID 0
-#define TEST_APP_INTERVAL 50
+#define TEST_APP_INTERVAL 1024
 
 /* messagees for when MSG_INIT and MSG_FINAL are sent
  */
@@ -192,25 +192,22 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 							d = (uint8_t *) sys_malloc(sizeof(uint8_t));
 							*d = s->count;
 
-							sys_shm_open(sys_shm_name(TEST_PID, s->count), d);
+							sys_shm_open(sys_shm_name(TEST_PID, 0), d);
+							sys_shm_open(sys_shm_name(TEST_PID, 1), d);
 
 							s->state = TEST_APP_FINAL;
-							sys_post_value(
-									OTHER_PID,
-									MSG_TRANS_READY,
-									0,
-									0);
 						}
 						break;
 
 					case TEST_APP_WAIT:
 						{
 							uint8_t *d;
-							d = (uint8_t*) sys_shm_get(sys_shm_name(TEST_PID, s->count));
+							d = (uint8_t*) sys_shm_get(sys_shm_name(TEST_PID, 0));
 
 							*d = s->count;
 
-							sys_shm_update(sys_shm_name(TEST_PID, s->count), d);
+							sys_shm_update(sys_shm_name(TEST_PID, 0), d);
+							sys_shm_update(sys_shm_name(TEST_PID, 1), d);
 									
 							s->count++;
 						}

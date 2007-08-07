@@ -16,8 +16,8 @@
  */
 
 #define MSG_TEST_DATA (MOD_MSG_START + 1)
-#define MSG_DATA_WAIT (MOD_MSG_START + 2)
-#define MSG_TRANS_READY (MOD_MSG_START + 3)
+#define MSG_WAIT_READY (MOD_MSG_START + 2)
+#define MSG_WAITING ( MOD_MSG_START + 3)
 
 /* this is the timer specifications */
 #define TEST_APP_TID 0
@@ -146,10 +146,15 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 			send_new_data(START_DATA, 0);
 			break;
 
+		case MSG_FINAL:
+			s->state = TEST_APP_FINAL;
+			send_new_data(FINAL_DATA, 1);
+			break;
+
 		case MSG_SHM:
 			{
-				uint8_t event;
 				uint8_t *d;
+				uint8_t event;
 				sos_shm_t name;
 
 				name = shm_get_name(msg);
@@ -157,26 +162,25 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 
 				d = (uint8_t *) sys_shm_get(name);
 
-				if ( (name & 0xFF ) != 0 || *d != s->count || event != SHM_UPDATED)
-					send_new_data(TEST_FAIL, s->count);
+				if ( (name & 0xFF) != 0 || event != SHM_UPDATED || *d != s->count)
+					send_new_data(TEST_FAIL, *d);
 				else
 					send_new_data(TEST_PASS, s->count);
+
 				s->count++;
+				if (s->count == 100)
+					sys_shm_stopwait(name);
 			}
 			break;
 
-		case MSG_TRANS_READY:
+		case MSG_WAIT_READY:
 			sys_shm_wait(sys_shm_name(OTHER_PID, 0));
+			s->count = 0;
 			sys_post_value(
-					OTHER_PID, 
-					MSG_DATA_WAIT,
+					OTHER_PID,
+					MSG_WAITING,
 					0,
-					0);
-			break;
-
-		case MSG_FINAL:
-			s->state = TEST_APP_FINAL;
-			send_new_data(FINAL_DATA, 1);
+					SOS_MSG_RELEASE);
 			break;
 
 	  /* here we handle messages of type MSG_TEST_DATA

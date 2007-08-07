@@ -9,15 +9,15 @@
 
 #define BASE_NODE_ID 0
 
-#define TEST_PID DFLT_APP_ID1
-#define OTHER_PID DFLT_APP_ID0
+#define TEST_PID DFLT_APP_ID0
+#define OTHER_PID DFLT_APP_ID1
 /* this is a new message type which specifies our test driver's packet type
  * both the python test script, and the message handler will need to handle messages of this type
  */
 
 #define MSG_TEST_DATA (MOD_MSG_START + 1)
-#define MSG_DATA_WAIT (MOD_MSG_START + 2)
-#define MSG_TRANS_READY (MOD_MSG_START + 3)
+#define MSG_WAIT_READY (MOD_MSG_START + 2)
+#define MSG_WAITING (MOD_MSG_START + 3)
 
 /* this is the timer specifications */
 #define TEST_APP_TID 0
@@ -36,6 +36,7 @@
 enum {
 	TEST_APP_INIT=0,
 	TEST_APP_FINAL,
+	TEST_APP_WAIT,
 };
 
 /* if you wish to store more information, such as a history of previous values
@@ -135,6 +136,7 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 			s->count = 0;
 			s->pid = msg->did;
 
+			sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
       send_new_data(START_DATA, 0);
 			break;
 
@@ -143,38 +145,12 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 			s->count = 0;
 			s->pid = msg->did;
 
+			sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
 			send_new_data(START_DATA, 0);
 			break;
 
-		case MSG_SHM:
-			{
-				uint8_t event;
-				uint8_t *d;
-				sos_shm_t name;
-
-				name = shm_get_name(msg);
-				event = shm_get_event(msg);
-
-				d = (uint8_t *) sys_shm_get(name);
-
-				if ( (name & 0xFF ) != 0 || *d != s->count || event != SHM_UPDATED)
-					send_new_data(TEST_FAIL, s->count);
-				else
-					send_new_data(TEST_PASS, s->count);
-				s->count++;
-			}
-			break;
-
-		case MSG_TRANS_READY:
-			sys_shm_wait(sys_shm_name(OTHER_PID, 0));
-			sys_post_value(
-					OTHER_PID, 
-					MSG_DATA_WAIT,
-					0,
-					0);
-			break;
-
 		case MSG_FINAL:
+			sys_timer_stop(TEST_APP_TID);
 			s->state = TEST_APP_FINAL;
 			send_new_data(FINAL_DATA, 1);
 			break;
@@ -199,6 +175,61 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 						SOS_MSG_RELEASE,
 						BCAST_ADDRESS);
     	}
+			break;
+
+		case MSG_WAITING:
+			s->state = TEST_APP_WAIT;
+			break;	
+
+		case MSG_TIMER_TIMEOUT:
+			{
+				switch(s->state){
+				  case TEST_APP_INIT:
+					  {
+							uint8_t *d;
+
+							d = (uint8_t*) sys_malloc(sizeof(uint8_t));
+							*d = s->count;
+
+							sys_shm_open(sys_shm_name(TEST_PID, 0),d);
+
+							s->state = TEST_APP_FINAL;
+						}
+						break;
+						
+					case TEST_APP_WAIT:
+						{
+							uint8_t *d;
+							d = (uint8_t *) sys_shm_get(sys_shm_name(TEST_PID, 0));
+
+							*d = s->count;
+
+							sys_shm_update(sys_shm_name(TEST_PID, 0), d);
+
+							s->count++;
+							if (s->count == 0){
+								s->state = TEST_APP_INIT;
+								sys_shm_close(sys_shm_name(TEST_PID, 0));
+								sys_free(d);
+							}
+						}
+						break;
+
+					case TEST_APP_FINAL:
+						{
+							sys_post_value(
+									OTHER_PID,
+									MSG_WAIT_READY,
+									0,
+									SOS_MSG_RELEASE);
+						}
+						break;
+
+					default:
+						return -EINVAL;
+						break;
+				}
+			} 
 			break;
 
 		default:
