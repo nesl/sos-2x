@@ -7,6 +7,8 @@
 #define LED_DEBUG
 #include <led_dbg.h>
 
+#define BASE_NODE_ID 0
+
 #define TEST_PID DFLT_APP_ID0
 #define OTHER_PID DFLT_APP_ID1
 /* this is a new message type which specifies our test driver's packet type
@@ -104,7 +106,7 @@ static int8_t send_new_data(uint8_t state, uint8_t data){
 						sizeof(data_msg_t),
 						data_msg,
 						SOS_MSG_RELEASE,
-						0);
+						BASE_NODE_ID);
 			}
 		} else
 			sys_led(LED_RED_ON);
@@ -133,6 +135,15 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 
 			sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
       send_new_data(START_DATA, 0);
+			break;
+
+		case MSG_ERROR:
+			s->state = TEST_APP_INIT;
+			s->count = 0;
+			s->pid = msg->did;
+
+			sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
+			send_new_data(START_DATA, 0);
 			break;
 
 		case MSG_FINAL:

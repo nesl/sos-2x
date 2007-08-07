@@ -7,6 +7,8 @@
 #define LED_DEBUG
 #include <led_dbg.h>
 
+#define BASE_NODE_ID 0
+
 /* driver specific values
  * be sure to include the .h file for the driver you are testing, and assign DRIVER_0_ID to the drivers PID value
  * if the driver has more sensors to poll, include addition macros  such as DRIVER_1_ID
@@ -94,9 +96,21 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 
 			s->state = TEST_APP_INIT;
 			s->pid = msg->did;
-			if (sys_id() != 0){
+			if (sys_id() != BASE_NODE_ID){
 				sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
 				if(sys_sensor_enable(DRIVER_0_ID) != SOS_OK) {
+					sys_timer_stop(TEST_APP_TID);
+				}
+			}
+			break;
+		
+		/* if an error occurs, just restart the state machine */
+		case MSG_ERROR:
+			s->state = TEST_APP_INIT;
+			s->pid = msg->did;
+			if (sys_id() != BASE_NODE_ID){
+				sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
+				if(sys_sensor_enable(DRIVER_0_ID) != SOS_OK){
 					sys_timer_stop(TEST_APP_TID);
 				}
 			}
@@ -105,7 +119,7 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 		/* disable and sensors your enables previously, and stop any timers which you started here
 		 */
 		case MSG_FINAL:
-			if (sys_id() != 0){
+			if (sys_id() != BASE_NODE_ID){
 				sys_sensor_disable(DRIVER_0_ID);
 				sys_timer_stop( TEST_APP_TID);
 			}
@@ -199,7 +213,7 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 								sizeof(data_msg_t),
 								data_msg,
 								SOS_MSG_RELEASE,
-								0);
+								BASE_NODE_ID);
 					}
 				} else
 					sys_led(LED_RED_ON);

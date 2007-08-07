@@ -7,7 +7,10 @@
 #define LED_DEBUG
 #include <led_dbg.h>
 
+#define BASE_NODE_ID 0
+
 #define TEST_PID DFLT_APP_ID0
+#define OTHER_PID DFLT_APP_ID1
 /* this is a new message type which specifies our test driver's packet type
  * both the python test script, and the message handler will need to handle messages of this type
  */
@@ -22,6 +25,8 @@
  */
 #define START_DATA 100
 #define FINAL_DATA 200
+#define TEST_FAIL  155
+#define TEST_PASS  255
 
 /* if your driver has more than one sensor, or device, which can be polled
  * include more states here
@@ -76,7 +81,7 @@ static int8_t send_new_data(uint8_t state, uint8_t data){
 		data_msg = (data_msg_t *) sys_malloc ( sizeof(data_msg_t) );
 
 		if ( data_msg ) {
-//			sys_led(LED_GREEN_TOGGLE);
+			sys_led(LED_GREEN_TOGGLE);
 
 			// copy all the data you wish to send
 			data_msg->id = sys_id();
@@ -101,7 +106,7 @@ static int8_t send_new_data(uint8_t state, uint8_t data){
 						sizeof(data_msg_t),
 						data_msg,
 						SOS_MSG_RELEASE,
-						0);
+						BASE_NODE_ID);
 			}
 		} else
 			sys_led(LED_RED_ON);
@@ -130,6 +135,15 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 
 			sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
       send_new_data(START_DATA, 0);
+			break;
+
+		case MSG_ERROR:
+			s->state = TEST_APP_INIT;
+			s->count = 0;
+			s->pid = msg->did;
+
+			sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
+			send_new_data(START_DATA, 0);
 			break;
 
 		case MSG_FINAL:
@@ -165,12 +179,21 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 				switch(s->state){
 				  case TEST_APP_INIT:
 					  {
-							uint8_t i;
-							for (i = 101; i < 111; i++)
-								if (sys_timer_stop(i) == SOS_OK)
-									send_new_data(155, i);
-							  else
-									send_new_data(255, i);
+							uint8_t *d;
+
+							d = (uint8_t *) sys_malloc(sizeof(uint8_t));
+
+							*d = s->count;
+
+							sys_shm_open(sys_shm_name(TEST_PID, s->count), d);
+							sys_shm_close(sys_shm_name(TEST_PID, s->count));
+
+							if (*d != s->count)
+								send_new_data(TEST_FAIL, s->count);
+							else
+								send_new_data(TEST_PASS, s->count);
+
+							sys_free(d);
 							s->count++;
 						}
 						break;
