@@ -1,8 +1,6 @@
-import sys
-import os
-sys.path.append(os.environ['SOSROOT'] + '/modules/unit_test/pysos/')
 import pysos
 import signal
+import sys
 
 # these two variables should be changed depending on the test drivers PID
 # and the type of message it will be sending, If you are using the generic_test.c 
@@ -16,7 +14,7 @@ ALARM_LEN = 60
 # what the test driver expects for data
 oldstate = {} 
 state = {}
-centroid = [292, 16]
+centroid = [507, 508, 396]
 
 # a signal handler that will go off for an alarm
 # it is highly suggested that you use this since it is the easiest way to test if your
@@ -39,23 +37,24 @@ def generic_test(msg):
 
     #unpack the values we are expecting, in this case it is a node id, the acclerometer id,
     # and a value from the sensor
-    (node_id, accelid, value) = pysos.unpack("<BBH", msg['data'])
+    (node_id, sensor_num, accelid, value) = pysos.unpack("<BBBH", msg['data'])
 
     if node_id not in state.keys():
-	state[node_id] = 0
-	oldstate[node_id] = 0
+	state[node_id] = [0, 0, 0]
+	oldstate[node_id] = [0,0,0]
 
     # these are some simple calculations to test the sensor value we have gotten
     # this is the part which you need to fill in in order to verify that the driver is working
+
     accelid -= 1
+
     if abs(value-centroid[accelid]) > 100:
-        print >> sys.stderr, "the value is to far out of range for sensorid %d, the value is %d" %(accelid+1, value)
-	print >> sys.stderr, "if the enviroment is not changing, then this is an error"
+	print >> sys.stderr, "the value is to far out of range for accel id %d, the value is %d" %(accelid+1, value)
+	print >> sys.stderr, "if the mote is not moving, then this is an error"
     else:
-        print "the value is acceptedable, for sensorid %d, the value is %d" %(accelid+1, value)
+	print "the value is acceptedable, for accelid %d, the value is %d" %(accelid+1, value)
 
 if __name__ == "__main__":
-
     # here we set up a connection to sossrv using the pysos module
     # and begin listening for messages
     # we also register our function above with the server so that it is called

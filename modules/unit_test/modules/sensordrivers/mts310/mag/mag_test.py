@@ -16,6 +16,7 @@ ALARM_LEN = 60
 # what the test driver expects for data
 oldstate = {} 
 state = {}
+centroid = [473 , 177]
 
 # a signal handler that will go off for an alarm
 # it is highly suggested that you use this since it is the easiest way to test if your
@@ -44,19 +45,15 @@ def generic_test(msg):
 	state[node_id] = 0
 	oldstate[node_id] = 0
 
-    print accelid
-    print value
     # these are some simple calculations to test the sensor value we have gotten
     # this is the part which you need to fill in in order to verify that the driver is working
-    g = (value-512)/1024.0*3000/333.0
-    if abs(g)>0.8:
-	if g > 0:
-	    state[node_id] = accelid
-	else:
-	    state[node_id] = 7-accelid
-    if oldstate[node_id] != state[node_id]:
-	print "For Node %d	Side %d is up"%(node_id, state[nodeid],)
-	oldstate[node_id] = state[node_id]
+    accelid -= 6
+
+    if abs(value-centroid[accelid]) > 100:
+        print >> sys.stderr, "the value is to far out of range for magid %d, the value is %d" %(accelid+6, value)
+	print >> sys.stderr, "if the mote is not moving, then this is an error"
+    else:
+        print "the value is acceptable, for magid %d, the value is %d" %(accelid+6, value)
 
 if __name__ == "__main__":
 

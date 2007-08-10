@@ -7,12 +7,12 @@ import struct
 import pysos
 
 TEST_MODULE = 0x80
-CENTROID = 512
 MSG_DATA_READY = 33 
 oldstate = -1
 state = -1
 count = {}
 total = {}
+centroid = [475, 709]
 
 def panic_handler(signum, frame):
     print "it is likely that your base station node has entered panic mode"
@@ -47,16 +47,14 @@ def accel_test(msg):
 	    print "node %d changing frequency to 100hz" %nodeid
 
 	count[nodeid] = packetid
-    g = (value-512)/1024.0*3000/333.0
-    if abs(g)>0.8:
-	if g > 0:
-	    state = accelid
-	else:
-	    state = 7-accelid
-    if oldstate != state:
-	print "Side %d is up"%(state,)
-	oldstate = state
+        
+	accelid -= 4
 
+	if abs(value-centroid[accelid]) > 100:
+	    print >> sys.stderr, "the value is to far out of range for accel id %d, the value is %d" %(accelid+4, value)
+	    print >> sys.stderr, "if the mote is not moving, then this is an error"
+	else:
+	    print "the value is acceptedable, for accelid %d, the value is %d" %(accelid+4, value)
 if __name__ == "__main__":
     srv = pysos.sossrv()
     msg = srv.listen()
