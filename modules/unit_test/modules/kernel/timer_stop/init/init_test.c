@@ -177,7 +177,6 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 							  else
 									send_new_data(TEST_PASS, i);
 
-							send_new_data(s->state, s->count);
 							s->count++;
 						}
 						break;

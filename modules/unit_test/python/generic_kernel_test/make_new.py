@@ -87,7 +87,7 @@ if __name__ == "__main__":
 
 	create_new_test(sensor_name)
 
-	sensor_loc = "/modules/unit_test" + sensor_loc
+	sensor_loc = "/modules/unit_test/modules" + sensor_loc
 
     #change the cwd
     os.chdir(os.environ['SOSROOT'] + "/modules/unit_test")

@@ -219,11 +219,11 @@ def make_kernel(platform):
 
     clean("config/blank")
     if platform == 0:
-        cmd_make = ["make", "-C", "config/blank", "micaz"]
+        cmd_make = ["make", "-C", "config/blank", "micaz", 'MODE=test_suite']
     elif platform == 1:
-        cmd_make = ["make", "-C", "config/blank", "mica2"]
+        cmd_make = ["make", "-C", "config/blank", "mica2", 'MODE=test_suite']
     elif platform == 2:
-        cmd_make =  ["make", "-C", "config/blank", "avrora"]
+        cmd_make =  ["make", "-C", "config/blank", "avrora", 'MODE=test)suite']
 
     try:
       subprocess.check_call(cmd_make, stderr=kernel_f, stdout=kernel_f)

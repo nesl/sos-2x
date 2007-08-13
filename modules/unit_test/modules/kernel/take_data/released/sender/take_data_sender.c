@@ -15,6 +15,8 @@
 
 #define MSG_TEST_DATA (MOD_MSG_START + 1)
 #define MSG_TRANS_DATA (MOD_MSG_START + 2)
+#define MSG_TRANS_READY (MOD_MSG_START + 3)
+#define MSG_START_TRANS (MOD_MSG_START + 4)
 
 /* this is the timer specifications */
 #define TEST_APP_TID 0
@@ -126,7 +128,7 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 			sys_led(LED_YELLOW_OFF);
 			sys_led(LED_RED_OFF);
 
-			s->state = TEST_APP_INIT;
+			s->state = TEST_APP_FINAL;
 			s->count = 0;
 			s->pid = msg->did;
 
@@ -162,6 +164,10 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
     	}
 			break;
 
+		case MSG_START_TRANS:
+			s->state = TEST_APP_INIT;
+			break;
+
 		case MSG_TIMER_TIMEOUT:
 			{
 				switch(s->state){
@@ -188,8 +194,11 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 
 					case TEST_APP_FINAL:
 						{
-							send_new_data(s->state, s->count);
-							s->state = TEST_APP_INIT;
+							sys_post_value(
+									OTHER_PID,
+									MSG_TRANS_READY,
+									0,
+									SOS_MSG_RELEASE);
 						}
 						break;
 

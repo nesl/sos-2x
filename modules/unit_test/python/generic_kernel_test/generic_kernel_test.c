@@ -20,8 +20,9 @@
 /* this is the timer specifications */
 #define TEST_APP_TID 0
 #define TEST_APP_INTERVAL 50
-
-/* messagees for when MSG_INIT and MSG_FINAL are sent
+/* a set of messages which the python script will be checking for.  the start and final data messages are sent
+ * when this module beings and ends respectively.  the other two messages are used to signify when a specific test
+ * has passed or failed on the mote.  If you wish to send other values, the python script will need a corresponding change
  */
 #define START_DATA 100
 #define FINAL_DATA 200

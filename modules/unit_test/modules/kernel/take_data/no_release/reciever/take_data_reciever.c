@@ -8,12 +8,15 @@
 #include <led_dbg.h>
 
 #define TEST_PID DFLT_APP_ID1
+#define OTHER_PID DFLT_APP_ID0
 /* this is a new message type which specifies our test driver's packet type
  * both the python test script, and the message handler will need to handle messages of this type
  */
 
 #define MSG_TEST_DATA (MOD_MSG_START + 1)
 #define MSG_TRANS_DATA (MOD_MSG_START + 2)
+#define MSG_TRANS_READY (MOD_MSG_START + 3)
+#define MSG_START_TRANS (MOD_MSG_START + 4)
 
 /* this is the timer specifications */
 #define TEST_APP_TID 0
@@ -157,6 +160,16 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 						SOS_MSG_RELEASE,
 						BCAST_ADDRESS);
     	}
+			break;
+
+	  case MSG_TRANS_READY:
+			{
+				sys_post_value(
+						OTHER_PID,
+						MSG_START_TRANS,
+						0,
+						SOS_MSG_RELEASE);
+			}
 			break;
 
 		case MSG_TRANS_DATA:

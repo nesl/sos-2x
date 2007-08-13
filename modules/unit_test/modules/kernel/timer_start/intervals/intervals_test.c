@@ -167,7 +167,7 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 						{
 							uint8_t i;
 
-							if (sys_timer_start(1, 3, TIMER_REPEAT) == SOS_OK)
+							if (sys_timer_start(1, 3, TIMER_REPEAT) != SOS_OK)
 								send_new_data(155, 1);
 							if (sys_timer_start(2, 5, TIMER_REPEAT) != SOS_OK)
 								send_new_data(155, 2);
@@ -176,7 +176,13 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 							if (sys_timer_start(4, 2047, TIMER_REPEAT) != SOS_OK)
 								send_new_data(155, 4);
 
+							sys_timer_stop(1);
+							sys_timer_stop(2);
+							sys_timer_stop(3);
+							sys_timer_stop(4);
+
 							send_new_data(s->state, s->count);
+
 							s->count++;
 						}
 						break;
