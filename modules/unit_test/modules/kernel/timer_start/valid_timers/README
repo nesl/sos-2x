@@ -1,0 +1,11 @@
+Test for sys_timer_start:
+=========================
+
+this test checks that a module can have at least 10 valid timers running at the same time.  The api does not specify how many valid timers a single module can have, so rather than be exhaustive, we just try 10.
+
+To use This Test:
+1) install a blank kernel
+2) use sos_tool to install /modules/unit_test/modules/kernel/timer_start/valid_timers/valid_timers_test.mlf
+3) run modules/unit_tests/modules/kernel/valid_timers/valid_timers_test.py
+
+additional Function Dependencies:

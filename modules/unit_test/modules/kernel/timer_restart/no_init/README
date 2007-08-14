@@ -1,0 +1,11 @@
+Test for sys_timer_restart:
+===========================
+
+this test checks that an error value is returned when trying to restart a timer that has not been started or initialized yet.
+
+To use This Test:
+1) install a blank kernel
+2) use sos_tool to install /modules/unit_test/modules/kernel/timer_restart/no_init/no_init_test.mlf
+3) run modules/unit_tests/modules/kernel/timer_restart/no_init/no_init_test.py
+
+additional Function Dependencies:

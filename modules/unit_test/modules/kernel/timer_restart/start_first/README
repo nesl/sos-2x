@@ -1,0 +1,12 @@
+Test for sys_timer_restart:
+===========================
+
+This test checks that a timer can be restarted when it is currently already running.
+
+To use This Test:
+1) install a blank kernel
+2) use sos_tool to install /modules/unit_test/modules/kernel/timer_restart/start_first/start_first.mlf
+3) run modules/unit_tests/modules/kernel/timer_restart/start_first/start_first.py
+
+additional Function Dependencies:
+-- timer_start

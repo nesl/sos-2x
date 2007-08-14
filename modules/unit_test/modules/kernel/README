@@ -1,0 +1,7 @@
+with a few exceptions, most tests in this folder will rely on these following functions to run.  
+
+-- sys_post_uart
+-- sys_timer_start
+-- sys_timer_stop
+-- sys_led
+-- sys_msg_take_data (only if running multiple nodes)

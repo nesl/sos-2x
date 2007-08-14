@@ -1,0 +1,14 @@
+Test for post_raw:
+==================
+
+This test uses sys_post_raw to check that one module has the capability of setting the source id's when sending a message.
+
+To use This Test:
+1) install a blank kernel
+2) use sos_tool to install /modules/unit_test/modules/kernel/post_raw/source_trick/sender/source_trick_sender.mlf
+3) use sos_tool to install /modules/unit_test/modules/kernel/post_raw/source_trick/reciever/source_trick.reciever.mlf
+3) run modules/unit_tests/modules/kernel/post_raw/source_trick/reciever/source_trick_reciever.py
+
+prior tests:
+-- malloc
+-- take_data

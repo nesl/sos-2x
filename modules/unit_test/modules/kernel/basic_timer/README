@@ -1,0 +1,11 @@
+Test for sys_timer:
+===================
+
+This is a very basic test which will check the functionality of a repeated timer.  This is is one of the basic functionalities that all other tests require.
+
+To use This Test:
+1) install a blank kernel
+2) use sos_tool to install /home/keith/sos-2x/trunk/modules/unit_test/modules/kernel/basic_timer/timer_basic.mlf
+3) to ensure it is working, check that the led's are working, the python script does nothing
+
+additional Function Dependencies:

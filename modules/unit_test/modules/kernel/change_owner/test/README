@@ -3,7 +3,7 @@ Test for sys_change_own:
 
 to use this test:
 
-1)install a blank kernel
+1) install a blank kernel
 2) use sos_tool to install modules/unit_test/modules/kernel/change_owner/test/start/change_owner_start.mlf
 3) use sos_tool to install modules/unit_test/modules/kernel/change_owner/test/end/change_owner_end.mlf
 4) run the python script modules/unit_test/modules/kernel/change_owner/test/end/change_owner_end.py to observer the output, and perform part of the test

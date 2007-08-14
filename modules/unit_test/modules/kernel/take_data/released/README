@@ -1,0 +1,13 @@
+Test for sys_msg_take_data:
+===========================
+
+this test checks that sys_msg_take_data will correctly take ownership of data when it has been sent via sys_post with the SOS_MSG_RELEASE flag set.
+
+To use This Test:
+1) install a blank kernel
+2) use sos_tool to install /modules/unit_test/modules/kernel/take_data/release/sender/take_data_sender.mlf
+3) use sos_tool to install /modules/unit_test/modules/kernel/take_data/release/reciever/take_data_reciever.mlf
+4) run modules/unit_tests/modules/kernel/take_data/release/reciever/take_data_reciever.py
+
+additional Function Dependencies:
+-- sys_post/release

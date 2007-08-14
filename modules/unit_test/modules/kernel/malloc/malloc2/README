@@ -1,0 +1,12 @@
+Test for sys_malloc:
+====================
+
+a basic test to ensure that we can call sys_malloc several times and then free the batch of memory allocated, repeatedly
+
+To use This Test:
+1) install a blank kernel
+2) use sos_tool to install /modules/unit_test/modules/kernel/malloc/malloc2/malloc_test.mlf
+3) run modules/unit_tests/modules/kernel/malloc/malloc2/malloc_test.py
+
+additional Function Dependencies:
+-- sys_free

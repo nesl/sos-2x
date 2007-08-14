@@ -1,0 +1,11 @@
+Test for sys_rand:
+==================
+
+this tests the randomness of sys_rand.  the test is very basic, and just checks that the values returned are uniformly distrubuted.
+
+To use This Test:
+1) install a blank kernel
+2) use sos_tool to install /modules/unit_test/modules/kernel/random/random/rand_test.mlf
+3) run modules/unit_tests/modules/kernel/random/random/rand_test.py
+
+additional Function Dependencies:

@@ -1,0 +1,11 @@
+Test for hw_type:
+=================
+
+test to check that sys_hw_type returns the correct value
+
+To use This Test:
+1) install a blank kernel
+2) use sos_tool to install /modules/unit_test/modules/kernel/hw_type/hw_type/hw_test.mlf
+3) run modules/unit_tests/modules/kernel/hw_type/hw_type/hw_test.py
+
+additional Function Dependencies:

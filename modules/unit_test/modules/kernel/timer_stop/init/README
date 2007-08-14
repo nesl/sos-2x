@@ -1,0 +1,12 @@
+Test for sys_timer_stop:
+========================
+
+this test checks that sys_timer_stop returns the correct value when stoping a timer that has already been initialized and started.
+
+To use This Test:
+1) install a blank kerne
+2) use sos_tool to install /modules/unit_test/modules/kernel/timer_stop/init/init_test.mlf
+3) run modules/unit_tests/modules/kernel/timer_stop/init/init_test.py
+
+additional Function Dependencies:
+-- timer_start

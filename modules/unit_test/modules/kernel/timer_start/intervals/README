@@ -1,0 +1,12 @@
+Test for sys_timer_start:
+=========================
+
+This tests a few of the valid timer intervals that are available according to the api.  previously the interval had to be larger than 4, but now that seems to no longer be the case.
+
+To use This Test:
+1) install a blank kernel
+2) use sos_tool to install /modules/unit_test/modules/kernel/timer_start/intervals/intervals_test.mlf
+3) run modules/unit_tests/modules/kernel/timer_start/intervals/intervals_test.py
+
+additional Function Dependencies:
+-- timer_stop

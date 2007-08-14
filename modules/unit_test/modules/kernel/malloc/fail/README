@@ -1,0 +1,11 @@
+Test for sys_malloc:
+====================
+
+This test tries to make sys_malloc fail.  Normally this should cause the kernel to go into panic mode, but with the test mode set an error value will be returned instead.
+
+To use This Test:
+1) install a blank kernel compilied with MODE=test_suite
+2) use sos_tool to install /modules/unit_test/modules/kernel/malloc/fail/malloc_fail.mlf
+3) run modules/unit_tests/modules/kernel/malloc/fail/malloc_fail.py
+
+additional Function Dependencies:

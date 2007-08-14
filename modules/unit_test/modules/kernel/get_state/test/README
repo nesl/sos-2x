@@ -1,0 +1,13 @@
+Test for sys_get_state:
+=======================
+
+a simple test to assure that the function sys_get_state() returns the correct state pointer.
+
+additonal function dependencies:
+--none
+
+To use this test:
+1) install a blank kernel
+2) use sos_tool to install $SOSROOT/modules/unit_tests/modules/kernel/get_state/get_state_test.c
+3) run $SOSROOT/modules/unit_tests/modules/kernel/get_state/get_state_test.py
+

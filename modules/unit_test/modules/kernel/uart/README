@@ -1,0 +1,15 @@
+Test for sys_post_uart:
+=======================
+
+This is a very basic test which simply checks that sending messages via the uart works correctly.  It is ment to be one of the most basic tests to be used, or to help debug if the problem is in the uart or somewhere else.  
+
+It's output is simply an empty message to the server, if a message fails to send for an entire minute the python script raise an exception and exit.
+
+test dependencies:
+--sys_timer_start
+
+To Use:
+1) install a blank kernel
+2) use sos_tool to install $SOSROOT/modules/unit_tests/modules/kernel/uart/uart_test.mlf
+3) run $SOSROOT/modules/unit_tests/modules/kernel/uart/uart_test.py, or simply observe that messages are being sent
+
