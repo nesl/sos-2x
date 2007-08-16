@@ -13,6 +13,8 @@ ALARM_LEN = 60
 
 START_DATA = 100
 FINAL_DATA = 200
+TEST_PASS = 255
+TEST_FAIL = 155
 # variables holding new and old sensor values
 # this can be replaces with whatever you want since this is specific to
 # what the test driver expects for data
@@ -54,6 +56,10 @@ def generic_test(msg):
 	state[node_id] = data
     if (node_state == 1 and state[node_id] != data):
 	print >> sys.stderr, " a message was lost somewhere on node %d before count %d" %(node_id,data)
+    if (node_state == TEST_PASS):
+	print "test passed for count %d" %data
+    if (node_state == TEST_FAIL):
+	print >> sys.stderr, "test failed for count %d" %data
     if (node_state == FINAL_DATA):
 	print "finalization worked correctly"
 

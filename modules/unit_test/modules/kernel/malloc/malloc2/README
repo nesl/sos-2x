@@ -3,6 +3,8 @@ Test for sys_malloc:
 
 a basic test to ensure that we can call sys_malloc several times and then free the batch of memory allocated, repeatedly
 
+this time 0 to 255 bytes will be allocated twice in the same timeout, and if both return non null pointers, TEST_PASS is returned, otherwise TEST_FAIL is returned.  
+
 To use This Test:
 1) install a blank kernel
 2) use sos_tool to install /modules/unit_test/modules/kernel/malloc/malloc2/malloc_test.mlf

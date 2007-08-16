@@ -3,6 +3,8 @@ Test for sys_realloc:
 
 a simple test to ensure that realloc will allocate additional memory for a module, and copy the previously assigned data correctly.
 
+on each timeout, the current count, and node state are sent.  A newly allocated piece of memory is then expanded by using realloc, and if any values are not copied correctly, then TEST_FAIL is sent.
+
 to run this test:
 1) install a blank kernel on the mote
 2) use sos_tool to install: modules/unit_test/modules/kernel/realloc/realloc/realloc.mlf

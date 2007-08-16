@@ -7,6 +7,19 @@ makefile_cont = ["#change the project name to reflect the test you have created\
 		"ROOTDIR = $(SOSROOT)\n",
 		"include $(ROOTDIR)/modules/Makerules\n"]
 
+readme_cont = ['Test for ...\n',
+	       '============\n',
+	       '\n',
+	       'To use This Test:\n',
+	       '1) install a blank kernel\n',
+	       '',
+	       '',
+	       '\n',
+	       'Prior Tests to Run:\n']
+
+entry_pattern = "%d) use sos_tool to install /modules/unit_test/modules/%s/%s.mlf\n"
+second_pattern = '%d) run /modules/unit_test/modules/%s/%s.py to check the output\n'
+
 def setup_dir(loc):
     ''' Setup the directory structure for a test, if any of the folders in the pathname do not exist, create them
         this will also change the current working directory to where the new files should be placed
@@ -64,7 +77,16 @@ def create_new_test(test_name):
 
     print "a new test has been created in %s" %os.getcwd()
 
+def copy_readme():
+    readme_f = open("README", 'w')
+
+    for line in readme_cont:
+	readme_f.write(line)
+
+    readme_f.close()
+
 if __name__ == "__main__":
+    n = 2
     #get the arguements, depending on if there are 3, or 5
     if (len(sys.argv) == 4):
 	test_name = sys.argv[1]
@@ -85,6 +107,9 @@ if __name__ == "__main__":
 	os.chdir(os.environ['SOSROOT'] + "/modules/unit_test/modules")
 	setup_dir(sensor_loc)
 
+	readme_cont[n+3] = entry_pattern %(n, sensor_loc,sensor_name)
+	n += 1
+
 	create_new_test(sensor_name)
 
 	sensor_loc = "/modules/unit_test/modules" + sensor_loc
@@ -98,6 +123,10 @@ if __name__ == "__main__":
 
     setup_dir(test_loc)
 
-    create_new_test(test_name)
-    
+    readme_cont[n+3] = entry_pattern %(n, test_loc, test_name)
+    n += 1
+    readme_cont[n+3] = second_pattern %(n, test_loc, test_name)
 
+    create_new_test(test_name)
+
+    copy_readme()

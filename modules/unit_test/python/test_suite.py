@@ -8,7 +8,6 @@ import subprocess
 import re
 import stat
 
-global number_of_nodes
 prog = 'mib510'
 install_port = ['/dev/ttyUSB0']
 listen_port = '/dev/ttyUSB1'
@@ -17,18 +16,11 @@ number_of_nodes = 1
 number_of_prog = 1
 tests_to_run = 'test.conf'
 depend_list = 'depend.conf'
+kernel_mode = ''
 
 class Test:
     ''' a small object to hold all the important information regarding a test
     '''
-#    def __init__(self, n, d, dl, t, tl, dur, dep):
-#	self.name = n
-#	self.driver_name = d
-#	self.driver_location = dl
-#	self.test_name = t
-#	self.test_location = tl
-#	self.time = dur * 60 
-#	self.dep_list = dep
     def __init__(self, test_list, dep):
 	self.name = test_list[0]
 	self.driver_name = test_list[1]
@@ -74,14 +66,15 @@ def configure_setup():
 	'''
     config_f = open('config.sys', 'r')
 
-    global listen_port
-    global install_port
-    global sos_group 
     global prog
+    global install_port
+    global listen_port
+    global sos_group
     global number_of_nodes
     global number_of_prog
     global tests_to_run
     global depend_list
+    global kernel_mode
 
     home = '/home/test'
     sos_root = home + '/sos-2x/trunk'
@@ -89,57 +82,61 @@ def configure_setup():
     test_dir = sos_root + '/modules/unit_test'
 
     for line in config_f:
-	words = re.match(r'test_list = (\S+)\n', line)
+	words = re.match(r'test_list = (\S+)(\s*)\n', line)
 	if words:
 	    tests_to_run = words.group(1)
 	    continue
-	words = re.match(r'depend_list= (\S+)\n', line)
+	words = re.match(r'depend_list= (\S+)(\s*)\n', line)
 	if words:
 	    depend_list = words.group(1)
 	    continue
-	words = re.match(r'number_of_nodes = (\d+)\n', line)
+	words = re.match(r'number_of_nodes = (\d+)(\s*)\n', line)
 	if words:
             number_of_nodes = int( words.group(1) )
 	    continue
-	words = re.match(r'boards = (\d+)\n', line)
+	words = re.match(r'boards = (\d+)(\s*)\n', line)
 	if words:
 	    number_of_prog = int( words.group(1) )
 	    continue
-	words = re.match(r'HOME = (\S+)\n', line)
+	words = re.match(r'HOME = (\S+)(\s*)\n', line)
 	if words:
 	    home = words.group(1)
 	    continue
-	words = re.match(r'SOSROOT = HOME(\S+)\n', line)
+	words = re.match(r'SOSROOT = HOME(\S+)(\s*)\n', line)
 	if words:
 	    sos_root = words.group(1)
 	    continue
-        words = re.match(r'SOSTOOLDIR = HOME(\S+)\n', line)
+        words = re.match(r'SOSTOOLDIR = HOME(\S+)(\s*)\n', line)
         if words:
 	    sos_tool_dir = words.group(1)
             continue
-        words = re.match(r'TESTS = SOSROOT(\S+)\n', line)
+        words = re.match(r'TESTS = SOSROOT(\S+)(\s*)\n', line)
         if words:
 	    test_dir = words.group(1)
 	    continue
-        words = re.match(r'PROG = (\S+)\n', line)
+        words = re.match(r'PROG = (\S+)(\s*)\n', line)
         if words:
 	    prog = words.group(1)
 	    continue
-        words = re.match(r'install_port = (\S+)\n', line)
+        words = re.match(r'install_port = (\S+)(\s*)\n', line)
         if words:
 	    install_port[0] = words.group(1)
 	    continue
-	words = re.match(r'install_port(\d+) = (\S+)\n', line)
+	words = re.match(r'install_port(\d+) = (\S+)(\s*)\n', line)
 	if words:
 	    install_port.append(words.group(2))
 	    continue
-        words = re.match(r'listen_port = (\S+)\n', line)
+        words = re.match(r'listen_port = (\S+)(\s*)\n', line)
         if words:
 	    listen_port = words.group(1)
 	    continue
-        words = re.match(r'SOS_GROUP = (\d+)\n', line)
+        words = re.match(r'SOS_GROUP = (\S+)(\s*)\n', line)
         if words:
 	    sos_group = words.group(1)
+	    continue
+	words = re.match(r'kernel_mode = (\S+)(\s*)\n', line)
+	if words:
+	    kernel_mode = words.group(1)
 	    continue
 
     number_of_prog = len(install_port)
@@ -148,6 +145,10 @@ def configure_setup():
     os.environ['SOSTESTDIR'] = home + sos_root + test_dir
     
 def gather_dependencies(dep_list_name):
+    ''' build the list of dependencies based off of the specified file
+    	each dependency has a name, source location, and the any other sub dependencies
+	'''
+
     dep_f = open(dep_list_name, 'r')
 
     current_name = ''
@@ -180,6 +181,7 @@ def configure_tests(test_list_name):
 	  test driver file name
 	  test driver location
 	  amount of time you want the test script to run
+	  any dependencies
         '''
     test_f = open(test_list_name, "r")
     
@@ -219,13 +221,14 @@ def make_kernel(platform):
 
     clean("config/blank")
     if platform == 0:
-        cmd_make = ["make", "-C", "config/blank", "micaz", 'MODE=test_suite']
+        cmd_make = ["make", "-C", "config/blank", "micaz", 'TEST_MODE=true', 'MODE=%s' %kernel_mode]
     elif platform == 1:
-        cmd_make = ["make", "-C", "config/blank", "mica2", 'MODE=test_suite']
+        cmd_make = ["make", "-C", "config/blank", "mica2", 'TEST_MODE=true', 'MODE=%s' %kernel_mode]
     elif platform == 2:
-        cmd_make =  ["make", "-C", "config/blank", "avrora", 'MODE=test)suite']
+        cmd_make =  ["make", "-C", "config/blank", "avrora", 'TEST_MODE=true', 'MODE=%s' %kernel_mode]
 
     try:
+      print cmd_make
       subprocess.check_call(cmd_make, stderr=kernel_f, stdout=kernel_f)
       kernel_f.close()
 
@@ -233,7 +236,7 @@ def make_kernel(platform):
 	  kernel_f = open(os.environ['SOSTESTDIR'] + '/../python/kernel.log', 'r')
 	  print "printing the output for making the kernel"
 	  for line in kernel_f:
-	      print lin
+	      print line
     except subprocess.CalledProcessError:
       print "compiling the kernel ran into some issues, please check the kernel.log file to see the error"
       sys.exit(1)
@@ -251,9 +254,9 @@ def install_on_mica(platform, address, port):
     global sos_group
 
     if platform == 0:
-        cmd_install = ["make", "-C", "config/blank", "install", "PROG=" + prog, "PORT=" + install_port[port], "SOS_GROUP=" + sos_group, "ADDRESS=" + str(address)] 
+        cmd_install = ["make", "-C", "config/blank", "install", "PROG=%s" %prog, "PORT=%s" %install_port[port], "SOS_GROUP=%s" %sos_group, "ADDRESS=%d" %address] 
     elif platform == 1:
-	cmd_install = ["make", "-C", "config/blank", "install", "PROG=" + prog, "PORT=" + install_port[port], "SOS_GROUP=" + sos_group, "ADDRESS=" + str(address)]
+	cmd_install = ["make", "-C", "config/blank", "install", "PROG=%s" %prog, "PORT=%s" %install_port[port], "SOS_GROUP=%s" %sos_group, "ADDRESS=%s" %addres]
     else:
         print "you shouldn't be doing this"
 	os.exit(0)

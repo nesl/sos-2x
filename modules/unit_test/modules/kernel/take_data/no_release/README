@@ -3,6 +3,8 @@ Test for sys_msg_take_data:
 
 this test checks that sys_msg_take_data will correctly make a copy of the data when it has been sent via sys_post without the SOS_MSG_RELEASE flag set.
 
+On each message recieved by the reciever, the contents are validated.  If they are valid, TEST_PASS is sent to the server, otherwise TEST_FAIL is sent.  
+
 To use This Test:
 1) install a blank kernel
 2) use sos_tool to install /modules/unit_test/modules/kernel/take_data/no_release/sender/take_data_sender.mlf

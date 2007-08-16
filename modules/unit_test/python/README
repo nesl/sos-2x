@@ -26,6 +26,7 @@ the things which might need to be modified are:
   -  addition, and more advanced options are:
      - number_of_nodes, change this if you whish to install a blank kernel on several nodes, and then have a "basestation" node distrubute the drivers through the network.
      - install_portX, where X is an integer more than 0.  This specifies ports where additional programming boards are connected too.  the X value is not important, and the order of installation might not match the way you delcare the ports.  also to note, specifying additonal install ports will overide the number of nodes you specify
+     - kernel_mode, used for building a kernel with either sfi or preemption set.
 
 next a set of tests needs to be specified.  To do this you will be modifying test.conf, or by modifying the config.sys file to point to your file of choice
 

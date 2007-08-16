@@ -26,6 +26,8 @@
  */
 #define START_DATA 100
 #define FINAL_DATA 200
+#define TEST_PASS 255
+#define TEST_FAIL 155
 
 /* if your driver has more than one sensor, or device, which can be polled
  * include more states here
@@ -178,9 +180,9 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 				d = (data_msg_t*)sys_msg_take_data(msg);
 
 				if (d->data != s->count)
-					send_new_data(155, s->count);
+					send_new_data(TEST_FAIL, s->count);
 				else
-					send_new_data(255, s->count);
+					send_new_data(TEST_PASS, s->count);
 
 				s->count++;
 				sys_free(d);

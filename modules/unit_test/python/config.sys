@@ -6,8 +6,9 @@ PROG = mib510
 install_port = /dev/ttyUSB0
 #install_port1 = /dev/ttyUSB8
 listen_port = /dev/ttyUSB1
-SOS_GROUP = 16 
+SOS_GROUP = 16   
 #number_of_nodes = 3
 test_list = test.conf
 depend_lsit = depend.conf
+#kernel_mode = SFI
 

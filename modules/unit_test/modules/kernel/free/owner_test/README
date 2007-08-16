@@ -1,7 +1,15 @@
 Test for sys_free:
 ==================
 
-This is a simple test to ensure that one module can free memory that has been allocated in another module
+This is a simple test to ensure that one module can free memory that has been allocated in another module, or is unable to when running in sfi mode.  To do this, one module claims some memory, saves a value in it, and passes the address to another module.  The second module then tries to free the memory.  The original module is then notified of this free and will inspect the memory value.
+
+when running without sfi, it will return:
+  TEST_PASS when the free is successful
+  TEST_FAIL when the free is not successful
+
+when running with sfi, the results are:
+  TEST_PASS when the free fails
+  TEST_FAIL when the free succeeds
 
 to run the test:
 

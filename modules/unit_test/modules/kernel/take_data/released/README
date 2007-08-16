@@ -3,6 +3,8 @@ Test for sys_msg_take_data:
 
 this test checks that sys_msg_take_data will correctly take ownership of data when it has been sent via sys_post with the SOS_MSG_RELEASE flag set.
 
+a sender module will wait for the reciever module be set up, once both are running together the sender sends a small message using sys post with the SOS MSG RELEASE flag set.  the reciever then validates the value and sends TEST_PASS or TEST_FAIL to the server.
+
 To use This Test:
 1) install a blank kernel
 2) use sos_tool to install /modules/unit_test/modules/kernel/take_data/release/sender/take_data_sender.mlf
