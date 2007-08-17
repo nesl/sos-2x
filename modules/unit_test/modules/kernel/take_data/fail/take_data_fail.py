@@ -13,6 +13,8 @@ ALARM_LEN = 60
 
 START_DATA = 100
 FINAL_DATA = 200
+TEST_FAIL = 155
+TEST_PASS = 255
 # variables holding new and old sensor values
 # this can be replaces with whatever you want since this is specific to
 # what the test driver expects for data
@@ -48,16 +50,14 @@ def generic_test(msg):
 
     # these are some simple calculations to test the sensor value we have gotten
     # this is the part which you need to fill in in order to verify that the function is working
-    # it is recommended that you send all error messages to stderr since the test suite will be checking that output
-    # to determine if any tests failed
     if (node_state == START_DATA):
 	print "initialization began correctly"
     if (node_state == 0):
 	state[node_id] = data
-    if (node_state == 155):
-	print >> sys.stderr, "a message was freed to early, or not recieved correctly on count %d" %data
-    if (node_state == 255):
-	print "the message was transfered correctly on count %d" %data
+    if (node_state == TEST_FAIL):
+	print >> sys.stderr, "the test for item %d has failed" %data
+    if (node_state == TEST_PASS):
+	print "the test for item %d has passed" %data
     if (node_state == 1 and state[node_id] != data):
 	print >> sys.stderr, " a message was lost somewhere on node %d before count %d" %(node_id,data)
     if (node_state == FINAL_DATA):
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     srv = pysos.sossrv()
     msg = srv.listen()
 
-    srv.register_trigger(generic_test, type=MSG_TEST_DATA)
+    srv.register_trigger(generic_test, sid=TEST_MODULE, type=MSG_TEST_DATA)
 
     # register the signal handler and begin an alarm that will wait for 60 seconds before going off
     # other times for the alarm might be good, use your own judgement based on your test

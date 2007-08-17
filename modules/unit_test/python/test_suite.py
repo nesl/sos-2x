@@ -29,6 +29,45 @@ class Test:
 	self.test_location = test_list[4]
 	self.time = float(test_list[5]) *60
 	self.dep_list = dep
+    
+    def check_dir(self, loc):
+	file_dirs = loc.split('/')
+	for dir in file_dirs:
+	    if dir == '':
+		continue
+	    try:
+		os.listdir(dir)
+	    except OSError:
+		return False
+	    os.chdir(dir)
+
+        return True 
+
+    def is_valid(self):
+	ret = True
+
+	old_cwd = os.getcwd()
+
+	os.chdir(os.environ['SOSROOT'])
+
+        if self.check_dir(self.driver_location) == False:
+	    print "driver location %s is invalid please check it" %self.driver_location
+	    ret = False
+        file_list = os.listdir(os.getcwd())
+	if "%s.c" %self.driver_name not in file_list or "Makefile" not in file_list:
+	    ret = False
+
+	os.chdir(os.environ['SOSTESTDIR'])
+	if self.check_dir(self.test_location) == False:
+	    print "test location %s is invalid, please check it" %self.test_location
+	    ret = False
+	file_list = os.listdir(os.getcwd())
+	if "%s.c" %self.test_name not in file_list or "%s.py" %self.test_name not in file_list or "Makefile" not in file_list:
+	    ret = False
+
+        print "Test %s is valid" %self.name
+	os.chdir(old_cwd)
+	return ret
 
 class Dependency:
 
@@ -196,7 +235,9 @@ def configure_tests(test_list_name):
         if line[0] == '@':
 	    if new_test[0] != '': 
 	        test_to_add= Test(new_test,dep_list)
-	        test_list.append(test_to_add)
+		if (test_to_add.is_valid()):
+		    print "test %s added" %test_to_add.name
+		    test_list.append(test_to_add)
 		dep_list = []
 	    new_test[0] = line[:-1]
             req_count = 1
@@ -208,7 +249,8 @@ def configure_tests(test_list_name):
 
     if new_test[0] != '':
 	new_test = Test(new_test, dep_list)
-	test_list.append(new_test)
+	if (new_test.is_valid()):
+	    test_list.append(new_test)
 
     return test_list
 
@@ -385,7 +427,8 @@ def run_tests(test_list, target, dep_dict):
 	if child == 0:
 	    print "running python test"
 	    cmd_test = ['python', test_location + '/' + test.test_name + '.py']
-	    run_and_redirect(cmd_test, error="%s/%s.bad" %(test_location, test.test_name)) 
+	    run_and_redirect(cmd_test, outfile="%s/%s.good" %(test_location, test.test_name),
+			     error="%s/%s.bad" %(test_location, test.test_name)) 
 	else:
 	    time.sleep(test.time)
 	    os.kill(child, signal.SIGKILL)

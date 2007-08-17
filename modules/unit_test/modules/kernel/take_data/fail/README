@@ -1,0 +1,12 @@
+Test for sys_msg_take_data:
+===========================
+
+this test requires the test mode to be set for the kernel.  it checks that if a message is sent with sys_post but the data pointer is NULL, then calling sys_msg_take_data will return an error value.
+
+To use This Test:
+1) install a blank kernel with TEST_MODE=true
+2) use sos_tool to install /modules/unit_test/modules/kernel/take_data/fail/take_data_fail.mlf
+3) run modules/unit_tests/modules/kernel/take_data/fail/take_data_fail.mlf
+
+additional Function Dependencies:
+-- sys_post
