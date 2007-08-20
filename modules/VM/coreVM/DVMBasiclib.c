@@ -838,7 +838,7 @@ static inline void led_op(uint16_t val)
       {
 	if (!(led & 1)) sys_led(LED_RED_OFF);
 	if (!(led & 2)) sys_led(LED_GREEN_OFF);
-	if (!(led & 4)) sys_led(LED_YELLOW_ON);
+	if (!(led & 4)) sys_led(LED_YELLOW_OFF);
 	break;
       }
     case 2:			/* on 1 bits */
