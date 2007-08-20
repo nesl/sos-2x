@@ -214,7 +214,7 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  DEBUG("[BASIC_LIB] execute: Setting Timer %d period to %d.\n", timerID, arg->value.var);
 	  //msec = 102 * arg->value.var + (4 * arg->value.var) / 10;
 	  // Set the timer timeout argument in seconds
-	  msec = arg->value.var * 1024;
+	  msec = 1024L * arg->value.var;
 	  DEBUG("[BASIC_LIB] execute: <<<<< WARNING - Timer %d not being stopped >>>>\n", timerID);
 	  //	  sys_timer_stop(timerID);
 	  if (msec > 0) {
