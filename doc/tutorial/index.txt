@@ -81,4 +81,6 @@ Other Documentation
 link:timesync/timesync.html[RATS]::
     Time synchronization in SOS
     
+link:dvm.html[DVM]::
+	Dynamic Virtual Machine (DVM)
 

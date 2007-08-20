@@ -38,6 +38,7 @@ $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --att
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. surge.txt
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. debug.txt
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. static_kernel.txt
+$ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. dvm.txt
 cd ..
 
 cd api

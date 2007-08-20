@@ -1,0 +1,336 @@
+Dynamic Virtual Machine (DVM)
+=============================
+
+The DVM is built on top of SOS to enable efficient multi-level software reconfiguration at 
+run-time. Motivation behind the system, and details on its architecture, can be found in 
+this link:http://nesl.ee.ucla.edu/document/show/199[paper]. It is recommended that new users 
+read through this paper once to get an overview of the desired software system and definitions 
+of some of the terms used below.
+
+The DVM source code is a part of the sos-2x distribution and can be obtained by following the 
+instructions link:./installation.html[here] for downloading sos-2x source via SVN. The rest of 
+the tutorial describes how to compile and use DVM with SOS. It is recommended that the new users 
+go through this tutorial in sequential order, while the advanced users can simply scan the 
+tutorial for points of interest.
+
+NOTE: Currently the DVM has only been tested with the Mica2/Micaz motes (AVR micro-controller) 
+and it may face some problems while running on other nodes supported by SOS. Tmote support
+will follow soon.
+
+Source code (Directory sturcture)
+---------------------------------
+
+The DVM source code is divided into following sub-directories in $SOSROOT:
+
+modules/VM::
+	This contains (or should contain) three sub-directories
+	- coreVM : DVM scheduler, event manager and basic library.
+	- library : Extension library module to extend the DVM instruction set at run-time.
+	- scriptable_modules : Modules which have exposed an interface to DVM.
+	- dvm_compiler : Tool to parse the DVM script and load it in the network at run-time.
+	- scripts : Sample scripts.
+
+NOTE: The current source in sos-2x repository only contains coreVM, dvm_compiler and
+scripts. The sample scripts do not use any extended instruction set and nor do they interface
+with any scriptable module. Work needs to be done to merge the libraries and
+scriptable modules from sos-1.x repository to sos-2x.
+
+modules/include/VM::
+	All DVM header files are here.
+
+config/VM::
+	DVM configuration files that are used to compile DVM with SOS kernel.
+
+[[compile]]
+
+Compilation
+-----------
+
+To compile, go into `$SOSROOT/config/VM` directory that contains all the configuration files 
+for compiling DVM with SOS. The sub-directory `VM_test` configures DVM with its basic instruction 
+set. Execute the following to install SOS with DVM on a mica2 mote (change parameters according
+to your hardware setup):
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% cd $SOSROOT/config/VM/VM_test
+% make mica2 install ADDRESS=2 PROG=mib510 PORT=/dev/ttyS0
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is same as compiling and installing any other SOS configuration. $SOSROOT should be set 
+as shown in the installation link:./installation.html[instructions].
+
+Testing
+-------
+
+This section describes how to test the DVM by injecting scripts, which implement a simple 
+CountToLeds application. As you might have already read in the paper, DVM is an event-based 
+system, and the scripts are event handlers, each corresponding to only one event (currently).
+
+The setup contains a node which has DVM installed on it, and another node which is connected 
+to the PC and acts as the SOS network interface. The <<compile, compilation>> section above 
+has already setup one node with DVM. Now, setup the network interface node with blank SOS 
+kernel and start the SOS server running on the Gateway PC according to the instructions 
+link:./blink_mica2.html[here]. It is assumed that SOS tool has also been compiled on the Gateway 
+PC and its path is in the $PATH environment variable.
+
+NOTE: SOS server and SOS tool would have been compiled and installed into the $PATH 
+variable if you followed the SOS installation instructions.
+
+Then, type the following commands to compile the file `dvm_compiler.c` in the directory 
+`$SOSROOT/modules/VM/dvm_compiler/` .
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% cd $SOSROOT/modules/VM/dvm_compiler/
+% make {x86 | ppc}
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This will result in an executable named `dvm_compiler`. Type the following to parse and inject a 
+script to be installed as a handler(capsule) for a pre-defined timer event.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% ./dvm_compiler $SOSROOT/modules/VM/scripts/cntToleds/timer_cnt.txt timer0 0 0
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Arguments to `dvm_compiler`:
+
+$SOSROOT/config/VM/VM_test/scripts/timer_cnt.txt ::
+	Script file. 
+timer0 ::
+	Refers to specific event for the script. Currently, it can be either "timer1", 
+	"timer2" or "timer3", thus allowing 4 different timers.
+0 ::
+	A dummy value, since timer0 above specifies a pre-defined event. 
+	In case of a custom event defined by the programmer, this argument should be 
+	set to the module id of the SOS module generating the desired event message. 
+0 ::
+	Dummy here too. For custom event, it refers to the "type" of the event. 
+	In SOS terms, it means the message type generated as a result of the event by 
+	the module described in 3 above.
+
+After the timer script is injected into the network, nothing will happen immediately as 
+the timer corresponding to the script (timer id 1) hasn't been started yet. For this, 
+we need to inject a script corresponding to the "reboot" event which is run only once 
+when the DVM reboots upon receiving a new script.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% ./dvm_compiler $SOSROOT/modules/VM/scripts/cntToleds/reboot_timer.txt reboot 0 0
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Assuming that there was no message loss over the wireless network, and both the 
+scripts successfully reached the node with the DVM, you should see the 3-bit counter 
+displayed through blinking leds. If you do not get the desired result, try sending 
+the above scripts again as they may not have reached the DVM node.
+
+Understanding the Basic Instruction Set and Writing Scripts (Event Handlers)
+----------------------------------------------------------------------------
+
+This section explains the instructions that are understood by DVM, and then teaches 
+how to write scripts for handling different events. The DVM follows a stack-based 
+architecture - this means that all the arguments to the instructions are found on the 
+stack. These instructions generally pop the required number of arguments from the stack, 
+perform the required operation, and then push back the result on the stack, unless specified 
+otherwise. DVM also allows embedded operands resulting in instructions of varying lengths. 
+The basic instruction set is implemented in the module DVMBasiclib.c in the coreVM directory. 
+It interfaces with the stack to access the arguments, and with the event handler to gain 
+access to varying length instructions.
+
+Instructions explained below are grouped according to the type of operations they perform:
+
+Stack operations
+~~~~~~~~~~~~~~~~
+- PUSH x, POP : Used to push or pop arguments from the stack. PUSH is used to push 8-bit 
+integer arguments (0 <= x <= 255) only. Usage: PUSH 10. Thus, PUSH is a two byte instruction 
+(1byte opcode + 1byte argument). 
+
+Math operations
+~~~~~~~~~~~~~~~
+- ADD, MUL, DIV, MOD : Used to add, subtract, multiply, divide or take remainder of the 
+top two arguments on the stack. They are only one byte instructions. Since SUB, DIV and MOD 
+are non-commutative operations, it's important to take care of the order of arguments on the 
+stack. The semantics followed here are: < top argument > < op > < top-1 argument >, where < op > 
+can be -, / or %. 
+- INCR, DECR : Increment or decrement the top argument of the stack by one. 
+- RAND : It takes one argument from the top of stack, and generates a random number between 0 
+and the argument. It pushes the result back onto the stack. 
+
+Variable/Buffer Access Operations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Local variables:: 
+	DVM provides 4 local variables for each event handler registered with it. 
+	Each variable can hold a 16-bit value (integer, or part of float). The scripts can access 
+	(set the values and read them) these variables through the following instructions. The variables 
+	are indexed by numbers 0-3, and the commands take this index as an embedded operand. The total 
+	length of the instructions is one byte.
+	- GETLOCAL x : Read the value of xth local variable (0 < = x < = 3) and push in onto the stack. 
+	- SETLOCAL x : Pop the stack, and set the xth local variable according to the popped argument. 
+
+Shared variables::
+	DVM provides 8 shared variables for sharing information amongst the registered event handlers. 
+	Each variable can hold a 16-bit value. They represent a shared resource of the system, and 
+	thus the scripts using these variables need to hold locks on them before being marked ready to 
+	run. This task of obtaining and releasing locks is taken care of by the ConcurrencyMngr module 
+	and the scripts do not need to worry about this aspect. The variables are indexed by numbers 0-7, 
+	and the commands take this index as an embedded operand. The total length is one byte.
+    - GETVAR x : Read the value of the xth shared variable, and push it onto the stack. 
+	- SETVAR x : Pop the stack, and set the xth shared variable according to the popped argument. 
+
+Shared Buffers::
+	DVM provides 4 shared buffers to be used by the scripts. They can hold upto eight 16-bit values, 
+	and like shared variables above, they too are a shared resource of the system. The instructions 
+	to access these buffers are a little different from the ones described above for variables.
+	- BPUSH x : Push xth buffer onto the stack. (0 < = x < = 3) One byte instruction. 
+	x is the index into the buffer list. 
+	- BAPPEND opt : Used to append entries at the end of a buffer. It pops two arguments from the 
+	stack - the first one should be a buffer, and the next one should be an entry (a variable or 
+	another buffer) to be appended onto the first buffer. It is a one byte instruction and has an 
+	embedded operand "opt" which can be either "0" or "1". The option 0 means that the 
+	resulting buffer is not pushed back onto the stack, while 1 means that the resulting buffer 
+	is pushed onto the stack. The option 1 may be used with BAPPEND repeatedly to add more than 
+	one entry into the buffer. This will be commonly while preparing argument or data buffers to be 
+	passed while interfacing with the SOS modules (detailed description in next section). 
+	- BCLEAR : Used to initialize/clear a buffer. It assumes that the buffer to be cleared is on the 
+	top of the stack. 
+
+Comparison operations::
+	All comparison operations are 2 byte instructions, including one byte argument, which is the byte 
+	number to which to jump to if the comparison results in a true value. The resulting true/false value 
+	is not pushed onto the stack. Use this instruction with care as the byte number should take into
+	account the variable length instructions in the script.
+	- JNZ x, JZ x : Used to check if the top of stack is a non-zero or xero respectively. 
+	- JG x, JGE x, JL x, JLE x, JE x, JNE x : The semantics followed by these comparisons is - 
+	< top argument > < cmp-op > < top-1 argument >, where < cmp-op > can take any of the comparison 
+	operators listed in this point. 
+
+SOS Module Interaction operations::
+	DVM enables the SOS modules to expose an interface, which can be used by the scripts at run-time to 
+	tune parameters, start/stop modules, change data flow/control flow etc. The scripts can use this 
+	interface through three instructions depending on the nature of service provided by the modules in 
+	concern. Details on how to pass the arguments to these modules, and get results from them, is described 
+	in the next section. The first two instructions (CALL and POST) assume that the top of stack contains a 
+	buffer containing all the arguments that need to be passed onto the concerned module.
+	- CALL mod-id fn-id : This is a three byte instruction where "mod-id" is the module id of the SOS 
+	module providing the function with id as "fn-id". It is a synchronous function call. 
+	- POST mod-id fn-id : It is an asynchronous function call where the script just posts a message to 
+	module "mod-id" with type "fn-id", and continues execution. When the module gets the message, it 
+	performs the desired operations as a side-effect without returning any result to the DVM script that 
+	invoked it. (Soon, there will be a reliable version of this instruction too where the script will wait 
+	till it gets a confirmation from the SOS scheduler that the message was delivered reliably to the 
+	destination module) 
+	- GET_DATA x : This is a third type of interaction where the script calls the kernel function 
+	`ker_sensor_get_data()` with the sensor type given by "x", and then waits for the sensor to return 
+	data to it. "x" can take values PHOTO, TEMPERATURE, MIC, ACCELX, ACCELY, MAGX, MAGY as defined in SOS. 
+	(Soon, we will extend this to be general enough to interact with any module which provides such a service.) 
+
+Miscellaneous operations::
+	- HALT : Each script ends with this instruction to tell the compiler that the script has finished 
+	execution for that invocation. 
+	- LED : It pops one argument from the stack and depending on the argument's five least significant bits, 
+	it turns the LEDs on or off. For exact details, read the comments in led_op() function in the file DVMBasiclib.c. 
+	- SETTIMER x : It pops one argument from the stack, multiplies it by 100, and uses that value to set 
+	the timer interval in ms for the event handler with ID=x. (0 < = x < = 7 currently). 
+	- POSTNET : Used to send messages over the radio. It calls post_net() with four arguments which are 
+	popped from the stack. The arguments are popped in this order - destination address, destination module id, 
+	message type and data. 
+
+The above list is by no means comprehensive in itself. There are some instructions, for instance floating
+point operations, which are not yet documented. We will add those soon. Also, we will be adding more 
+instructions according to your feedback, or if we find more useful instructions which we think should be 
+a part of the above list. Currently, only 112 opcodes have been assigned to the above mentioned instructions, 
+thus leaving us with 16 more opcodes (Basic library can accommodate upto 128 opcodes). Also, you are welcome 
+to study the Basiclib file and add custom instructions on your own. This should be fairly easy as you will 
+just have to follow the implementation of other instructions. Difficulty may arise when you are implementing 
+instructions that require the script to wait on some condition. For this, check out the implementation of 
+OP_GET_DATA. For adding shared resources, add new instructions accessing those resources to the list in function 
+`lockNum()` in the basic library. DVM can support up to a maximum of 24 shared resources (configurable at 
+compile-time. See file DvmConstants.h, Dvm.h and codesend.h), and currently there are 20 shared resources. 
+Besides this, you can add (and remove) four extension libraries at run-time to enhance the DVM instruction set. 
+A sample extension library is given in the modules/VM/libraries directory and the reader can easily follow its 
+structure to implement new extension libraries of his own. An extension library can accommodate a maximum of 32 
+opcodes. More details on this are given in Section 4.
+
+Writing Scripts - Example
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Next, we will explain how to write the scripts by means of the same example used in the previous section. 
+These scripts implement a simple CountToLeds application. For this application, we need a script to run 
+every time a timer fires, and one script to run once to start the timer with appropriate interval 
+(one second in this case) and initialize a local counting variable to zero. The script (timer_cnt.txt) 
+for timer event looks as follows -
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+GETLOCAL 0      // Get current value of local variable 0 (counting variable).
+INCR            // Increment the counting variable.
+SETLOCAL 0      // Set the new increased value of counting variable.
+PUSH 8          // Push 8 onto the stack. This will be used for modulo 
+                // operations for a mod-8 counter.
+GETLOCAL 0 
+MOD             // Counting variable % 8.
+LED             // Display LEDs according to the value calculated in 
+				// previous instruction.
+HALT            // Execution ends.
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The script (reboot_timer.txt) for setting the timer and initializing counter variable looks as follows -
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PUSH 0
+SETLOCAL 0      // Initialize counter variable to zero
+PUSH 10         // Timer interval = 10 * 100 ms. = 1 sec
+SETTIMER 1      // Start the timer for event handler 1, which is the script 
+                // described above.
+HALT
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now, lets consider a little complicated example of an application which just takes readings from the 
+light sensor after regular intervals and sends them to the SOS tree routing module to be forwarded to 
+the sink. This again requires a script for a timer event handler, and a script to initialize the timer. 
+This shows the use of the function POST to interface with the tree routing module given in 
+modules/VM/scriptable_modules/ directory, and an example of preparing buffer to be passed onto the 
+tree routing module.
+
+WARNING: As mentioned earlier in this tutorial, the scriptable tree_routing module is not yet
+included in the sos-2x distribution, so this script will not work directly. Hence, use this script 
+only as an example to understand and write more complex scripts.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PUSH 2
+GETLOCAL 0      // A local modulo-2 counter for sampling
+INCR            // at every alternate timer firing.     
+MOD
+SETLOCAL 0
+GETLOCAL 0
+JNZ 28          // Check if the counter has reached zero, if not then 
+                // jump to byte 28 (HALT) to exit
+PUSH 15         // Else, push 15 which is an argument to be sent to 
+                // tree_routing. It represents a message type recognized 
+                // by all the other nodes in the network for this 
+                // particular application.
+GET_DATA PHOTO  // Get sensor data (the script waits here after executing 
+                // this command).
+GETLOCAL 1      // Variable 1 stores the sequence number.
+GETLOCAL 2      // Variable 2 contains the source node-id.
+GETLOCAL 1
+INCR            // Increment the sequence number, and
+SETLOCAL 1      // store it back in variable 1.
+BPUSH 0         // Use buffer 0 to prepare argument buffer to be passed 
+				// onto tree_routing.
+BCLEAR          // Clear buffer 0.
+BPUSH 0
+BAPPEND 1		// Append node-id onto buffer.
+BAPPEND 1		// Append sequence number onto buffer.
+BAPPEND 1		// Append sensor reading.
+BAPPEND 1		// Append 15 (message type).
+POST 141 35     // Post a message (type 35) to module 141 (tree_routing)
+                // with argument buffer prepared above.
+HALT
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The script to set the timer is similar to the one described in the previous application. 
+
