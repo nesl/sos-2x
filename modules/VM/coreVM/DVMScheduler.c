@@ -4,7 +4,7 @@
  * \author Ram Kumar - Port to sos-2.x
  */
 
-#include <VM/dvm.h>
+#include <VM/Dvm.h>
 #include <VM/DvmConstants.h>
 #include <VM/DVMScheduler.h>
 #include <VM/DVMqueue.h>
