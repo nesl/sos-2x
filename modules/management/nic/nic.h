@@ -11,7 +11,7 @@ enum {
 
 typedef struct {
 	uint8_t group;
-} __attribute__((packed)) sos_group_t;
+} PACK_STRUCT sos_group_t;
 
 
 

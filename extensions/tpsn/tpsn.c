@@ -52,7 +52,7 @@ typedef struct
 	uint32_t time[2];
 	uint8_t type;
 	uint8_t seq_no;
-} __attribute__ ((packed)) tpsn_req_t;
+} PACK_STRUCT tpsn_req_t;
 
 typedef struct
 {
@@ -60,7 +60,7 @@ typedef struct
 	uint8_t type;
 	uint8_t seq_no;
 	uint32_t previous_time[2];
-} __attribute__ ((packed)) tpsn_reply_t;
+} PACK_STRUCT tpsn_reply_t;
 
 typedef struct tpsn_node_s
 {
@@ -69,7 +69,7 @@ typedef struct tpsn_node_s
 	uint8_t unused_padding_flags : 4;	
 	uint8_t free : 1;
 	uint8_t counter :3;
-} __attribute__ ((packed)) tpsn_node_t;
+} PACK_STRUCT tpsn_node_t;
 	
 
 /**
@@ -79,7 +79,7 @@ typedef struct {
 	sos_pid_t pid;
 	uint8_t current_seq_no;
 	tpsn_node_t tpsn_node[TPSN_BUFFER_SIZE];
-} __attribute__ ((packed)) app_state_t;
+} PACK_STRUCT app_state_t;
 
 /*
  * Forward declaration of module 

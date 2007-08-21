@@ -202,15 +202,15 @@ char **argv;
 		script.eventType = 0;
 	}
 	if (strcmp(argv[2], "timer3") == 0) {
-		script.capsuleID = DVM_CAPSULE_ID6;
+		script.capsuleID = DVM_CAPSULE_ID4;
 		script.moduleID = TIMER_PID;
 		script.eventType = MSG_TIMER_TIMEOUT;	
 	} else if (strcmp(argv[2], "timer2") == 0) {
-		script.capsuleID = DVM_CAPSULE_ID5;
+		script.capsuleID = DVM_CAPSULE_ID3;
 		script.moduleID = TIMER_PID;
 		script.eventType = MSG_TIMER_TIMEOUT;	
 	} else if (strcmp(argv[2], "timer1") == 0) {
-		script.capsuleID = DVM_CAPSULE_ID4;
+		script.capsuleID = DVM_CAPSULE_ID2;
 		script.moduleID = TIMER_PID;
 		script.eventType = MSG_TIMER_TIMEOUT;	
 	} else if (strcmp(argv[2], "timer0") == 0) {
@@ -218,11 +218,11 @@ char **argv;
 		script.moduleID = TIMER_PID;
 		script.eventType = MSG_TIMER_TIMEOUT;	
 	} else if (strcmp(argv[2], "pushbutton") == 0)
-		script.capsuleID = DVM_CAPSULE_ID2;
+		script.capsuleID = DVM_CAPSULE_ID5;
 	else if (strcmp(argv[2], "reboot") == 0)
 		script.capsuleID = DVM_CAPSULE_REBOOT;
 	else if (strcmp(argv[2], "cliff") == 0)
-		script.capsuleID = DVM_CAPSULE_ID3;
+		script.capsuleID = DVM_CAPSULE_ID6;
 	else exit(printf("Wrong capsule name\n"));
 
 	//open file	

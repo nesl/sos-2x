@@ -54,7 +54,7 @@
 typedef struct 
 {
 	sos_pid_t pid;
-} __attribute__ ((packed)) app_state_t;
+} PACK_STRUCT app_state_t;
 
 /*
  * Forward declaration of module 

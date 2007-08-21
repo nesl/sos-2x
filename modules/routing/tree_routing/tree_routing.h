@@ -40,7 +40,7 @@ typedef struct {
       sos_pid_t dst_pid;
       uint8_t reserved;
       uint16_t parentaddr; // Ram - This field is only for visualization of topology
-} __attribute__ ((packed)) tr_hdr_t;
+} PACK_STRUCT tr_hdr_t;
 
 
 

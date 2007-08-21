@@ -572,7 +572,7 @@ typedef struct _str_avrinstr
 #define OP_TYPE19_MASK 0xFE0F
 #define OP_LDS 0x9000
 #define OP_STS 0x9200  
-} __attribute__((packed)) avr_instr_t;
+} PACK_STRUCT avr_instr_t;
 
 #if 0
 typedef struct _str_avrinstr
@@ -605,7 +605,7 @@ typedef struct _str_avrinstr
 	#define OP_ROL 0x1C00 // ADC
 	#define OP_TST 0x2000 // AND
       */
-    } __attribute__((packed)) op_type1;
+    } PACK_STRUCT op_type1;
     
     struct
     {
@@ -616,7 +616,7 @@ typedef struct _str_avrinstr
 #define OP_TYPE2_MASK 0xFF00
 #define OP_ADIW 0x9600
 #define OP_SBIW 0x9700
-    } __attribute__((packed)) op_type2;
+    } PACK_STRUCT op_type2;
       
     struct
     {
@@ -632,7 +632,7 @@ typedef struct _str_avrinstr
 #define OP_SBCI  0x4000
 #define OP_SBR   0x6000 //-- Same as OP_ORI
 #define OP_SUBI  0x5000
-    } __attribute__((packed)) op_type3;
+    } PACK_STRUCT op_type3;
 
     struct
     {
@@ -672,7 +672,7 @@ typedef struct _str_avrinstr
 #define OP_ST_Z_INC            0x9201
 #define OP_ST_Z_DEC            0x9202
 #define OP_SWAP                0x9402
-    } __attribute__((packed)) op_type4;
+    } PACK_STRUCT op_type4;
 
     struct
     {
@@ -682,7 +682,7 @@ typedef struct _str_avrinstr
 #define OP_TYPE5_MASK 0xFF8F
 #define OP_BCLR 0x9488
 #define OP_BSET 0x9408
-    } __attribute__((packed)) op_type5;
+    } PACK_STRUCT op_type5;
 
     struct
     {
@@ -695,7 +695,7 @@ typedef struct _str_avrinstr
 #define OP_BST  0xFA00
 #define OP_SBRC 0xFC00
 #define OP_SBRS 0xFE00
-    } __attribute__((packed)) op_type6;
+    } PACK_STRUCT op_type6;
     
     struct
     {
@@ -705,7 +705,7 @@ typedef struct _str_avrinstr
 #define OP_TYPE7_MASK 0xFC00
 #define OP_BRBC 0xF800
 #define OP_BRBS 0xF000
-    } __attribute__((packed)) op_type7;
+    } PACK_STRUCT op_type7;
 
     struct
     {
@@ -731,7 +731,7 @@ typedef struct _str_avrinstr
 #define OP_BRTS 0xF006
 #define OP_BRVC 0xF403
 #define OP_BRVS 0xF003
-    } __attribute__((packed)) op_type8;
+    } PACK_STRUCT op_type8;
       
     struct
     {
@@ -765,7 +765,7 @@ typedef struct _str_avrinstr
 #define OP_SLEEP     0x9588
 #define OP_SPM       0x95E8
 #define OP_WDR       0x95A8
-    } __attribute__((packed)) op_type9;
+    } PACK_STRUCT op_type9;
 
     struct
     {
@@ -776,7 +776,7 @@ typedef struct _str_avrinstr
 #define OP_TYPE10_MASK 0xFE0E
 #define OP_CALL 0x940E
 #define OP_JMP  0x940C
-    } __attribute__((packed)) op_type10; //-- Two Word Instruction
+    } PACK_STRUCT op_type10; //-- Two Word Instruction
 
     struct
     {
@@ -788,7 +788,7 @@ typedef struct _str_avrinstr
 #define OP_SBI  0x9A00
 #define OP_SBIC 0x9900
 #define OP_SBIS 0x9B00
-    } __attribute__((packed)) op_type11;
+    } PACK_STRUCT op_type11;
 
     struct
     {
@@ -801,7 +801,7 @@ typedef struct _str_avrinstr
 #define OP_FMULS 0x0380
 #define OP_FMULSU 0x0388
 #define OP_MULSU 0x0300
-    } __attribute__((packed)) op_type12;
+    } PACK_STRUCT op_type12;
 
     struct
     {
@@ -812,7 +812,7 @@ typedef struct _str_avrinstr
 #define OP_TYPE13_MASK 0xF800
 #define OP_IN  0xB000
 #define OP_OUT 0xB800
-    } __attribute__((packed)) op_type13;
+    } PACK_STRUCT op_type13;
 
 
     struct
@@ -830,7 +830,7 @@ typedef struct _str_avrinstr
 #define OP_LDD_Z 0x8000
 #define OP_STD_Y 0x8208
 #define OP_STD_Z 0x8200
-    } __attribute__((packed)) op_type14;
+    } PACK_STRUCT op_type14;
 
     struct
     {
@@ -839,7 +839,7 @@ typedef struct _str_avrinstr
       unsigned r:4;
 #define OP_TYPE15_MASK 0xFF00
 #define OP_MULS  0x0200
-    } __attribute__((packed)) op_type15;
+    } PACK_STRUCT op_type15;
     
 
     struct
@@ -849,7 +849,7 @@ typedef struct _str_avrinstr
       unsigned r:4;
 #define OP_TYPE16_MASK 0xFF00
 #define OP_MOVW  0x0100
-    } __attribute__((packed)) op_type16;
+    } PACK_STRUCT op_type16;
     
     struct
     {
@@ -858,7 +858,7 @@ typedef struct _str_avrinstr
 #define OP_TYPE17_MASK 0xF000
 #define OP_RCALL 0xD000
 #define OP_RJMP  0xC000
-    } __attribute__((packed)) op_type17;
+    } PACK_STRUCT op_type17;
 
     struct
     {
@@ -867,7 +867,7 @@ typedef struct _str_avrinstr
       unsigned op_field2:4;
 #define OP_TYPE18_MASK 0xFF0F
 #define OP_SER  0xEF0F
-    } __attribute__((packed)) op_type18;
+    } PACK_STRUCT op_type18;
 
     struct
     {
@@ -877,11 +877,11 @@ typedef struct _str_avrinstr
 #define OP_TYPE19_MASK 0xFE0F
 #define OP_LDS 0x9000
 #define OP_STS 0x9200
-    } __attribute__((packed)) op_type19; //--Two Word Instruction
+    } PACK_STRUCT op_type19; //--Two Word Instruction
 
 
   };
-} __attribute__((packed)) avr_instr_t;
+} PACK_STRUCT avr_instr_t;
 #endif
 
 #endif//_AVRINSTR_H_

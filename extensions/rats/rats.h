@@ -32,6 +32,6 @@ typedef struct
 	uint32_t time_at_target_node;	
 	uint32_t error; //msec
 	uint8_t msg_type;
-} __attribute__ ((packed)) rats_t;
+} PACK_STRUCT rats_t;
 
 #endif // _RATS_H_

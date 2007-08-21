@@ -18,6 +18,7 @@
 
 // This will automatically include the processor specific include file
 #include <proc_minielf.h>
+#include <sos_info.h>
 
 /**
  * \brief Mini-ELF Header
@@ -29,7 +30,7 @@ typedef struct{
   Melf_Word     m_modhdrndx; //!< Index of the SOS module header in the symbol table
   Melf_Half     m_shnum;     //!< Number of entries in section table
   unsigned char pad;
-} __attribute__((packed)) Melf_Mhdr;
+} PACK_STRUCT Melf_Mhdr;
 
 
 				
@@ -47,7 +48,7 @@ typedef struct {
   Melf_Word  sh_size;   //!< Size of the section in bytes
   Melf_Half  sh_link;   //!< Link to another section (For e.g. Relocation section links to the section for which it contains the relocation information)
   Melf_Half  sh_info;   //!< Section dependant information
-} __attribute__((packed)) Melf_Shdr;
+} PACK_STRUCT Melf_Shdr;
 
 /**
  * \brief Mini-ELF Symbol Record
@@ -59,7 +60,7 @@ typedef struct {
   Melf_Addr st_value;    //!< Value of the symbol
   unsigned char st_info; //!< Symbol binding and type info. (Same as ELF)
   Melf_Half st_shid;     //!< Section Id containing the symbol
-} __attribute__((packed)) Melf_Sym;
+} PACK_STRUCT Melf_Sym;
 
 /**
  * Macro to retreive binding information from the info field.
@@ -94,14 +95,14 @@ typedef struct {
   Melf_Sword r_addend;  //!< Addend Value
   unsigned char r_type; //!< Relocation Type
   unsigned char pad;
-} __attribute__((packed)) Melf_Rela;
+} PACK_STRUCT Melf_Rela;
 
 typedef struct sos_func_cb_t {
 	Melf_Addr ptr;        //! function pointer                    
 	uint8_t proto[4]; //! function prototype                  
 	uint8_t pid;      //! function PID                                    
 	uint8_t fid;      //! function ID                         
-} __attribute__((packed)) 
+} PACK_STRUCT 
 sos_func_cb_t;
 
 typedef struct sos_mod_header_t {
@@ -119,7 +120,7 @@ typedef struct sos_mod_header_t {
   uint8_t padding;          //!< Extra padding to make it word aligned.
   Melf_Addr module_handler;
   sos_func_cb_t funct[];
-} __attribute__((packed)) 
+} PACK_STRUCT 
 sos_mod_header_t;
 
 

@@ -23,7 +23,7 @@ typedef struct
 	uint8_t msg_type;
 	uint16_t node_id;
 	int32_t clock_drift;
-} __attribute__ ((packed)) tpsn_t;
+} PACK_STRUCT tpsn_t;
 
 #ifndef _MODULE_
 extern mod_header_ptr tpsn_get_header();

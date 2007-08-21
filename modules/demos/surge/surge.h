@@ -48,7 +48,7 @@ typedef struct SurgeMsg {
   //  uint8_t magy;
   //  uint8_t accelx;
   //  uint8_t accely;
-} __attribute__ ((packed)) SurgeMsg;
+} PACK_STRUCT SurgeMsg;
 
 
 

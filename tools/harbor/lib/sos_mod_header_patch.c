@@ -25,7 +25,7 @@ typedef struct harbor_sos_func_cb_t {
   uint8_t proto[4]; //! function prototype                  
   uint8_t pid;      //! function PID                                    
   uint8_t fid;      //! function ID                         
-} __attribute__((packed))  harbor_sos_func_cb_t;
+} PACK_STRUCT  harbor_sos_func_cb_t;
 
 typedef struct harbor_sos_mod_header_t {
   uint16_t state_size;     //!< module state size
@@ -42,7 +42,7 @@ typedef struct harbor_sos_mod_header_t {
   uint8_t padding;          //!< Extra padding to make it word aligned.
   uint16_t module_handler;//!< Message Handler
   harbor_sos_func_cb_t funct[];
-} __attribute__((packed)) harbor_sos_mod_header_t;
+} PACK_STRUCT harbor_sos_mod_header_t;
 
 //----------------------------------------------------------------------------
 // DEBUG

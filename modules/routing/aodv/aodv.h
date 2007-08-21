@@ -75,7 +75,7 @@ typedef struct AODV_rreq_pkt_str {
 	uint16_t dest_addr;
 	uint16_t dest_seq_no;
 	uint8_t hop_count; 
-} __attribute__ ((packed))
+} PACK_STRUCT
 AODV_rreq_pkt_t;
 
 typedef struct AODV_rrep_pkt_str{
@@ -83,13 +83,13 @@ typedef struct AODV_rrep_pkt_str{
 	uint16_t dest_addr;
 	uint16_t dest_seq_no;
 	uint8_t hop_count; 
-} __attribute__ ((packed))
+} PACK_STRUCT
 AODV_rrep_pkt_t;
 
 typedef struct AODV_rerr_pkt_str{
 	uint16_t addr;
 	uint16_t seq_no;
-} __attribute__ ((packed))
+} PACK_STRUCT
 AODV_rerr_pkt_t;
 
 typedef struct AODV_hdr_str{
@@ -100,13 +100,13 @@ typedef struct AODV_hdr_str{
 	sos_pid_t src_pid;
 	uint8_t msg_type;
 	uint8_t seq_no;
-} __attribute__ ((packed))
+} PACK_STRUCT
 AODV_hdr_t;
 
 typedef struct AODV_pkt_str{
 	AODV_hdr_t hdr;
 	uint8_t data[AODV_PAYLOAD_SIZE]; 
-} __attribute__ ((packed))
+} PACK_STRUCT
 AODV_pkt_t;
 
 typedef struct AODV_cache_entry_str {

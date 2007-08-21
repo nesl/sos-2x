@@ -2,12 +2,18 @@ ROOTDIR = $(SOSROOT)
 INCDIR += -I$(ROOTDIR)/modules/include
 INCDIR += -I$(ROOTDIR)/kernel/include
 
+MACHINE = $(shell uname -m)
+
 ifeq ($(MAKECMDGOALS), x86)
 CFLAGS += -DLLITTLE_ENDIAN
 endif
 
 ifeq ($(MAKECMDGOALS), ppc)
+ifeq ($(MACHINE), i386)
+CFLAGS += -DLLITTLE_ENDIAN
+else
 CFLAGS += -DBBIG_ENDIAN
+endif
 endif
 
 DEFS += -DNO_PID_PLAT -DNO_PID_PROC

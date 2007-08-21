@@ -85,14 +85,14 @@ typedef struct
 	uint16_t sampling_period;
 	uint16_t node_id;
 	float est_error;
-} __attribute__ ((packed)) test_packet_t;
+} PACK_STRUCT test_packet_t;
 
 typedef struct
 {
 	uint32_t time[2];	//must always be the first field of the struct (filled by the network stack)
 	uint8_t type;		//must always be second, in order to discriminate between normal and test packets
 	uint16_t node_id;
-} __attribute__ ((packed)) ext_packet_t;
+} PACK_STRUCT ext_packet_t;
 
 
 typedef struct
@@ -101,7 +101,7 @@ typedef struct
 	uint8_t type;
 	uint32_t int_parent_time;	
 	uint16_t node_id;
-} __attribute__ ((packed)) debug_packet_t;
+} PACK_STRUCT debug_packet_t;
 
 
 typedef struct
@@ -109,7 +109,7 @@ typedef struct
   uint16_t saddr;
 	uint16_t old_period;
 	uint16_t new_period;
-} __attribute__ ((packed)) period_packet_t;
+} PACK_STRUCT period_packet_t;
 
 typedef struct
 {
@@ -117,7 +117,7 @@ typedef struct
 	uint8_t type;		//must always be second, in order to discriminate between normal and test packets
 	uint16_t transmission_period;
 	uint16_t min_period_node_id;
-} __attribute__ ((packed)) ts_packet_t;
+} PACK_STRUCT ts_packet_t;
 
 typedef struct timesync
 {
@@ -134,7 +134,7 @@ typedef struct timesync
 	uint8_t panic_timer_retransmissions;
 	uint8_t ref_counter;
 	struct timesync *next;
-} __attribute__ ((packed)) timesync_t;
+} PACK_STRUCT timesync_t;
 
 /**
  * Module can define its own state
@@ -148,7 +148,7 @@ typedef struct {
 	uint8_t validation_timer_retransmissions;
 	uint16_t validation_timer_counter; //used to count how many times the validation counter has fired
 	uint16_t transmit_timer_counter; //used to count how many times the transmission counter has fired	
-} __attribute__ ((packed)) app_state_t;
+} PACK_STRUCT app_state_t;
 
 /*
  * Forward declaration of module 

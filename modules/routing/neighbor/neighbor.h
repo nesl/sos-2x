@@ -24,7 +24,7 @@ typedef struct nbr_entry_t {
 typedef struct est_entry_str {
 	uint16_t id;
 	uint8_t receiveEst;
-} __attribute__ ((packed)) est_entry_t;
+} PACK_STRUCT est_entry_t;
 
 typedef struct nbr_beacon_t {
 	int16_t seqno;
@@ -32,7 +32,7 @@ typedef struct nbr_beacon_t {
 	uint8_t hopcount;
 	uint8_t estEntries;
 	est_entry_t estList[];
-} __attribute__ ((packed)) nbr_beacon_t;
+} PACK_STRUCT nbr_beacon_t;
 
 enum 
 {

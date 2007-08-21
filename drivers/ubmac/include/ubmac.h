@@ -10,7 +10,7 @@ typedef struct
 	uint16_t node_id;
 	uint8_t timesync_mod_id;
 	uint8_t sync_precision;
-} __attribute__ ((packed)) ubmac_init_t;
+} PACK_STRUCT ubmac_init_t;
 
 #define MSG_START_TIMESYNC (MOD_MSG_START + 0)
 #define MSG_STOP_TIMESYNC (MOD_MSG_START + 1)

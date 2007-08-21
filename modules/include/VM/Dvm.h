@@ -85,16 +85,16 @@ typedef uint32_t DvmCapsuleVersion;
 
 typedef struct {
   list_t queue;
-}  __attribute__((packed)) DvmQueue; 
+}  PACK_STRUCT DvmQueue; 
 
 typedef struct {
   int16_t var;
-}  __attribute__((packed)) DvmValueVariable;
+}  PACK_STRUCT DvmValueVariable;
 
 typedef struct {
   uint8_t size;
   uint8_t entries[DVM_BUF_LEN];
-}  __attribute__((packed)) DvmDataBuffer;
+}  PACK_STRUCT DvmDataBuffer;
 
 typedef struct {
   DvmDataBuffer* var;
@@ -106,7 +106,7 @@ typedef struct {
     DvmValueVariable value;
     DvmBufferVariable buffer;
   };
-} __attribute__((packed)) DvmStackVariable;
+} PACK_STRUCT DvmStackVariable;
 
 /*
 typedef struct {
@@ -117,7 +117,7 @@ typedef struct {
 typedef struct {
   uint8_t sp;
   DvmStackVariable stack[DVM_OPDEPTH];
-} __attribute__((packed)) DvmOperandStack;
+} PACK_STRUCT DvmOperandStack;
    	 
 /* A DvmCapsule is the unit of propagation. */
 /*
@@ -125,7 +125,7 @@ typedef struct {
   //DvmCapsuleOption options;
   DvmCapsuleLength dataSize;
   int8_t data[DVM_CAPSULE_SIZE];
-} __attribute__((packed)) DvmCapsule;
+} PACK_STRUCT DvmCapsule;
 */
 
 typedef struct {
@@ -144,7 +144,7 @@ typedef struct {
   uint16_t num_executed;
   uint8_t *init_data;							// Initial data attached with an event message
   uint8_t init_size;
-} __attribute__((packed)) DvmContext;
+} PACK_STRUCT DvmContext;
 
 typedef struct {
   DvmContext context;
@@ -155,7 +155,7 @@ typedef struct {
   
 typedef struct {
   DvmContext* holder;
-}  __attribute__((packed)) DvmLock;
+}  PACK_STRUCT DvmLock;
 
 typedef struct DvmErrorMsg {
   uint8_t context;
@@ -163,14 +163,14 @@ typedef struct DvmErrorMsg {
   uint8_t capsule;
   uint8_t instruction;
   uint16_t me;
-}  __attribute__((packed)) DvmErrorMsg;
+}  PACK_STRUCT DvmErrorMsg;
 
 typedef struct DvmTrickleTimer {
   uint16_t elapsed;      // Current time (in ticks)
   uint16_t threshold;    // Time to consider transmitting (in ticks) (t)
   uint16_t interval;     // Size of current interval (in ticks)      (tau)
   uint16_t numHeard;     // Number of messages heard                 (c)
-} __attribute__((packed)) DvmTrickleTimer;
+} PACK_STRUCT DvmTrickleTimer;
 
 typedef struct {
 	sos_pid_t destModID;    // lddata requirement: destination module ID
@@ -180,23 +180,23 @@ typedef struct {
 	DvmCapsuleLength length;
 	uint8_t libraryMask;
 	uint8_t data[DVM_MAX_SCRIPT_LENGTH];
-} __attribute__((packed)) DvmScript;
+} PACK_STRUCT DvmScript;
 
 typedef struct {
   DvmCapsuleVersion version;
   uint8_t capsuleNum;
   uint8_t piece;
   uint8_t chunk[MVIRUS_CHUNK_SIZE];
-}  __attribute__((packed)) DvmCapsuleChunkMsg;
+}  PACK_STRUCT DvmCapsuleChunkMsg;
 
 typedef struct {
   DvmCapsuleVersion versions[DVM_CAPSULE_NUM];
-}  __attribute__((packed)) DvmVersionMsg;
+}  PACK_STRUCT DvmVersionMsg;
 
 typedef struct {
   DvmCapsuleVersion version;
   uint8_t capsuleNum;
   uint8_t bitmask[MVIRUS_BITMASK_SIZE];
-}  __attribute__((packed)) DvmCapsuleStatusMsg;
+}  PACK_STRUCT DvmCapsuleStatusMsg;
 
 #endif

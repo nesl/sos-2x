@@ -72,7 +72,7 @@ typedef struct
 {
 	uint32_t wakeup_time;
 	uint32_t period;
-} __attribute__ ((packed)) ubmac_transmit_t;
+} PACK_STRUCT ubmac_transmit_t;
 
 typedef struct ubmac_data
 {
@@ -97,7 +97,7 @@ typedef struct
 	ubmac_data_t *dest_info;
 	uint16_t timer_counter;
 	uint16_t learning_interval_counter;
-} __attribute__ ((packed)) app_state_t;
+} PACK_STRUCT app_state_t;
 
 static uint8_t add_info(app_state_t *s, ubmac_init_t * ubmac_init_ptr);
 static void update_info(app_state_t *s, uint16_t node_id, ubmac_transmit_t *ubmac_transmit_ptr);
