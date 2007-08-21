@@ -1,6 +1,9 @@
 PySOS version 1.6 - August 13, 2007 
 ===================================
+
 Authors: Thiago Teixeira and Neeraj Singh.
+Website:
+link:http://enaweb.eng.yale.edu/drupal/pysos[http://enaweb.eng.yale.edu/drupal/pysos]
 
 This module allows you to connect to a SOS server on any host
 and port, as well as send and receive SOS messages.
