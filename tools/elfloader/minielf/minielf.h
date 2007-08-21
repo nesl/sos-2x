@@ -18,7 +18,7 @@
 
 // This will automatically include the processor specific include file
 #include <proc_minielf.h>
-#include <sos_info.h>
+//#include <sos_info.h>
 
 /**
  * \brief Mini-ELF Header

@@ -6,8 +6,14 @@
 
 #if defined(AVR_MCU) || defined(EMU_MICA2)
 #include <avr_minielf.h>
+#ifndef PACK_STRUCT
+#define PACK_STRUCT __attribute__((packed))
+#endif
 #elif defined(MSP430_MCU)
 #include <msp430_minielf.h>
+#ifndef PACK_STRUCT
+#define PACK_STRUCT 
+#endif
 #else
 #error No architecture specified
 #endif
