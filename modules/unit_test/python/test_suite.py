@@ -8,6 +8,7 @@ import subprocess
 import re
 import stat
 
+INF = -1.0
 prog = 'mib510'
 install_port = ['/dev/ttyUSB0']
 listen_port = '/dev/ttyUSB1'
@@ -27,7 +28,13 @@ class Test:
 	self.driver_location = test_list[2]
 	self.test_name = test_list[3]
 	self.test_location = test_list[4]
-	self.time = float(test_list[5]) *60
+	if test_list[5] == 'inf':
+	    self.time = INF
+	else:
+	    try: 
+		self.time = float(test_list[5]) *60
+	    except ValueError:
+		self.time = 0.0 
 	self.dep_list = dep
     
     def check_dir(self, loc):
@@ -430,8 +437,10 @@ def run_tests(test_list, target, dep_dict):
 	    run_and_redirect(cmd_test, outfile="%s/%s.good" %(test_location, test.test_name),
 			     error="%s/%s.bad" %(test_location, test.test_name)) 
 	else:
-	    time.sleep(test.time)
-	    os.kill(child, signal.SIGKILL)
+	    if test.time != INF:
+		print "finite run-time"
+		time.sleep(test.time)
+		os.kill(child, signal.SIGKILL)
 	    os.waitpid(child, 0)
 	    if (os.stat("%s/%s.bad" %(test_location, test.test_name))[stat.ST_SIZE] > 0):
 		failed_tests.append(test)
