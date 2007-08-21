@@ -179,6 +179,7 @@ typedef struct {
 	uint8_t eventType;
 	DvmCapsuleLength length;
 	uint8_t libraryMask;
+	uint8_t padding;
 	uint8_t data[DVM_MAX_SCRIPT_LENGTH];
 } PACK_STRUCT DvmScript;
 
