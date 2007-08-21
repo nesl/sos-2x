@@ -39,6 +39,7 @@ $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --att
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. debug.txt
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. static_kernel.txt
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. dvm.txt
+$ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. pysos.txt
 cd ..
 
 cd api

@@ -84,3 +84,12 @@ link:timesync/timesync.html[RATS]::
 link:dvm.html[DVM]::
 	Dynamic Virtual Machine (DVM)
 
+link:pysos.html[PySOS]::
+    PySOS is a Python module that connects to a SOS server to provide
+    low-level access to the messaging system of the network. With PySOS you
+    can easily send/receive messages to/from any node on the network. This
+    can be done either through the interactive Python shell or through a
+    Python script.
+
+
+

@@ -1,0 +1,166 @@
+PySOS version 1.6 - August 13, 2007 
+===================================
+Authors: Thiago Teixeira and Neeraj Singh.
+
+This module allows you to connect to a SOS server on any host
+and port, as well as send and receive SOS messages.
+
+
+INITIALIZATION:
+---------------
+Make sure you are running the SOS server, then create a new instance:
+
+[python]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>>> import pysos
+>>> srv = pysos.sossrv()    # you may enter host=... and port=... here
+>>>                         # localhost and 7915 are default
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+SENDING MESSAGES:
+-----------------
+
+There are 3 different ways to send messages. They aren't too 
+different, and it's up to your personal preference which one to use:
+
+1ST METHOD:
+~~~~~~~~~~~
+
+[python]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>>> data = '\00\01\02\03'    # 4 bytes: 00, 01, 02, 03
+>>> 
+>>> srv.post(daddr = 5,   saddr = 3,  did  = 128, 
+...          sid   = 128, type  = 32, data = data)
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Any of these can be omitted, in which case the defaults specified 
+with set_message_defaults() are utilized. You may also choose to 
+use the pack() method, as such:
+
+[python]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>>> data = pysos.pack('<LHB', 0, 1, 2)
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+where '<LHB' stands for a little endian ('<') struct composed of a
+uint32 ('L'), uint16 ('H') and uint8 ('B'). For signed integers, use
+lowercase letters instead. Of course, the string you feed into the pack()
+method depends on your particular data struct.
+
+
+2ND METHOD:
+~~~~~~~~~~~
+
+This method is largely the same as the previous, but it separates
+the message creation from the act of sending it:
+
+[python]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>>> m = pysos.msg(daddr = 5,   saddr = 3,  did  = 128, 
+...               sid   = 128, type  = 32, data = data)
+>>>
+>>> srv.post_msg(m) 
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+3RD METHOD:
+~~~~~~~~~~~
+
+If you prefer to use SOS's post_net syntax, you may do so like this:
+
+[python]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>>> srv.post_net(128, 128, 32, 4, data, 0, 5)
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In this case, saddr is the one specified with set_message_defaults(),
+or 0xFFFE by default. This is because post_net does not let you specify
+your saddr in SOS.
+
+Also note that the "length" and "flags" parameters are ignored. 
+
+
+RECEIVING MESSAGES:
+-------------------
+
+There are 2 different methods you can use. The first one is 
+synchronous (blocking) and the 2nd asynchronous -- it allows you to 
+register listeners and then run a non-blocking method to start listening 
+for messages. You can use both of these methods with the same sossrv.
+
+1ST METHOD (synchronous):
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[python]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>>> msg = srv.listen(did   = 128,  sid   = 128, 
+...                  daddr = 0x14, saddr = 0x16, 
+...                  type  = 32,   nreplies = 5, timeout = 3.0)
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This method returns the first matching messages. It returns the message as
+a dictionary with keys 'did', 'sid', 'daddr', 'saddr', 'type, 'length',
+and 'data'. To cast msg['data'] into a tuple, you may use the unpack()
+method, as such:
+
+[python]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>>> data = pysos.unpack('<LHB', msg['data'])
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+2ND METHOD (asynchronous):
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For this method you register a trigger (i.e. listener). Then a thread
+in the background will call a function of your choosing
+when the trigger fires.
+
+This is how you specify a trigger:
+
+[python]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>>> srv.register_trigger(func,         did   = 128, 
+...                      sid   = 128,  daddr = 0x14,
+...                      saddr = 0x16, type  = 32)
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Where you may omit any parameter (except func) to match all messages,
+irrespective of that parameter's value. That is, None is a wildcard.
+At any point, you may use the deregister_trigger() method to remove
+triggers from the pysos instance. When deregistering a trigger, None
+is once again used as wildcard.
+
+
+RPC-STYLE COMMUNICATIONS:
+-------------------------
+
+You can also do an RPC-style call, which posts a message to the network 
+and returns the response message(s):
+
+[python]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>>> replylist = srv.post_rpc_msg(m, rtype=36, nreplies=10, timeout=5.0)
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The above command creates a message dictionary (through sossrv.msg_dict)
+which is sent to all the nodes. We collect up to 10 replies with message
+type 36 in the variable msglist. The replies are in a list of message
+dicts. If 5 seconds elapse, we just return the messages obtained thus far.
+
+For those who do not wish to first create a message dict (the variable
+called 'm' in the example above), there is the post_rpc() method:
+
+[python]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>>> post_rpc(did    = 0x97, daddr  = 13, type   = 32,
+...          rsid   = 0x97, rsaddr = 13, rtype  = 40,
+...          timeout = 3, nreplies = 5)
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+MORE INFORMATION:
+-----------------
+
+Use each method's help function for more details.
