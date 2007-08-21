@@ -20,6 +20,7 @@ typedef struct {
 	unsigned char eventType;
 	unsigned short length;
 	unsigned char libraryMask;
+	unsigned char padding;
 	unsigned char data[DVM_MAX_SCRIPT_LENGTH];
 } __attribute__((packed)) DvmScript;
 
@@ -270,6 +271,7 @@ char **argv;
 	if ((DVM_SCRIPT_HEADER_SIZE + i) > 256)
 		exit(printf("Script packet size is greater than 256 bytes. Exiting.\n"));
 
-	system("../../../tools/sos_tool/sos_tool.exe --lddata=./script.dat");
+	//system("../../../tools/sos_tool/sos_tool.exe --lddata=./script.dat");
+	system("sos_tool.exe --lddata=./script.dat");
 	
 }
