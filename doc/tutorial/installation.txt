@@ -102,6 +102,9 @@ export SOSMSPTOOLDIR=$SOSTOOLDIR
 
 # Add the ./bin directory of the toolchain into the PATH
 export PATH=$SOSTOOLDIR/bin:$PATH
+
+# Add pysos to the python path
+export PYTHONPATH=$PYTHONPATH:$SOSROOT/tools/utils/
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 NOTE: Make sure that the environment variables are set by either closing and 
@@ -247,6 +250,9 @@ export SOSMSPTOOLDIR=$SOSTOOLDIR
 
 # Add the ./bin directory of the toolchain into the PATH
 export PATH=$SOSTOOLDIR/bin:$PATH
+
+# Add pysos to the python path
+export PYTHONPATH=$PYTHONPATH:$SOSROOT/tools/utils/
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 NOTE: The lines below are for *Intel* based Mac.
@@ -267,6 +273,9 @@ export SOSMSPTOOLDIR=$SOSTOOLDIR/msp430
 
 # Add the ./bin directory of the toolchain into the PATH
 export PATH=$SOSTOOLDIR/bin:$SOSMSPTOOLDIR/bin:$PATH
+
+# Add pysos to the python path
+export PYTHONPATH=$PYTHONPATH:$SOSROOT/tools/utils/
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 IMPORTANT: Make sure that the environment variables are set by either closing and 
@@ -408,6 +417,9 @@ export SOSMSPTOOLDIR=/cygdrive/c/mspgcc
 
 # Add the ./bin directory of the toolchain into the PATH
 export PATH=$SOSTOOLDIR/bin:$SOSMSPTOOLDIR/bin:$PATH
+
+# Add pysos to the python path
+export PYTHONPATH=$PYTHONPATH:$SOSROOT/tools/utils/
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 NOTE: Make sure that the environment variables are set by either closing and 
