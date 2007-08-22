@@ -408,8 +408,8 @@ int8_t execute(dvm_state_t* dvm_st, DvmState *eventState)
 	  DvmStackVariable* arg1 = popOperand( eventState);    
 	  DvmStackVariable* arg2 = popOperand( eventState);    
 
-	  pushValue( eventState, arg1->value.var % arg2->value.var, DVM_TYPE_INTEGER);
 	  DEBUG("[BASIC_LIB] execute: MOD INT: %d\n", arg1->value.var % arg2->value.var);
+	  pushValue( eventState, arg1->value.var % arg2->value.var, DVM_TYPE_INTEGER);
 	  context->pc += 1;                                         
 	  break;                                                    
 	}                                                             
