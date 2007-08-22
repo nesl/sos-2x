@@ -11,7 +11,7 @@
 #define MSG_TIMER_TIMEOUT 2
 #define TIMER_PID 4
 #define DVM_MAX_SCRIPT_LENGTH 255
-#define DVM_SCRIPT_HEADER_SIZE 7
+#define DVM_SCRIPT_HEADER_SIZE 8
 
 typedef struct {
 	unsigned char destModID;		// lddata requirement: destination module ID
