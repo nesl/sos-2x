@@ -17,5 +17,7 @@ SRCS += loader.c
 SRCS += dvm.c DVMScheduler.c DVMResourceManager.c DVMEventHandler.c
 SRCS += DVMConcurrencyMngr.c DVMBasiclib.c DVMStacks.c DVMqueue.c
 
+CFLAGS += -g
+
 include ../../Makerules
 
