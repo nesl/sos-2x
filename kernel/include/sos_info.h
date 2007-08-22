@@ -79,9 +79,13 @@ enum {
 #endif
 
 #ifdef SUPPORTS_PACKED
+#ifndef PACK_STRUCT
 #define PACK_STRUCT  __attribute__ ((packed))
+#endif
 #else
+#ifndef PACK_STRUCT
 #define PACK_STRUCT
+#endif
 #endif
 
 #ifdef _SOS_SERVER_CLIENT_
