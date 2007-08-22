@@ -106,7 +106,7 @@ endif
 # Make rules
 ####
 
-$(PLATFORM): $(PROCESSOR)
+$(PLATFORM): $(PROCESSOR) $(OBJS)
 
 all:
 	@echo "make { $(PLATLIST) check}";
