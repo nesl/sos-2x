@@ -33,9 +33,24 @@ class Test:
 	else:
 	    try: 
 		self.time = float(test_list[5]) *60
+		if self.time < 0.0:
+		    self.time = 0.0
 	    except ValueError:
 		self.time = 0.0 
 	self.dep_list = dep
+
+    def to_string(self):
+	result = "%s\n%s\n%s\n%s\n%s\n" %(self.name, self.driver_name, self.driver_location, 
+		                              self.test_name, self.test_location)
+	if self.time == INF:
+	    result += "INF\n"
+	else:
+	    result += "%f\n" %(self.time/60)
+
+	for dep in self.dep_list:
+	    result += "%s\n" %(dep)
+
+	return result
     
     def check_dir(self, loc):
 	file_dirs = loc.split('/')
@@ -106,11 +121,11 @@ def clean(dest):
     cmd_clean = ['make', '-C', dest, 'clean']
     subprocess.call(cmd_clean, stdout=null)
        
-def configure_setup():
+def configure_setup(config_file='config.sys'):
     ''' read the config.sys file to set up the hardware and envrioment variables correctly
         a number of options can be set, and is detailed in the README file
 	'''
-    config_f = open('config.sys', 'r')
+    config_f = open(config_file, 'r')
 
     global prog
     global install_port
