@@ -7,7 +7,7 @@
   <property name="width_request">600</property>
   <property name="height_request">600</property>
   <property name="visible">True</property>
-  <property name="title" translatable="yes">window1</property>
+  <property name="title" translatable="yes">List Editor</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
   <property name="modal">False</property>
@@ -56,7 +56,6 @@
 		      <property name="visible">True</property>
 		      <property name="label">gtk-open</property>
 		      <property name="use_stock">True</property>
-		      <signal name="activate" handler="on_open1_activate" last_modification_time="Thu, 23 Aug 2007 22:41:54 GMT"/>
 		      <signal name="activate" handler="open_test_list" last_modification_time="Thu, 23 Aug 2007 22:51:34 GMT"/>
 		    </widget>
 		  </child>
@@ -81,7 +80,7 @@
 		      <property name="visible">True</property>
 		      <property name="label">gtk-quit</property>
 		      <property name="use_stock">True</property>
-		      <signal name="activate" handler="quite_gui" last_modification_time="Thu, 23 Aug 2007 22:52:01 GMT"/>
+		      <signal name="activate" handler="destroy" last_modification_time="Thu, 23 Aug 2007 23:14:25 GMT"/>
 		    </widget>
 		  </child>
 		</widget>
@@ -144,7 +143,7 @@
 		  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
 		  <child>
-		    <widget class="GtkTreeView" id="treeview1">
+		    <widget class="GtkTreeView" id="old_test_list">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
 		      <property name="headers_visible">True</property>
@@ -278,7 +277,7 @@
 		  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
 		  <child>
-		    <widget class="GtkTreeView" id="treeview2">
+		    <widget class="GtkTreeView" id="new_test_list">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
 		      <property name="headers_visible">True</property>
