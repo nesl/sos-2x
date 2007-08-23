@@ -72,6 +72,8 @@ typedef struct Message{
 	uint8_t  *data;                          //!< actual payload
 	uint16_t flag;                           //!< flag to indicate the status of message, see below
 	uint8_t payload[SOS_MSG_PAYLOAD_LENGTH]; //!< statically allocated payload
+    int8_t rssi;                             //!< rssi value for a packet that came over the radio
+    uint8_t rssipadding;
 #ifdef SOS_USE_PREEMPTION
   	pri_t priority;                          //!< msg priority
     uint8_t padding;

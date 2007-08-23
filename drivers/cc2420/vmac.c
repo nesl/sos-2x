@@ -300,6 +300,9 @@ void mac_to_sosmsg(VMAC_PPDU *ppdu, Message *msg)
 		msg->data = ppdu->mpdu.data;
 	}
 	msg->flag |= SOS_MSG_RELEASE;
+    // RSSI is the most significant byte of the post payload
+    // But, since the word is little endian, its the lower byte.
+    msg->rssi = (ppdu->mpdu.fcs & 0x00ff);
 }
 
 /*************************************************************************
