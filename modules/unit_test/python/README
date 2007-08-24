@@ -1,32 +1,53 @@
-test_suite.py:
+SOS Test Suite Application
+==========================
+Keith Stevens <fozziethebeat@gmail.com>
+v1.0, Aug 2007
+
+Introduction
+------------
 
 this is a test suite to help automate the testing of various sos drivers, and the kernel's functionality.  It is capable of running tests on: mica2 boards, micaz boards, or an avrora simulation.  The basic operations are to install a blank kernel on the desired target, start the sossrv, and install the needed drivers for a test,  and finally run an associated python test script that will verify any output.
 
-to use the test_suite:
+Getting Started
+---------------
 
+The Test Suite uses a number of easily configurable files in order to work for your particular setup.  The required files are config.sys, test.conf, and depend.conf.  With these set up correctly, you can then any set of tests automatically by just running test_suite with python.
+
+Setting up config.sys
+~~~~~~~~~~~~~~~~~~~~~
 first, config.sys will need to be modified according to your systems setup.
 the things which might need to be modified are:
-1) enviroment variables
-  -  variables such as SOSROOT, SOSTOOLDIR, HOME, and SOSTESTDIR which specifies where the unit test files are located.
-     if not specified each of these have defaults as such 
-     -  HOME = /home/test
-     -  SOSROOT = $HOME/sos-2x/trunk
-     -  SOSTOOLDIR = $HOME/local
-     -  SOSTESTDIR = $SOSROOT/modules/unit_test/modules
-     - test_list = the list of test which you want to perform, by default this is test.lst
-     - depend_list = the list of dependencies you want registered
 
-2) settings for the nodes.  
-  -  this is to automate the installation of a blank kernel.
-  -  the most important things to specify are:
-     - PROG, the programming board such as mib510
-     - install_port, the port which the programmer is listening on. for example, /dev/ttyUSB0
-     - listen_port, the port which the sossrv will be listening on. for example, /dev/ttyUSB1
-     - SOS_GROUP, the group id you which to nodes to have
-  -  addition, and more advanced options are:
-     - number_of_nodes, change this if you whish to install a blank kernel on several nodes, and then have a "basestation" node distrubute the drivers through the network.
-     - install_portX, where X is an integer more than 0.  This specifies ports where additional programming boards are connected too.  the X value is not important, and the order of installation might not match the way you delcare the ports.  also to note, specifying additonal install ports will overide the number of nodes you specify
-     - kernel_mode, used for building a kernel with either sfi or preemption set.
+.Envoriment Variables and files
+`----------------------------------------------------------------------------
+Variable         Description                Default 
+-----------------------------------------------------------------------------
+Home             Your home Directory        /home/test
+SOSROOT          Your SOS source directory  $HOME/sos-2x/trunk
+SOSTOOLDIR       you sos tools direcotyr    $HOME/local
+SOSTESTDIR       the location of test files $SOSROOT/modules/unit_test/modules
+test_list        a list of tests to run     test.conf
+depend_list      a list of dependencies     depend.conf
+------------------------------------------------------------------------------
+
+.Node Settings
+`---------------------------------------------------------------
+Setting          Description                        Example
+----------------------------------------------------------------
+PROG             your programming board             mib510
+install_port     the main programming board's port  /dev/ttyUSB0
+listen_port      the port sossrv will connect to    /dev/ttyUSB1
+install_portN    additional install ports where N>0 /dev/ttyUSB3
+SOS_GROUP        the sos group you want             15
+number_of_nodes  the number of nodes when using a   4
+                 single programming board
+kernel_mode      various modes for the kernel       sfi, preemption
+----------------------------------------------------------------
+
+please note that by having any install_portN's will override the value in number_of_nodes.
+
+Editing test.conf
+~~~~~~~~~~~~~~~~~
 
 next a set of tests needs to be specified.  To do this you will be modifying test.conf, or by modifying the config.sys file to point to your file of choice
 
@@ -48,6 +69,8 @@ example layout for a test:
 6) the number of minutes you want the test to run for, in our example, it is just 1 minute
 7) any additional lines that are not comments or do not start with @ will be considered as dependencies.  
 
+Editing depend.conf
+~~~~~~~~~~~~~~~~~~~
 One last file needs to be modified now, the dependency list
 
 by default this is depend.conf , and will contain a list of modules, and the modules that each one depends on
@@ -62,24 +85,27 @@ specificly, each dependency should look like this:
  for example, for surge we say that it depends on tree_routng and phototemp_sensor, so each of these gets their own line
 in addition, the dependency list is modular, so surge does not need to declare neighbor as a dependency, only tree_routing does.
 
+Finally, Running the test suite
+-------------------------------
 finally, now that you have set up the configuration, and the tests you want to run, the test_suite is quite easy to use.
 
 to run simply type:
-    python test_suite.py -p 2
-where the last arguement is either 0, 1, or 2.  this specifies which target you wish to run the target on.
-0 is for micaz
-1 is for mica2
-2 is for avrora
+python test_suite.py
 
-if not specified, the default is for micaz
-
-additional arugments for the test_suite are as follows:
-
+.Arguements to test_suite.py
+`--------------------------------------------
+Arguement               Description
+---------------------------------------------              
   -h, --help		display propper usage
-  -d, --debug		display additional output which is normall redirected to files for logging
-  -n, --no_make		tells the test_suite not to recompile and install a blank kernel
-  -p, --platform	specify the platform, as explained above
+  -d, --debug		display additional output 
+                        which is normall redirected to files for logging
+  -n, --no_make		tells the test_suite not to 
+                        recompile and install a blank kernel
+  --platform	        specify the platform, valid values are:
+                        micaz, mica2, tmote, avrora
 
+Output from the Test Suite
+--------------------------
 About the additional files that are specified:
 
 while running the test_suite a number of additional files will be created.  Most of these are log files which contain the build and install information for each step of running a test.  

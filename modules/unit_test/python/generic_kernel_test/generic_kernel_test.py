@@ -1,6 +1,5 @@
 import sys
 import os
-sys.path.append(os.environ['SOSROOT'] + '/modules/unit_test/pysos/')
 import pysos
 import signal
 

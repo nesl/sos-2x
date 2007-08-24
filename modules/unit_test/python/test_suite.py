@@ -8,6 +8,7 @@ import subprocess
 import re
 import stat
 
+AVRORA_PORT='127'
 INF = -1.0
 prog = 'mib510'
 install_port = ['/dev/ttyUSB0']
@@ -87,7 +88,6 @@ class Test:
 	if "%s.c" %self.test_name not in file_list or "%s.py" %self.test_name not in file_list or "Makefile" not in file_list:
 	    ret = False
 
-        print "Test %s is valid" %self.name
 	os.chdir(old_cwd)
 	return ret
 
@@ -201,9 +201,11 @@ def configure_setup(config_file='config.sys'):
 	    continue
 
     number_of_prog = len(install_port)
-    os.environ['SOSROOT'] = home + sos_root
-    os.environ['SOSTOOLDIR'] = home + sos_tool_dir
-    os.environ['SOSTESTDIR'] = home + sos_root + test_dir
+    if os.environ['SOSROOT'] == '':
+	os.environ['SOSROOT'] = home + sos_root
+    if os.environ['SOSTOOLDIR'] == '':
+	os.environ['SOSTOOLDIR'] = home + sos_tool_dir
+    os.environ['SOSTESTDIR'] = os.environ['SOSROOT'] + test_dir
     
 def gather_dependencies(dep_list_name):
     ''' build the list of dependencies based off of the specified file
@@ -284,12 +286,7 @@ def make_kernel(platform):
     kernel_f = open(os.environ['SOSTESTDIR'] + "/../python/kernel.log", "w")
 
     clean("config/blank")
-    if platform == 0:
-        cmd_make = ["make", "-C", "config/blank", "micaz", 'TEST_MODE=true', 'MODE=%s' %kernel_mode]
-    elif platform == 1:
-        cmd_make = ["make", "-C", "config/blank", "mica2", 'TEST_MODE=true', 'MODE=%s' %kernel_mode]
-    elif platform == 2:
-        cmd_make =  ["make", "-C", "config/blank", "avrora", 'TEST_MODE=true', 'MODE=%s' %kernel_mode]
+    cmd_make =  ["make", "-C", "config/blank", platform , 'TEST_MODE=true', 'MODE=%s' %kernel_mode]
 
     try:
       print cmd_make
@@ -317,10 +314,8 @@ def install_on_mica(platform, address, port):
     global prog
     global sos_group
 
-    if platform == 0:
-        cmd_install = ["make", "-C", "config/blank", "install", "PROG=%s" %prog, "PORT=%s" %install_port[port], "SOS_GROUP=%s" %sos_group, "ADDRESS=%d" %address] 
-    elif platform == 1:
-	cmd_install = ["make", "-C", "config/blank", "install", "PROG=%s" %prog, "PORT=%s" %install_port[port], "SOS_GROUP=%s" %sos_group, "ADDRESS=%s" %addres]
+    if platform != 'avrora':
+	cmd_install = ["make", "-C", "config/blank", "install", "PROG=%s" %prog, "PORT=%s" %install_port[port], "SOS_GROUP=%s" %sos_group, "ADDRESS=%s" %address]
     else:
         print "you shouldn't be doing this"
 	os.exit(0)
@@ -330,7 +325,7 @@ def install_on_mica(platform, address, port):
       subprocess.check_call(cmd_install)
     except subprocess.CalledProcessError:
 	print "problem installing on board: %s, please be sure that the board is connected propperly" %install_port[port]
-	print "please press any key when ready"
+	print "please press enter when ready"
 
 	raw_input()
 	install_on_mica(platform, address, port)
@@ -353,9 +348,9 @@ def run_sossrv(target):
     ''' start up sossrv.  for targets mica2 or micaz, it will run sossrv on the listen port specified.  
         for avrora taget, it will set up on localhost:2390, which is the port avrora expects on default
 	output from sossrv will be directed to $SOSROOT/modules/unit_test/python/sossrv.log '''
-    if target == 0 or target == 1:
+    if target != 'avrora':
 	cmd_run = ['sossrv.exe', '-s', listen_port]
-    elif target == 2:
+    else:
 	cmd_run = ['sossrv.exe', '-n', '127.0.0.1:2390']
 
     print cmd_run
@@ -365,15 +360,19 @@ def run_sossrv(target):
     if ret == 0:
 	run_and_redirect(cmd_run, os.environ['SOSTESTDIR'] + '/../python/sossrv.log')
 
-    time.sleep(10)
+    time.sleep(20)
     return ret
 
 def run_and_log(name, dir, platform, base_file='test_run'):
     out_f = open(base_file+'.good', 'w')
     err_f = open(base_file+'.bad', 'w')
 
-    cmd_make = ['make', '-C', dir, platform]
-    cmd_install = ['sos_tool.exe', '--insmod=' + dir + '/' + name + '.mlf']
+    if platform == 'avrora':
+	cmd_make = ['make', '-C', dir, 'mica2']
+	cmd_install = ['sos_tool.exe', '--insmod=' + dir + '/' + name + '.mlf']
+    else:
+	cmd_make = ['make', '-C', dir, platform]
+	cmd_install = ['sos_tool.exe', '--insmod=' + dir + '/' + name + '.mlf']
 
     clean(dir)
 
@@ -393,11 +392,6 @@ def install_dependency(dep_list, dep_dict, target):
     if len(dep_dict) == 0:
 	return
 
-    if target == 0:
-	plat = 'micaz'
-    elif target == 1:
-	plat = 'mica2'
-
     for dep in dep_list:
 	print "installing dependency: %s" %dep
 	current_dep = dep_dict[dep]
@@ -406,11 +400,11 @@ def install_dependency(dep_list, dep_dict, target):
 	    install_dependency(current_dep.sub_dep, dep_dict,target)
 	 
         dep_loc = os.environ['SOSROOT'] + current_dep.source
-	run_and_log(current_dep.name, dep_loc, plat, "%s/install_%s" %(dep_loc, current_dep.name))
+	run_and_log(current_dep.name, dep_loc, target, "%s/install_%s" %(dep_loc, current_dep.name))
 
 	time.sleep(5)
 
-def run_tests(test_list, target, dep_dict):
+def run_tests(test_list, platform, dep_dict):
     ''' given a list of tests, and the target node, compile, dynamically load, and test the output for each
         test.  before each test, all modules will be removed from the network to prevent any conflicts.
 	Also, the python test script, which is used to verify the output of the tests, and runs that tests 
@@ -418,11 +412,6 @@ def run_tests(test_list, target, dep_dict):
 	the standard output and error for the python script will be saved in in a log file located in the test
 	driver's location
 	'''
-    if target == 0:
-	platform = 'micaz'
-    elif target == 1 or target == 2:
-	platform = 'mica2'
-
     failed_tests = []
 
     cmd_erase = ["sos_tool.exe", "--rmmod=0"]
@@ -459,6 +448,9 @@ def run_tests(test_list, target, dep_dict):
 	    os.waitpid(child, 0)
 	    if (os.stat("%s/%s.bad" %(test_location, test.test_name))[stat.ST_SIZE] > 0):
 		failed_tests.append(test)
+		print "test %s had failures" %test.test_name
+	    else:
+		print "test %s passed" %test.test_name
 
 	    if (_debug == 1):
 		test_out_f = open("%s/%s.bad" %(test_location, test.test_name), 'r')
@@ -477,15 +469,16 @@ def usage():
 
 def process_args(argv):
     try:
-	opts, args = getopt.getopt(argv, "hndp", ["help", "no_make", "debug", "platform"])
+	opts, args = getopt.getopt(argv, "hnd", ["help", "no_make", "debug", "platform="])
     except getopt.GetoptError:
 	usage()
 	sys.exit(2)
     global _debug 
     _debug=0
     build_kernel = True
-    platform = 0
+    platform = 'micaz'
 
+    print opts
     for opt, arg in opts:
 	if opt in ("-h", "--help"):
 	    usage()
@@ -504,8 +497,9 @@ if __name__ == '__main__':
     sossrv_child = 0
     build_kernel = True
        
+    accepted_targets = ['micaz', 'mica2', 'avrora', 'tmote']
     (build_kernel, target) = process_args(sys.argv[1:])
-    if target > 2:
+    if target not in accepted_targets:
 	print "invalid target type, exiting"
 	sys.exit(1)
 
@@ -524,7 +518,7 @@ if __name__ == '__main__':
 	print "building the kernel"
 	make_kernel(target)
 
-	if target == 2:
+	if target == 'avrora':
 	    #install on avrora with the approriate number of nodes
 	    avrora_child = install_on_avrora(number_of_nodes)
 	elif number_of_prog == 1: 
@@ -532,22 +526,30 @@ if __name__ == '__main__':
 	    # it will install one node at a time, and wait for the user to switch nodes before continuing
 	    print "installing several nodes via the same board, please pay attention"
 	    while (number_of_nodes > 1):
-		install_on_mica(target, number_of_nodes - 1, 0)
 
+		print "please place a node on the programming board"
 		print "this current nodes address is: %d" %(number_of_nodes - 1)
-		print "please remove the current node and place another on the programming board"
-		print "press any key when ready to install on the next node"
+		print "press enter when ready to install on the node"
 		
 		raw_input()
 
+		install_on_mica(target, number_of_nodes - 1, 0)
+
 		number_of_nodes -= 1
 
+            print "about to install on the basestation node"
+	    print "please place it on the programming board, and press enter when ready"
+
+	    raw_input()
 	    install_on_mica(target, 0, 0)
 	    print "this is the base station node, please leave it connected to the programming board"
 	else:
 	    # installing on several programming boards, serially
 	    # we assume that for each port assigned, there is a programming board and node connected
-	    print "installing through multiple programming boards, your reaction is not required"
+	    print "please make sure every programming board listed has a node on it"
+	    print "press enter when ready"
+
+	    raw_input()
 
 	    while (number_of_prog > 0):
 		install_on_mica(target, number_of_prog -1, number_of_prog-1)
@@ -557,6 +559,10 @@ if __name__ == '__main__':
 
 	    number_of_prog -= 1
 	    
+    print "please make sure all nodes are turned on and that the basestation is still connected"
+    print "press anykey when ready"
+    raw_input()
+
     print "starting sossrv"
     sos_child = run_sossrv(target)
 
