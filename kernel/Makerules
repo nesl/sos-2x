@@ -51,6 +51,10 @@ ADDRESS=1
 DEFS += -D'NODE_ADDR=$(ADDRESS)'
 endif
 
+ifneq ($(SOS_TEST_SUITE),)
+DEFS += -D'SOS_TEST_SUITE'
+endif
+
 ifneq ($(ACK_ENABLED),)
 DEFS += -D'VMAC_ACK_ENABLED=$(ACK_ENABLED)'
 endif

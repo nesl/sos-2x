@@ -193,7 +193,11 @@ int8_t ker_sys_shm_open( sos_shm_t name, void *shm )
   ATOMIC_DISABLE_PREEMPTION();
   if( ker_shm_open( my_id, name, shm ) != SOS_OK ) {
     ATOMIC_ENABLE_PREEMPTION();
+#ifdef SOS_TEST_SUITE
+    return -EINVAL;
+#else
     return ker_mod_panic( my_id );
+#endif
   }
   ATOMIC_ENABLE_PREEMPTION();
   return SOS_OK;
@@ -206,7 +210,11 @@ int8_t ker_sys_shm_update( sos_shm_t name, void *shm )
   ATOMIC_DISABLE_PREEMPTION();
   if( ker_shm_update( my_id, name, shm ) != SOS_OK ) {
     ATOMIC_ENABLE_PREEMPTION();
+#ifdef SOS_TEST_SUITE
+    return -EINVAL;
+#else
     return ker_mod_panic( my_id );
+#endif
   }
   ATOMIC_ENABLE_PREEMPTION();
   return SOS_OK;
@@ -219,7 +227,11 @@ int8_t ker_sys_shm_close( sos_shm_t name )
   ATOMIC_DISABLE_PREEMPTION();
   if( ker_shm_close( my_id, name ) != SOS_OK ) {
     ATOMIC_ENABLE_PREEMPTION();
+#ifdef SOS_TEST_SUITE
+    return -EINVAL;
+#else
     return ker_mod_panic( my_id );
+#endif
   }
   ATOMIC_ENABLE_PREEMPTION();
   return SOS_OK;
@@ -243,7 +255,11 @@ int8_t ker_sys_shm_wait( sos_shm_t name )
   ATOMIC_DISABLE_PREEMPTION();
   if( ker_shm_wait( my_id, name ) != SOS_OK ) {
     ATOMIC_ENABLE_PREEMPTION();
+#ifdef SOS_TEST_SUITE
+    return -EINVAL;
+#else
     return ker_mod_panic( my_id );
+#endif
   }
   ATOMIC_ENABLE_PREEMPTION();
   return SOS_OK;
@@ -256,7 +272,11 @@ int8_t ker_sys_shm_stopwait( sos_shm_t name )
   ATOMIC_DISABLE_PREEMPTION();
   if( ker_shm_stopwait( my_id, name ) != SOS_OK ) {
     ATOMIC_ENABLE_PREEMPTION();
+#ifdef SOS_TEST_SUITE
+    return -EINVAL;
+#else
     return ker_mod_panic( my_id );
+#endif
   }
   ATOMIC_ENABLE_PREEMPTION();
   return SOS_OK;
@@ -268,7 +288,11 @@ int8_t ker_sys_shm_open( sos_shm_t name, void *shm )
 	sos_pid_t my_id = ker_get_current_pid();
 	
 	if( ker_shm_open( my_id, name, shm ) != SOS_OK ) {
+#ifdef SOS_TEST_SUITE
+	    	return -EINVAL;
+#else
 		return ker_mod_panic( my_id );
+#endif
 	}
 	return SOS_OK;
 }
@@ -278,7 +302,11 @@ int8_t ker_sys_shm_update( sos_shm_t name, void *shm )
 	sos_pid_t my_id = ker_get_current_pid();
 	
 	if( ker_shm_update( my_id, name, shm ) != SOS_OK ) {
+#ifdef SOS_TEST_SUITE
+	    	return -EINVAL;
+#else
 		return ker_mod_panic( my_id );
+#endif
 	}
 	return SOS_OK;
 }
@@ -288,7 +316,11 @@ int8_t ker_sys_shm_close( sos_shm_t name )
 	sos_pid_t my_id = ker_get_current_pid();
 	
 	if( ker_shm_close( my_id, name ) != SOS_OK ) {
+#ifdef SOS_TEST_SUITE
+	    	return -EINVAL;
+#else
 		return ker_mod_panic( my_id );
+#endif
 	}
 	return SOS_OK;
 }
@@ -305,7 +337,11 @@ int8_t ker_sys_shm_wait( sos_shm_t name )
 	sos_pid_t my_id = ker_get_current_pid();
 	
 	if( ker_shm_wait( my_id, name ) != SOS_OK ) {
+#ifdef SOS_TEST_SUITE
+	    	return -EINVAL;
+#else
 		return ker_mod_panic( my_id );
+#endif
 	}
 	return SOS_OK;
 }
@@ -315,7 +351,11 @@ int8_t ker_sys_shm_stopwait( sos_shm_t name )
 	sos_pid_t my_id = ker_get_current_pid();
 	
 	if( ker_shm_stopwait( my_id, name ) != SOS_OK ) {
+#ifdef SOS_TEST_SUITE
+	    	return -EINVAL;
+#else
 		return ker_mod_panic( my_id );
+#endif
 	}
 	return SOS_OK;
 }

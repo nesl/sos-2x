@@ -1338,7 +1338,9 @@ void* ker_sys_malloc(uint16_t size)
   if( size == 0 ) {
 	return NULL;
   }
+#ifndef SOS_TEST_SUITE
   ker_mod_panic(my_id);    
+#endif
   return NULL;
 }
 
@@ -1351,7 +1353,9 @@ void* ker_sys_realloc(void* pntr, uint16_t newSize)
   if( newSize == 0 ) {
 	return NULL;
   }
+#ifndef SOS_TEST_SUITE
   ker_mod_panic(ker_get_current_pid());
+#endif
   return NULL;
 }
 
@@ -1364,7 +1368,11 @@ int8_t ker_sys_change_own( void* ptr )
 {
   sos_pid_t my_id = ker_get_current_pid();    
   if( SOS_OK != sos_blk_mem_change_own( ptr, my_id, true ) ) {
+#ifndef SOS_TEST_SUITE
 	ker_mod_panic(my_id);
+#else
+	return -EINVAL;
+#endif
   }
   return SOS_OK;
 }

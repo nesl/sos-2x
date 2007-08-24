@@ -179,7 +179,9 @@ void* ker_sys_msg_take_data(Message *msg)
 	if( ret != NULL ) {
 		return ret;
 	}
+#ifndef SOS_TEST_SUITE
 	ker_mod_panic(my_id);
+#endif
 	return NULL;
 }
 
