@@ -461,7 +461,7 @@ def run_tests(test_list, target, dep_dict):
 		failed_tests.append(test)
 
 	    if (_debug == 1):
-		test_out_f = open("$s/$s.bad" %(test_location, test.test_name), 'r')
+		test_out_f = open("%s/%s.bad" %(test_location, test.test_name), 'r')
 		print "printing the error output from the python script"
 		for line in test_out_f:
 		    print line
