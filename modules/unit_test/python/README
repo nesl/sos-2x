@@ -6,7 +6,7 @@ v1.0, Aug 2007
 Introduction
 ------------
 
-this is a test suite to help automate the testing of various sos drivers, and the kernel's functionality.  It is capable of running tests on: mica2 boards, micaz boards, or an avrora simulation.  The basic operations are to install a blank kernel on the desired target, start the sossrv, and install the needed drivers for a test,  and finally run an associated python test script that will verify any output.
+The SOS Test Suite is an automation system for running a series of mote applications.  Given a list of modules that need to be installed, run for some period of time, and then removed, this Test Suite will perform all of the needed steps.  The initial inspiration for this was to test the many sensor drivers and system function calls in SOS, but it is also capable of much more.  
 
 Getting Started
 ---------------
@@ -19,7 +19,7 @@ first, config.sys will need to be modified according to your systems setup.
 the things which might need to be modified are:
 
 .Envoriment Variables and files
-`----------------------------------------------------------------------------
+`----------------`--------------------------`----------------------------------
 Variable         Description                Default 
 -----------------------------------------------------------------------------
 Home             Your home Directory        /home/test
@@ -31,7 +31,7 @@ depend_list      a list of dependencies     depend.conf
 ------------------------------------------------------------------------------
 
 .Node Settings
-`---------------------------------------------------------------
+`----------------`----------------------------------`-------------
 Setting          Description                        Example
 ----------------------------------------------------------------
 PROG             your programming board             mib510
@@ -49,9 +49,9 @@ please note that by having any install_portN's will override the value in number
 Editing test.conf
 ~~~~~~~~~~~~~~~~~
 
-next a set of tests needs to be specified.  To do this you will be modifying test.conf, or by modifying the config.sys file to point to your file of choice
+Next a set of tests needs to be specified.  To do this you will be modifying test.conf, or by modifying the config.sys file to point to your file of choice
 
-each test has a very specific format of 6 lines that are required. Comments can be added in between any line with a #.  
+Each test has a very specific format of 6 lines that are required, and additional lines are option. Comments can be added in between any line with a #.  
 example layout for a test:
 
     @test0:
@@ -62,12 +62,18 @@ example layout for a test:
     1
 
 1) the first line is simply a title for the test, this line should always start with a @ (this is really just a place holder to specify a new test is being declared), the : is not really neccesary but looks nice.
+
 2) the next line should be the name of the .c file for the driver code.  
+
 3) the third line will be location driver which you wish to test, in our case it is the h34c accelerometer sensor driver.  This folder needs to include a make file for compilation, and a file wuch as accel_sensor.c which is specified by the previous line.  this folder should be in $SOSROOT.
+
 4) this line works much like the second line, except it specifies the name of test drivers name.  Both the .c file and .py file should start with this name.  for example there should be a accel_test.c and accel_test.py
+
 5) the location of the test driver files.  this must include a make file in it, and a python script.  the path you give should be from $SOSTOOLDIR, as specified in config.sys.  so in our case /sensordrivers/h34c/modules is located in $SOSROOT/modules/unit_test/modules/
+
 6) the number of minutes you want the test to run for, in our example, it is just 1 minute
-7) any additional lines that are not comments or do not start with @ will be considered as dependencies.  
+
+7) any additional lines that are not comments or do not start with @ will be considered as dependencies. These dependencies should be the ones which will be listed in the depend.conf file, and allow for more than two modules to be inserted durring a single test.
 
 Editing depend.conf
 ~~~~~~~~~~~~~~~~~~~
@@ -78,11 +84,12 @@ by default this is depend.conf , and will contain a list of modules, and the mod
 already included is the dependency list for the Surge module, to give you an idea of how to add more dependencies
 specificly, each dependency should look like this:
 
- 1)the name of the module, this should specificly be the name which other modules will know it by and be the .c files name
- 2) the location of the module under $SOSROOT
- 3) any other modules which this one directly depends on, with one module per line
+ 1) the name of the module, this should be a unique identifier. 
+ 2) the name of the source files for the module 
+ 3) the location of the module under $SOSROOT
+ 4) any other modules which this one directly depends on, with one module per line
 
- for example, for surge we say that it depends on tree_routng and phototemp_sensor, so each of these gets their own line
+for example, for surge we say that it depends on tree_routng and phototemp_sensor, so each of these gets their own line
 in addition, the dependency list is modular, so surge does not need to declare neighbor as a dependency, only tree_routing does.
 
 Finally, Running the test suite
@@ -93,7 +100,7 @@ to run simply type:
 python test_suite.py
 
 .Arguements to test_suite.py
-`--------------------------------------------
+`-----------------------`---------------------
 Arguement               Description
 ---------------------------------------------              
   -h, --help		display propper usage
@@ -103,6 +110,8 @@ Arguement               Description
                         recompile and install a blank kernel
   --platform	        specify the platform, valid values are:
                         micaz, mica2, tmote, avrora
+
+---------------------------------------------
 
 Output from the Test Suite
 --------------------------

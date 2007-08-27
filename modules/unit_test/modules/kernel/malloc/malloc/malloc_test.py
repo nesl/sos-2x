@@ -57,7 +57,7 @@ def generic_test(msg):
     if (node_state == 155):
 	print >> sys.stderr, "a test failed on count %d" %data
     if (node_state == 255):
-	print "the test passed on count %d" data
+	print "the test passed on count %d" %data
     if (node_state == FINAL_DATA):
 	print "finalization worked correctly"
 

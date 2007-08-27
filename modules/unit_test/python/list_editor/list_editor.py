@@ -39,6 +39,80 @@ class list_editor_gui():
 
 	add_column(self.new_test_list_view, 'Test #', 0, expand=False)
 	add_column(self.new_test_list_view, 'Name', 1, expand=False)
+        
+	#set up the edit inputs
+	self.test_name = self.w('test_name')
+	self.module1_name = self.w('module1_name')
+	self.module1_loc = self.w('module1_loc')
+	self.module2_name = self.w('module2_name')
+	self.module2_loc = self.w('module2_loc')
+	self.test_time = self.w('test_time')
+	self.depend_list = self.w('depend_list')
+
+    def edit_test(self,test):
+        if not test: return
+
+	self.test_name.set_text(test.name)
+	self.module1_name.set_text(test.driver_name)
+	self.module1_loc.set_text(test.driver_location)
+	self.module2_name.set_text(test.test_name)
+	self.module2_loc.set_text(test.test_location)
+	
+	if test.time == test_suite.INF:
+	    self.test_time.set_text('INF')
+	else:
+	    self.test_time.set_text(str(test.time/60.0))
+
+	dep_list = ''
+	for dep in test.dep_list:
+	    dep_list += "%s " %dep
+	self.depend_list.set_text(dep_list)
+
+    def add_new_test(self, botton=None):
+	test_val = []
+
+	test_val.append(self.test_name.get_text())
+	test_val.append(self.module1_name.get_text())
+	test_val.append(self.module1_loc.get_text())
+	test_val.append(self.module2_name.get_text())
+	test_val.append(self.module2_loc.get_text())
+	test_val.append(self.test_time.get_text())
+
+	dep_list = self.depend_list.get_text().split()
+
+	new_test = test_suite.Test(test_val, dep_list)
+
+	if not new_test.is_valid():
+	    return
+
+	if self.curr_test != None:
+	    self.new_list[self.curr_test] = new_test
+	else:
+	    self.new_list.append(new_test)
+
+        self.refresh_new_test_list()
+
+    def clear_test(self, button=None):
+	self.test_name.set_text('')
+	self.module1_name.set_text('')
+	self.module1_loc.set_text('')
+	self.module2_name.set_text('')
+	self.module2_loc.set_text('')
+	self.test_time.set_text('')
+	self.depend_list.set_text('')
+
+	self.curr_test = None
+
+    def edit_new_test(self, button=None):
+	((index, ), cursor) = self.new_test_list_view.get_cursor()
+
+	self.curr_test = index
+        self.edit_test(self.new_list[index])
+
+    def edit_old_test(self, button=None):
+	((index, ), cursor) = self.old_test_list_view.get_cursor()
+
+	self.edit_test(self.old_list[index])
 
     def save_new_test_list(self, button=None, filename=None):
 	if not filename: filename = file_chooser_dialog(title="Save Test List", dlgtype="save", filters=(('test config files', '*.conf'), ('all files', '*')))

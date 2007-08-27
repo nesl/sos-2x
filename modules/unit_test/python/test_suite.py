@@ -7,6 +7,7 @@ import sys
 import subprocess
 import re
 import stat
+import curses
 
 AVRORA_PORT='127'
 INF = -1.0
@@ -19,6 +20,19 @@ number_of_prog = 1
 tests_to_run = 'test.conf'
 depend_list = 'depend.conf'
 kernel_mode = ''
+
+def check_dir(loc):
+    file_dirs = loc.split('/')
+    for dir in file_dirs:
+	if dir == '':
+	    continue
+	try:
+	    os.listdir(dir)
+	except OSError:
+	    return False
+	os.chdir(dir)
+
+    return True 
 
 class Test:
     ''' a small object to hold all the important information regarding a test
@@ -53,19 +67,6 @@ class Test:
 
 	return result
     
-    def check_dir(self, loc):
-	file_dirs = loc.split('/')
-	for dir in file_dirs:
-	    if dir == '':
-		continue
-	    try:
-		os.listdir(dir)
-	    except OSError:
-		return False
-	    os.chdir(dir)
-
-        return True 
-
     def is_valid(self):
 	ret = True
 
@@ -73,7 +74,7 @@ class Test:
 
 	os.chdir(os.environ['SOSROOT'])
 
-        if self.check_dir(self.driver_location) == False:
+        if check_dir(self.driver_location) == False:
 	    print "driver location %s is invalid please check it" %self.driver_location
 	    ret = False
         file_list = os.listdir(os.getcwd())
@@ -81,7 +82,7 @@ class Test:
 	    ret = False
 
 	os.chdir(os.environ['SOSTESTDIR'])
-	if self.check_dir(self.test_location) == False:
+	if check_dir(self.test_location) == False:
 	    print "test location %s is invalid, please check it" %self.test_location
 	    ret = False
 	file_list = os.listdir(os.getcwd())
@@ -93,11 +94,28 @@ class Test:
 
 class Dependency:
 
-    def __init__(self):
-	self.name = ''
-	self.source = ''
-	self.sub_dep = []
+    def __init__(self, dep_val):
+	self.name = dep_val[0] 
+	self.source_name = dep_val[1]
+	self.source_loc = dep_val[2]
+	self.sub_dep = dep_val[3:]
 
+    def is_valid(self):
+	ret = True
+	old_cwd = os.getcwd()
+
+	os.chdir(os.environ['SOSROOT'])
+
+        if check_dir(self.source_loc) == False:
+	    print "dependency %s is badly formated" %self.source_loc
+	    ret = False
+	file_list = os.listdir(os.getcwd())
+	if "%s.c" %self.source_name not in file_list or "Makefile" not in file_list:
+	    print "source file %s does not exist" %self.source_name
+	    ret = False
+
+        os.chdir(old_cwd)
+	return ret
 
 def run_and_redirect(run_cmd, outfile='/dev/null', error='/dev/null'):
     ''' redirect the output to outfile, if a file is specified
@@ -215,23 +233,25 @@ def gather_dependencies(dep_list_name):
     dep_f = open(dep_list_name, 'r')
 
     current_name = ''
-    current_dep = Dependency()
+    dep_val = []
     dep_dict = {}
 
     for line in dep_f:
 	if line[0] == '@':
 	    if current_name != '':
-		dep_dict[current_name] = current_dep
-	    current_dep = Dependency()
-	    current_dep.name = line[1:-1]
-     	    current_name = line[1:-1]
-	elif line[0] == '/':
-	    current_dep.source = line[:-1]
+		new_dep = Dependency(dep_val)
+		if new_dep.is_valid():
+		    dep_dict[current_name] = new_dep 
+		dep_val = []
+	    current_name = line[1:-1]
+	    dep_val.append(current_name)
 	elif line[0] != '#':
-	    current_dep.sub_dep.append(line[:-1])
+	    dep_val.append(line[0:-1])
 
     if current_name != '':
-	dep_dict[current_name] = current_dep
+	new_dep = Dependency(dep_val)
+	if new_dep.is_valid():
+	    dep_dict[current_name] = new_dep
 	
     return dep_dict
 
@@ -289,7 +309,6 @@ def make_kernel(platform):
     cmd_make =  ["make", "-C", "config/blank", platform , 'TEST_MODE=true', 'MODE=%s' %kernel_mode]
 
     try:
-      print cmd_make
       subprocess.check_call(cmd_make, stderr=kernel_f, stdout=kernel_f)
       kernel_f.close()
 
@@ -320,7 +339,6 @@ def install_on_mica(platform, address, port):
         print "you shouldn't be doing this"
 	os.exit(0)
     
-    print cmd_install
     try:
       subprocess.check_call(cmd_install)
     except subprocess.CalledProcessError:
@@ -353,7 +371,6 @@ def run_sossrv(target):
     else:
 	cmd_run = ['sossrv.exe', '-n', '127.0.0.1:2390']
 
-    print cmd_run
     time.sleep(10)
 
     ret = os.fork()
@@ -399,8 +416,8 @@ def install_dependency(dep_list, dep_dict, target):
 	if len(current_dep.sub_dep) > 0:
 	    install_dependency(current_dep.sub_dep, dep_dict,target)
 	 
-        dep_loc = os.environ['SOSROOT'] + current_dep.source
-	run_and_log(current_dep.name, dep_loc, target, "%s/install_%s" %(dep_loc, current_dep.name))
+        dep_loc = os.environ['SOSROOT'] + current_dep.source_loc
+	run_and_log(current_dep.source_name, dep_loc, target, "%s/install_%s" %(dep_loc, current_dep.source_name))
 
 	time.sleep(5)
 
@@ -478,7 +495,6 @@ def process_args(argv):
     build_kernel = True
     platform = 'micaz'
 
-    print opts
     for opt, arg in opts:
 	if opt in ("-h", "--help"):
 	    usage()
@@ -560,7 +576,7 @@ if __name__ == '__main__':
 	    number_of_prog -= 1
 	    
     print "please make sure all nodes are turned on and that the basestation is still connected"
-    print "press anykey when ready"
+    print "press enter when ready"
     raw_input()
 
     print "starting sossrv"
