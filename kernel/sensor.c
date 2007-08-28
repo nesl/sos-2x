@@ -321,7 +321,7 @@ int8_t ker_sensor_data_ready(uint8_t sensor_id, uint16_t sensor_data, uint8_t st
   return SOS_OK;
 }
 
-
+#ifndef NEW_SENSING_API
 int8_t sensor_remove_all(sos_pid_t pid)
 {
 	uint8_t i;
@@ -333,7 +333,7 @@ int8_t sensor_remove_all(sos_pid_t pid)
 	}
 	return SOS_OK;
 }
-
+#endif
 
 #ifdef FAULT_TOLERANT_SOS
 int8_t sensor_micro_reboot(sos_pid_t pid)

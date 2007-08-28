@@ -45,7 +45,15 @@ br 0    ; br #ker_i2c_reserve_bus     ; 39
 br 0    ; br #ker_i2c_release_bus     ; 40
 br 0    ; br #ker_i2c_send_data       ; 41
 br 0    ; br #ker_i2c_read_data       ; 42
-br #post_longer             ; 43
-;br 0
-;br #ker_adc_proc_getPeriodicData	; 34
-;br #ker_adc_proc_stopPeriodicData
+br #post_longer             			; 43
+br #ker_sys_sensor_start_sampling		; 44
+br #ker_sys_sensor_stop_sampling		; 45
+br # ker_sys_sensor_driver_register		; 46
+br #ker_sys_sensor_driver_deregister	; 47
+br #ker_sys_adc_bind_channel			; 48
+br #ker_sys_adc_unbind_channel			; 49
+br #ker_adc_get_data					; 50
+br #ker_adc_stop_data					; 51
+br #ker_sys_register_isr				; 52    // Used for user interrupt controller in msp430
+br #ker_sys_deregister_isr				; 53    // Used for user interrupt controller in msp430
+br 0									; 54

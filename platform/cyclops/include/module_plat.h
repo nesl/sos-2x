@@ -6,11 +6,10 @@
 #ifndef _MODULE_PLAT_H
 #define _MODULE_PLAT_H
 
-// This file is automatically included from module.h
-// if _MODULE_ is defined.
+// IMPORTANT: Need to convert all the functions below to sys_* API.
 
+#if 0
 #include <image.h> // Cyclops Platform Image Data Type Definitions
-#include <kertable_plat.h> // Required for PROC_KERTABLE_END
 #include <matrix.h> // Required for CYCLOPS_Matrix etc. data types
 #include <hardware_types.h>
 
@@ -132,6 +131,8 @@ static inline int8_t ext_mem_init(){
 	ext_mem_init_t func = (ext_mem_init_t)get_kertable_entry(PROC_KERTABLE_END + 12);
 	return func();
 }
+
+#endif
 
 //int8_t ext_mem_init();
 #endif /* _MODULE_PLAT_H */

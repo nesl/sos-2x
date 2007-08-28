@@ -63,6 +63,7 @@
 #include <sos_info.h>
 #include <measurement.h>
 #include <sos_sched.h>
+#include <sensor_system.h>
 
 /**
  * @brief initialization 

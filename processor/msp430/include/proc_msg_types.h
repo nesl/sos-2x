@@ -18,6 +18,9 @@ enum {
  /* uart_system msgs */
  MSG_UART_SEND_DONE = PROC_MSG_START, //!< uart send done
  MSG_UART_READ_DONE, //!< uart read Done
+ MSG_ADC_START_NEXT_SAMPLING,
+ MSG_ADC_HANDLE_DATA_EVENT,
+ MSG_SHT1x_START_NEXT_SAMPLING,
 };
 
 #endif /* _PROC_MSG_TYPES_H_ */

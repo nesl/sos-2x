@@ -28,8 +28,19 @@
 #include <sos_shm.h>
 #include <error_type.h>
 
+#include <sensor_system.h>
+
+#include <sys_module_proc.h>
+#include <sys_module_plat.h>
+
 #ifndef SYS_JUMP_TBL_START
 /// \cond NOTYPEDEF
+
+/*
+ * This section is required for simulation target as it does not
+ * use system jump table. Instead it uses direct function calls.
+ */
+
 void* ker_sys_malloc(uint16_t size);
 void* ker_sys_realloc(void* pntr, uint16_t newSize);
 void ker_sys_free(void *pntr);
@@ -55,11 +66,15 @@ int8_t ker_sensor_register(sos_pid_t calling_id,
         uint8_t sensor_id, 
         uint8_t sensor_fid, void *ctx);
 int8_t ker_sensor_deregister(sos_pid_t calling_id, uint8_t sensor_id);
-int8_t ker_sensor_get_data(uint8_t sensor_id);
 int8_t ker_sensor_enable(uint8_t sensor_id);
 int8_t ker_sensor_disable(uint8_t sensor_id);
 int8_t ker_sensor_data_ready(uint8_t sensor_id, uint16_t sensor_data, uint8_t status);
 
+int8_t ker_sys_sensor_driver_register(sensor_id_t sensor, uint8_t sensor_control_fid);
+int8_t ker_sys_sensor_driver_deregister(sensor_id_t sensor);
+int8_t ker_sys_sensor_start_sampling(sensor_id_t *sensors, unsigned int num_sensors, 
+						sample_context_t *param, void *context);
+int8_t ker_sys_sensor_stop_sampling(sensor_id_t sensor); 
 
 int8_t ker_i2c_reserve_bus(uint8_t calling_id, uint8_t ownAddress, uint8_t flags);
 int8_t ker_i2c_release_bus(uint8_t calling_id);
@@ -99,6 +114,7 @@ extern uint16_t node_address;
 #endif
 /// \endcond 
 #endif
+
 
 /**
  * \defgroup system_api SOS System API
@@ -1212,17 +1228,6 @@ static inline int8_t sys_sensor_disable(uint8_t sensor_id)
 }
 /* @} */
 
-/// \cond NOTYPEDEF
-typedef int8_t (*sys_i2c_reserve_bus_t)(uint8_t calling_id, uint8_t i2c_addr, uint8_t flags);
-/// \endcond
-
-
-
-
-
-
-
-
 /**
  * \ingroup system_api
  * \defgroup i2c I2C
@@ -1230,6 +1235,9 @@ typedef int8_t (*sys_i2c_reserve_bus_t)(uint8_t calling_id, uint8_t i2c_addr, ui
  * @{
  */
 
+/// \cond NOTYPEDEF
+typedef int8_t (*sys_i2c_reserve_bus_t)(uint8_t calling_id, uint8_t i2c_addr, uint8_t flags);
+/// \endcond
 
 /**
  * Reserve the I2C bus.
@@ -1338,6 +1346,87 @@ static inline int8_t sys_i2c_read_data(uint8_t i2c_addr, uint8_t read_size, uint
   return ker_i2c_read_data(i2c_addr, read_size, calling_id);
 #endif
 }
+/* @} */
+
+/**
+ * \ingroup system_api
+ * \defgroup sensing Sensing
+ * Function to sample sensor readings
+ *
+ * @{
+ */
+/// \cond NOTYPEDEF
+typedef int8_t (*ker_sys_sensor_start_sampling_func_t)(sensor_id_t *sensors, unsigned int num_sensors,
+				sample_context_t *param, void *context);
+/// \endcond
+/**
+ * Get sensor readings
+ * \return SOS_OK for success.  The reading will appear as message typed MSG_DATA_READY.
+ */
+static inline int8_t sys_sensor_start_sampling(sensor_id_t *sensors, unsigned int num_sensors,
+				sample_context_t *param, void *context)
+{
+#ifdef SYS_JUMP_TBL_START
+	return ((ker_sys_sensor_start_sampling_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*44))
+			(sensors, num_sensors, param, context);
+#else
+	return ker_sys_sensor_start_sampling(sensors, num_sensors, param, context);
+#endif
+}
+
+/// \cond NOTYPEDEF
+typedef int8_t (*ker_sys_sensor_stop_sampling_func_t)(sensor_id_t sensor);
+/// \endcond
+
+static inline int8_t sys_sensor_stop_sampling(sensor_id_t sensor)
+{
+#ifdef SYS_JUMP_TBL_START
+	return ((ker_sys_sensor_stop_sampling_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*45))(sensor);
+#else
+	return ker_sys_sensor_stop_sampling(sensor); 
+#endif
+}
+
+/// \cond NOTYPEDEF
+typedef int8_t (*ker_sys_sensor_driver_register_func_t)(sensor_id_t sensor, uint8_t sensor_control_fid);
+/// \endcond
+
+/**
+ * Register a sensor driver.
+ *
+ * \param sensor   
+ * \param sensor_control_fid
+ * \return SOS_OK      If registration was successful
+ */
+static inline int8_t sys_sensor_driver_register(sensor_id_t sensor, uint8_t sensor_control_fid)
+{
+#ifdef SYS_JUMP_TBL_START
+	return ((ker_sys_sensor_driver_register_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*46))
+			(sensor, sensor_control_fid);
+#else
+	return ker_sys_sensor_driver_register(sensor, sensor_control_fid);
+#endif
+}
+
+/// \cond NOTYPEDEF
+typedef int8_t (*ker_sys_sensor_driver_deregister_func_t)(sensor_id_t sensor);
+/// \endcond
+
+/**
+ * Deregister a sensor driver.
+ *
+ * \param sensor
+ * \return SOS_OK      If registration was successful
+ */
+static inline int8_t sys_sensor_driver_deregister(sensor_id_t sensor)
+{
+#ifdef SYS_JUMP_TBL_START
+	return ((ker_sys_sensor_driver_deregister_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*47))(sensor);
+#else
+	return ker_sys_sensor_driver_deregister(sensor);
+#endif
+}
+
 /* @} */
 
 

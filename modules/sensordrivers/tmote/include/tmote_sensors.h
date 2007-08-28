@@ -24,10 +24,19 @@ enum {
 #define TSR_TYPE LIGHT_SENSOR
 #define VCC_TYPE VOLTAGE_SENSOR
 
-// add port mapping for tmote
-#define TEMP_HW_CH INCH_TEMP
-#define PAR_HW_CH INCH_A4
-#define TSR_HW_CH INCH_A5
-#define VCC_HW_CH INCH_VCC2
+// Port mapping for Tmote.
+/*
+ * Do not use INCH_A* defines as they work only
+ * on Linux, and not on Mac OS.
+ * #define TEMP_HW_CH INCH_TEMP
+ * #define PAR_HW_CH INCH_A4
+ * #define TSR_HW_CH INCH_A5
+ * #define VCC_HW_CH INCH_VCC2
+*/
+#define TEMP_HW_CH INCH_10
+#define PAR_HW_CH INCH_4
+#define TSR_HW_CH INCH_5
+#define VCC_HW_CH INCH_11
+
 #endif // _TMOTE_SENSOR_H_
 

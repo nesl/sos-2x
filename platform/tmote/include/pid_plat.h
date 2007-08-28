@@ -54,10 +54,11 @@
  */
 enum{
   KER_UART_PID = (PROC_MAX_PID + 1), //! pid for kernel uart msg handler
+  SHT1x_COMM_PID = (PROC_MAX_PID + 2), //! pid for sht1x communication driver
 }; 
 //Note:- Please update PLAT_MAX_PID
 
-#define PLAT_MAX_PID         (PROC_MAX_PID + 1)
+#define PLAT_MAX_PID         (PROC_MAX_PID + 2)
 
 // XXX what is the max value?
 #endif

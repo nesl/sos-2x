@@ -4,7 +4,6 @@
 #include <sys_module.h>
 
 #include <sensor.h>
-#include <adc_api.h>
 
 //#define LED_DEBUG
 #include <led_dbg.h>
@@ -66,7 +65,7 @@ static int8_t par_sensor_control(func_cb_ptr cb, uint8_t cmd, void* data) {\
 	switch (cmd) {
 		case SENSOR_GET_DATA_CMD:
 			// get ready to read accel sensor
-			return sys_adc_get_data(PAR_SID, 0);
+			return sys_adc_proc_getData(PAR_SID, 0);
 
 		case SENSOR_ENABLE_CMD:
 			break;
@@ -98,7 +97,7 @@ int8_t par_sensor_msg_handler(void *state, Message *msg)
 		case MSG_INIT:
 			// bind adc channel and register callback pointer
 
-		  if(sys_adc_bind_port(PAR_SID, PAR_HW_CH, LITEPOT_PID,  SENSOR_DATA_READY_FID) != SOS_OK){
+		  if(sys_adc_proc_bindPort(PAR_SID, PAR_HW_CH, LITEPOT_PID,  SENSOR_DATA_READY_FID) != SOS_OK){
         LED_DBG(LED_RED_TOGGLE);
       }
 			// register with kernel sensor interface
@@ -107,7 +106,7 @@ int8_t par_sensor_msg_handler(void *state, Message *msg)
 
 		case MSG_FINAL:
 			//  unregister ADC port
-			sys_adc_unbind_port(LITEPOT_PID, PAR_SID);
+			sys_adc_proc_unbindPort(LITEPOT_PID, PAR_SID);
 			// unregister sensor
 			sys_sensor_deregister(LITEPOT_PID, PAR_SID);
 			break;

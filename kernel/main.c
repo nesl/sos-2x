@@ -48,6 +48,11 @@
 #include <sos_module_fetcher.h>
 #include <random.h>
 #include <sensor.h>
+
+#ifdef NEW_SENSING_API
+#include <sensor_kernel.h>
+#endif
+
 #include <malloc.h>
 #include <monitor.h>
 #include <fntable.h>
@@ -104,7 +109,11 @@ int sos_main(uint8_t cond){
     sched_init(cond);
 
 	//! initialize sensor manager
+#ifdef NEW_SENSING_API
+	sensor_system_init();
+#else
 	sensor_init();
+#endif
 
 	//! initialize the Function Table
 	fntable_init();

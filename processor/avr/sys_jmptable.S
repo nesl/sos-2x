@@ -50,4 +50,14 @@ jmp ker_i2c_release_bus     ; 40
 jmp ker_i2c_send_data       ; 41
 jmp ker_i2c_read_data       ; 42
 jmp post_longer             ; 43
-jmp 0                      ; 44
+jmp ker_sys_sensor_start_sampling		; 44
+jmp ker_sys_sensor_stop_sampling		; 45
+jmp ker_sys_sensor_driver_register		; 46
+jmp ker_sys_sensor_driver_deregister	; 47
+jmp 0	; jmp ker_sys_adc_bind_channel	; 48
+jmp 0	; jmp ker_sys_adc_unbind_channel; 49
+jmp 0	; jmp ker_adc_get_data			; 50
+jmp 0	; jmp ker_adc_stop_data			; 51
+jmp 0	; jmp ker_sys_register_isr		; 52 // For interrupt controller in msp430
+jmp 0	; jmp ker_sys_deregister_isr	; 53	
+jmp 0                      				; 54

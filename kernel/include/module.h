@@ -38,45 +38,31 @@
 /** 
  * @brief Header file for modules
  * 
- * This is the only file that module writer should include.
- * Currently, we do not support PC emulation on this.
+ * This file should only be included by modules written as kernel extensions.
+ * It will give compilation error otherwise.
  */
 
 #ifndef _MODULE_H
 #define _MODULE_H
 
-#ifndef _MODULE_
 #include <sos.h>
-#include <sos_sched.h>
-// Ram - I am including the following file here because the configuration
-// needs to know what sensor board it is being compiled to
 #include <sensor.h>
-#include <sos_error_types.h>
 #include <random.h>
-#endif
 
-#include <sos_info.h>
-#include <sos_types.h>
-#include <sos_module_types.h>
 #include <sos_timer.h>
-#include <monitor.h>
 #include <message_types.h>
 #include <codemem.h>
 #include <systime.h>
-#include <sos_shm.h>
-#include <pid.h>
-#include <stddef.h>
 #include <kertable_conf.h>
 #include <fntable_types.h>
-#include <sos_error_types.h>
+
+// Include processor and platform specific API's for kernel extension modules.
+#include <module_proc.h>
+#include <module_plat.h>
+
 #ifdef SOS_SFI
 #include <memmap.h>
 #endif
-// Ram - I have removed the following include file
-// Module writers interacting with sensorboards
-// should specify the header file for that board
-// explicitly in their files
-//#include <sensor.h>
 
 #ifdef _MODULE_
 #error "Loadable module cannot include module.h"

@@ -9,8 +9,8 @@
  */
 
 #include <hardware.h>           // platform/tmote/include/
-#include <kertable.h>           // sos-1.x/kernel/include/
-#include <kertable_proc.h>      // processor/msp430/include/
+//#include <kertable.h>           // sos-1.x/kernel/include/
+//#include <kertable_proc.h>      // processor/msp430/include/
 #include <pin_alt_func.h>       // processor/msp430/include/
 
 #define LED_DEBUG
@@ -51,6 +51,13 @@ SOS_KER_TABLE(NULL);
 #endif
 */
 
+// Initialize the SHT1x driver for new sensing system
+// and Tmote Sky sensor board.
+#ifdef NEW_SENSING_API
+#ifdef TMOTE_SENSOR_BOARD
+extern int8_t sht1x_comm_init();
+#endif
+#endif
 
 //-------------------------------------------------------------------------
 // FUNCTION DECLARATION
@@ -58,56 +65,70 @@ SOS_KER_TABLE(NULL);
 void hardware_init(void){
 	init_IO();
 
-  // WATCHDOG SETUP FOR MSP430
-  // After PUC, watchdog is enabled by default
-  // with a timeout of 32 ms. Till we support
-  // watchdog, we will simply disable it
-  DISABLE_WDT();
+	// WATCHDOG SETUP FOR MSP430
+	// After PUC, watchdog is enabled by default
+	// with a timeout of 32 ms. Till we support
+	// watchdog, we will simply disable it
+	DISABLE_WDT();
 
-  // CLOCK SUBSYSTEM
-  clock_hal_init();
-  
-  // LEDS
-  led_init();
+	// CLOCK SUBSYSTEM
+	clock_hal_init();
+
+	// LEDS
+	led_init();
 
 	// HARDWARE TIMERS
 	timerb_hal_init();
 
-  // SYSTEM TIMER
-  timer_hardware_init(DEFAULT_INTERVAL);
+	// SYSTEM TIMER
+	timer_hardware_init(DEFAULT_INTERVAL);
 
-  // UART
+	// UART
 	uart_hardware_init();
 	uart_system_init();
 #ifndef NO_SOS_UART
-  //! Initialize uart comm channel
+	//! Initialize uart comm channel
 	sos_uart_init();
 #endif
-	
+
 	// SPI
 	spi_hardware_init();
 
 	// RADIO
 	//#ifndef NO_SOS_RADIO
-//	cc2420_hardware_init();
+	//	cc2420_hardware_init();
 	mac_init();
 	//#endif
 
-  // I2C
+	// I2C
 	// Currently there is no I2C support
 
-  // ADC
-  adc_proc_init();
+	// ADC
+#ifdef NEW_SENSING_API
+	adc_driver_init();
+#else
+	adc_proc_init();
+#endif
 
-  // Ram - I dont know which flash this is ?
-  //  init_flash();
+	// Interrupt controller
+	interrupt_init();
 
-  
-  
-  // EXTERNAL FLASH
-  // Currently there is no support
+	// SHT1x chip communication controller
+#ifdef NEW_SENSING_API
+#ifdef TMOTE_SENSOR_BOARD
+	sht1x_comm_init();
+#endif
+#endif
 
-  // MSP430 PERIPHERALS (Optional)
+	// Ram - I dont know which flash this is ?
+	//  init_flash();
+
+
+
+	// EXTERNAL FLASH
+	// Currently there is no support
+
+	// MSP430 PERIPHERALS (Optional)
 
 }
 

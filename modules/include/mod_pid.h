@@ -136,8 +136,11 @@ enum {
   //! 167 - Temperature Sensor
   TEMP_SENSOR_PID = (APP_MOD_MIN_PID + 39),
 
-  //! 168 - Battery Voltage Sensor
-  BATTERY_SENSOR_PID = (APP_MOD_MIN_PID + 40),
+  //! 168 - SHT1x Temperature/Humidty Sensor
+  SHT1x_SENSOR_PID = (APP_MOD_MIN_PID + 40),
+
+  //! 169 - Battery Voltage Sensor
+  BATTERY_SENSOR_PID = (APP_MOD_MIN_PID + 41),
 
 //! PLEASE add the name to modules/mod_pid.c
 };

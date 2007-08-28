@@ -26,6 +26,8 @@
 #include <vhal.h>
 #include <vmac.h>
 #include <adc_proc.h>
+#include <adc_driver_kernel.h>
+#include <interrupt_ctrl_kernel.h>
 
 /**
  * @brief initialize hardware

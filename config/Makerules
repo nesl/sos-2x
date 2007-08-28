@@ -84,6 +84,15 @@ DEFS += -DSOS_USE_PREEMPTION
 SRCS += priority.c
 endif
 ##################################################
+# New Sensing API Options
+#################################################
+ifeq ($(MODE), new_sensing_api)
+DEFS += -DNEW_SENSING_API
+endif
+ifeq ($(SB), tmote)
+DEFS += -DTMOTE_SENSOR_BOARD
+endif
+##################################################
 
 SRCS += $(PROJ).c
 SRCS += sched.c message.c message_queue.c message_net.c
@@ -94,6 +103,7 @@ SRCS += random.c sensor.c timestamp.c
 SRCS += sos_logging.c
 SRCS += sos_shm.c slab.c
 SRCS += error_type.c
+SRCS += sensor_system.c
 #SRCS += version_sync.c sos_cam.c
 
 # Check if ViRe framework needs to be included.

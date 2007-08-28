@@ -4,7 +4,6 @@
 #include <sys_module.h>
 
 #include <sensor.h>
-#include <adc_api.h>
 
 //#define LED_DEBUG
 #include <led_dbg.h>
@@ -65,7 +64,7 @@ static int8_t temp_sensor_control(func_cb_ptr cb, uint8_t cmd, void* data) {\
 	switch (cmd) {
 		case SENSOR_GET_DATA_CMD:
 			// get ready to read accel sensor
-			return sys_adc_get_data(TEMP_SID, 0);
+			return sys_adc_proc_getData(TEMP_SID, 0);
 
 		case SENSOR_ENABLE_CMD:
 			break;
@@ -97,14 +96,14 @@ int8_t temp_sensor_msg_handler(void *state, Message *msg)
 		case MSG_INIT:
 			// bind adc channel and register callback pointer
 
-		  sys_adc_bind_port(TEMP_SID, TEMP_HW_CH, TEMP_SENSOR_PID,  SENSOR_DATA_READY_FID);
+		  sys_adc_proc_bindPort(TEMP_SID, TEMP_HW_CH, TEMP_SENSOR_PID,  SENSOR_DATA_READY_FID);
 			// register with kernel sensor interface
 			sys_sensor_register(TEMP_SENSOR_PID, TEMP_SID, SENSOR_CONTROL_FID, (void*)(&s->state));
 			break;
 
 		case MSG_FINAL:
 			//  unregister ADC port
-			sys_adc_unbind_port(TEMP_SENSOR_PID, TEMP_SID);
+			sys_adc_proc_unbindPort(TEMP_SENSOR_PID, TEMP_SID);
 			// unregister sensor
 			sys_sensor_deregister(TEMP_SENSOR_PID, TEMP_SID);
 			break;

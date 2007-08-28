@@ -4,7 +4,6 @@
 #include <sys_module.h>
 
 #include <sensor.h>
-#include <adc_api.h>
 
 //#define LED_DEBUG
 #include <led_dbg.h>
@@ -66,7 +65,7 @@ static int8_t tsr_sensor_control(func_cb_ptr cb, uint8_t cmd, void* data) {\
 	switch (cmd) {
 		case SENSOR_GET_DATA_CMD:
 			// get ready to read accel sensor
-			return sys_adc_get_data(TSR_SID, 0);
+			return sys_adc_proc_getData(TSR_SID, 0);
 
 		case SENSOR_ENABLE_CMD:
 			break;
@@ -98,14 +97,14 @@ int8_t tsr_sensor_msg_handler(void *state, Message *msg)
 		case MSG_INIT:
 			// bind adc channel and register callback pointer
 
-		  sys_adc_bind_port(TSR_SID, TSR_HW_CH, PHOTOTEMP_SENSOR_PID,  SENSOR_DATA_READY_FID);
+		  sys_adc_proc_bindPort(TSR_SID, TSR_HW_CH, PHOTOTEMP_SENSOR_PID,  SENSOR_DATA_READY_FID);
 			// register with kernel sensor interface
 			sys_sensor_register(PHOTOTEMP_SENSOR_PID, TSR_SID, SENSOR_CONTROL_FID, (void*)(&s->state));
 			break;
 
 		case MSG_FINAL:
 			//  unregister ADC port
-			sys_adc_unbind_port(PHOTOTEMP_SENSOR_PID, TSR_SID);
+			sys_adc_proc_unbindPort(PHOTOTEMP_SENSOR_PID, TSR_SID);
 			// unregister sensor
 			sys_sensor_deregister(PHOTOTEMP_SENSOR_PID, TSR_SID);
 			break;

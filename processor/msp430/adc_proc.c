@@ -320,6 +320,8 @@ int8_t ker_adc_proc_stopPerodicData(uint8_t port) {
 }
 #include <led.h>
 
+#ifndef NEW_SENSING_API
+
 interrupt (ADC_VECTOR) adc_proc_interrupt() {
 	uint16_t adcValue;
   uint16_t iv = ADC12IV;
@@ -378,4 +380,6 @@ interrupt (ADC_VECTOR) adc_proc_interrupt() {
 		}
 	}
 }
+
+#endif
 
