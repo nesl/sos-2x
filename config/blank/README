@@ -1,0 +1,10 @@
+To use the new sensing sub-system on Tmote, compile blank
+with
+
+make tmote install MODE=new_sensing_api SB=tmote ADDRESS=2 ....
+
+Then, go to the $(SOSROOT)/modules/sensordrivers/tmote/new_api/
+to compile and load individual sensor drivers as required.
+The test module to test all those sensor drivers is in 
+$(SOSROOT)/modules/sensordrivers/tmote/new_api/test/
+
