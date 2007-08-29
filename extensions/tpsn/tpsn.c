@@ -34,7 +34,6 @@
  * @author Ilias Tsigkogiannis {ilias@ee.ucla.edu}
  */
  
-#include <module.h>
 #include <sys_module.h>
 //#define LED_DEBUG
 #include <led_dbg.h>
@@ -94,7 +93,6 @@ static mod_header_t mod_header SOS_MODULE_HEADER =
 {
 	mod_id : TPSN_TIMESYNC_PID,
 	state_size : sizeof(app_state_t),
-	num_timers : 0,
 	num_sub_func : 0,
 	num_prov_func :0,
 	platform_type  : HW_TYPE /* or PLATFORM_ANY */,
