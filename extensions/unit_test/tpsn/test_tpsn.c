@@ -2,9 +2,9 @@
 /* ex: set ts=4 shiftwidth=4 softtabstop=4 cindent: */
 
 /**
- * Module needs to include <module.h>
+ * Module needs to include <sys_module.h>
  */
-#include <module.h>
+#include <sys_module.h>
 #include <led.h>
 #include <tpsn/tpsn.h>
 
@@ -39,7 +39,6 @@ static mod_header_t mod_header SOS_MODULE_HEADER =
 {
 	mod_id : DFLT_APP_ID0,
 	state_size : sizeof(app_state_t),
-	num_timers : 1,
 	num_sub_func : 0,
 	num_prov_func : 0,
 	module_handler : module,	
@@ -64,8 +63,7 @@ static int8_t module(void *state, Message *msg)
 			if(ROOT_NODE_ID == ker_id()) // transmitter
 			{
 				DEBUG("TPSN tester: Transmitter starting\n");
-				ker_timer_init(s->pid, TRANSMIT_TIMER, TIMER_REPEAT);	
-				ker_timer_start(s->pid, TRANSMIT_TIMER, TRANSMIT_INTERVAL);
+				sys_timer_start(TRANSMIT_TIMER, TRANSMIT_INTERVAL, TIMER_REPEAT);
 			}
 			else
 			{
@@ -83,7 +81,7 @@ static int8_t module(void *state, Message *msg)
 					//If the the pointer that was previously passed to TPSN is now NULL, then allocate
 					//memory. Otherwise use the same buffer
 					if(s->tpsn_ptr == NULL)
-						s->tpsn_ptr = (tpsn_t *)ker_malloc(sizeof(tpsn_t), s->pid);
+						s->tpsn_ptr = (tpsn_t *)sys_malloc(sizeof(tpsn_t));
 						
 					s->tpsn_ptr->mod_id = s->pid;
 					s->tpsn_ptr->msg_type = MSG_TPSN_REPLY;
@@ -109,14 +107,14 @@ static int8_t module(void *state, Message *msg)
 			post_uart(s->pid, s->pid, MSG_TPSN_REPLY, sizeof(s->tpsn_ptr->clock_drift), &s->tpsn_ptr->clock_drift, 0, UART_ADDRESS);
 			
 			//The pointer needs both to be freed and to be set to NULL, since ker_free doesn't do the latter
-			ker_free(s->tpsn_ptr);
+			sys_free(s->tpsn_ptr);
 			s->tpsn_ptr = NULL;
 			break;
 		}
 		
 		case MSG_FINAL:
 		{
-			ker_timer_stop(s->pid, TRANSMIT_TIMER);
+			sys_timer_stop(TRANSMIT_TIMER);
 			return SOS_OK;
 		}
 
