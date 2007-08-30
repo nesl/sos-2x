@@ -2,11 +2,11 @@
 # PROJ is the file name of your module.
 #PROJ = tpsn_app
 PROJ = test_tpsn
-ROOTDIR = ../../../..
+ROOTDIR = ../../../../..
 #SRCS += tpsn.c test_tpsn.c
 
 #include $(ROOTDIR)/config/Makerules
 include $(ROOTDIR)/modules/Makerules
 
-vpath tpsn.c $(ROOTDIR)/modules/tpsn/
+vpath tpsn.c $(ROOTDIR)/modules/timesync/tpsn/
 vpath test_tpsn.c .

@@ -7,7 +7,7 @@
 #include <sys_module.h>
 #define LED_DEBUG
 #include <led_dbg.h>
-#include <tpsn/tpsn.h>
+#include <timesync/tpsn/tpsn.h>
 
 #define TRANSMIT_TIMER 0
 
