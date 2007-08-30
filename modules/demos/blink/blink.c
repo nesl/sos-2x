@@ -107,6 +107,8 @@ static int8_t blink_msg_handler(void *state, Message *msg)
 	   * Stop the timer
 	   */
 	  sys_timer_stop(BLINK_TID);
+      sys_led(LED_GREEN_OFF);
+      sys_led(LED_RED_OFF);
 	  DEBUG("Blink Stop\n");
 	  break;
 	}
