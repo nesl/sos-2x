@@ -8,6 +8,22 @@ static inline uint32_t ticks_to_msec(uint32_t ticks) {
   return ((ticks >> 5) * 1000) >> 10;
 }
 
+#ifdef TMOTE_PLATFORM
+/**
+ * The following parameters are TMote specific.
+ * The TMote uses the 16bit TimerB of the msp430 for system time, but
+ * ker_systime32 still returns a 32bit counter since we use the overflow
+ * interrupt to track the higher par.
+ *
+ **/
+
+//#define PROPAGATION_DELAY_FLOAT 
+#define AVG_PROPAGATION_DELAY 100 // this is the propagation delay in ticks, needs to be measured.
+#define SIGMA 10 // not sure about that
+#define INT_MAX_GTIME 0x7F000000
+//#define FLOAT_MAX_GTIME (((0x7F000000 >> 5) * 1000) >> 10) // 0x7F000000 in milliseconds
+
+#endif
 
 /**
  * @brief initialize systime kernel device
