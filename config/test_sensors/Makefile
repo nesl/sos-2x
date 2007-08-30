@@ -1,5 +1,6 @@
 # -*-Makefile-*-
 # Testing ALL sensors on Tmote Sky
+# NOTE: This is for testing the new sensing sub-system only.
 
 PROJ = test_sensors_app
 MODE = new_sensing_api
