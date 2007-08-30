@@ -30,6 +30,7 @@ static inline uint32_t msec_to_ticks(uint32_t msec) {
   return (SYSTIME_FREQUENCY*temp + ((msec - temp*10)*SYSTIME_FREQUENCY)/10);
 }
  
+#ifdef MICA2_PLATFORM
 // 1230 microseconds is the propogation delay (154 clock ticks, if the resolution
 // of the timer is 8 microseconds/tick)
 // SIGMA shows the normal variance of the propagation delay. It is 0.32 microseconds 
@@ -45,7 +46,7 @@ static inline uint32_t msec_to_ticks(uint32_t msec) {
 #define TIMER3_MAX_GTIME (0x7F00)
 #define INT_MAX_GTIME (TIMER3_MAX_GTIME*0x10000)
 #define FLOAT_MAX_GTIME (18495715) //0x7F000000 in milliseconds
-
+#endif
 
 
 /**
