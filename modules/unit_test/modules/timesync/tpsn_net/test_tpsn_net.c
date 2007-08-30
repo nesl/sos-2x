@@ -106,6 +106,7 @@ static int8_t test_tpsn_net_module_handler(void *state, Message *msg)
             msg_global_time_send_t* datamsg = (msg_global_time_send_t*) sys_msg_take_data(msg);
             LED_DBG(LED_YELLOW_TOGGLE);
             sys_post_uart(s->pid, MSG_GLOBAL_TIME_SEND, sizeof(msg_global_time_send_t), datamsg, SOS_MSG_RELEASE, BCAST_ADDRESS);
+            break;
 
         }
 		
@@ -127,7 +128,7 @@ static int8_t test_tpsn_net_module_handler(void *state, Message *msg)
 }
 
 #ifndef _MODULE_
-mod_header_ptr test_tpsn_get_header()
+mod_header_ptr test_tpsn_net_get_header()
 {
 	return sos_get_header_address(mod_header);
 }

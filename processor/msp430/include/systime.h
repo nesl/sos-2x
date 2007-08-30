@@ -8,6 +8,10 @@ static inline uint32_t ticks_to_msec(uint32_t ticks) {
   return ((ticks >> 5) * 1000) >> 10;
 }
 
+static inline uint32_t msec_to_ticks(uint32_t msec) {
+    return ((msec << 10) / 1000) << 5;
+}
+
 #ifdef TMOTE_PLATFORM
 /**
  * The following parameters are TMote specific.

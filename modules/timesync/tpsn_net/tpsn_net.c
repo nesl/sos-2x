@@ -8,10 +8,11 @@
 #define LED_DEBUG
 #include <led_dbg.h>
 #include <timesync/tpsn/tpsn.h>
+#include <systime.h> // needed for msec_to_ticks
 #include "tpsn_net.h"
 
 // max time before we need a refresh
-#define REFRESH_INTERVAL (60lu*1024lu)
+#define REFRESH_INTERVAL (msec_to_ticks(30*1024))
 
 #define ADV_TIMER_ID 0
 
@@ -90,7 +91,7 @@ static int8_t tpsn_net_module_handler(void *state, Message *msg)
 
             if(s->sync_state == SYNCED){
                 // we are synced, and thus had at least one time sync exchange
-                uint8_t do_refresh = 0;
+                uint32_t delta_refresh = 0;
                 uint32_t cur_time = sys_time32();
                 // if we are level 1, then just return our time
                 if(s->level == 1){
@@ -99,16 +100,12 @@ static int8_t tpsn_net_module_handler(void *state, Message *msg)
                 } else {
                     // check for overflow
                     if(cur_time < s->last_refresh){
-                        if( (uint32_t)(0xFFFFFFFF - s->last_refresh) + cur_time > REFRESH_INTERVAL){
-                            do_refresh = (0xFFFFFFFF - s->last_refresh) + cur_time;
-                        }
+                        delta_refresh = (0xFFFFFFFF - s->last_refresh) + cur_time;
                     } else {
-                        if( cur_time - s->last_refresh > REFRESH_INTERVAL){
-                            do_refresh = cur_time - s->last_refresh;
-                        }
+                        delta_refresh = cur_time - s->last_refresh;
                     }
-                    if (do_refresh > 0){
-                        DEBUG("TPSN_NET: Refresh needed refresh: %d\n", do_refresh);
+                    if (delta_refresh > REFRESH_INTERVAL){
+                        DEBUG("TPSN_NET: Refresh needed refresh: %d\n", delta_refresh);
                         if(s->tpsn_ptr == NULL)
                             s->tpsn_ptr = (tpsn_t*) sys_malloc(sizeof(tpsn_t));
 
@@ -118,7 +115,7 @@ static int8_t tpsn_net_module_handler(void *state, Message *msg)
                         sys_post(TPSN_TIMESYNC_PID, MSG_GET_INSTANT_TIMESYNC, sizeof(tpsn_t), s->tpsn_ptr, 0);
                     }
                     time_reply_msg->time = time_msg->time + s->clock_drift;
-                    time_reply_msg->refreshed = do_refresh;
+                    time_reply_msg->refreshed = delta_refresh;
                 }
             } else {
                 time_reply_msg->time = NOT_SYNCED;
