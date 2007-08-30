@@ -44,4 +44,5 @@ char mod_pid_name[][256] = {
     "Temperature      ",           // 167
 	"SHT1x sensor     ",		   // 168
     "Battery Voltage  ",           // 169
+    "TPSN Net         ",           // 170
 };

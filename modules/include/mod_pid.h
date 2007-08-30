@@ -142,6 +142,9 @@ enum {
   //! 169 - Battery Voltage Sensor
   BATTERY_SENSOR_PID = (APP_MOD_MIN_PID + 41),
 
+  //! 170 - TPSN Network Module
+  TPSN_NET_PID = (APP_MOD_MIN_PID + 42),
+
 //! PLEASE add the name to modules/mod_pid.c
 };
 

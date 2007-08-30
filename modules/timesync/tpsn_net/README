@@ -1,0 +1,3 @@
+This module depends on the tpsn module. It provides a network
+wide time syncronization and easy to use sync utilities for other
+modules.
