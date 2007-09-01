@@ -135,8 +135,8 @@ int8_t uart_startTransceiverTx( uint8_t *msg, uint8_t msg_len, uint8_t flags) {
 		//DEBUG("uart_startTransceiverTx Fail!!! ***\n");
 		return -EBUSY;
 	}
-
-	state[TX].flags = UART_SYS_SHARED_FLAGS_MSK & flags;  // get shared flags
+  
+  state[TX].flags = UART_SYS_SHARED_FLAGS_MSK & flags;  // get shared flags
 	if (state[TX].flags & UART_SOS_MSG_FLAG) {
 		state[TX].msgHdr = (Message*)msg;
 		state[TX].msgLen = state[TX].msgHdr->len; // if msg->len != msg_len ???
@@ -149,6 +149,11 @@ int8_t uart_startTransceiverTx( uint8_t *msg, uint8_t msg_len, uint8_t flags) {
 	state[TX].state = UART_HDLC_START;
 	state[TX].hdlc_state = HDLC_START;
 
+  if(state[TX].msgHdr->type == MSG_TIMESTAMP){
+    uint32_t timestp = ker_systime32();
+    memcpy(state[TX].msgHdr->data, (uint8_t*)(&timestp),sizeof(uint32_t));
+  }
+	
 	uart_enable_tx();
 	uart_setByte(HDLC_FLAG);
 	//DEBUG("uart_startTransceiverTx Start!!! ***\n");
@@ -554,6 +559,11 @@ uart_recv_interrupt() {
 #ifndef NO_SOS_UART_MGR
 						set_uart_address(entohs(state[RX].msgHdr->saddr));
 #endif
+            if(state[RX].msgHdr->type == MSG_TIMESTAMP){
+              uint32_t timestp = ker_systime32();
+              memcpy(((uint8_t*)(state[RX].msgHdr->data) + sizeof(uint32_t)),(uint8_t*)(&timestp),sizeof(uint32_t));
+
+            }
 						handle_incoming_msg(state[RX].msgHdr, SOS_MSG_UART_IO);
 						state[RX].msgHdr = NULL;
 					} else {

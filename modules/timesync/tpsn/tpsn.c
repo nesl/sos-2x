@@ -157,7 +157,11 @@ static int8_t module(void *state, Message *msg)
 					memcpy(tpsn_reply_ptr->previous_time, tpsn_req_ptr->time, sizeof(tpsn_req_ptr->time));
 					tpsn_reply_ptr->type = TPSN_REPLY;					
 					tpsn_reply_ptr->seq_no = tpsn_req_ptr->seq_no;
-					sys_post_net(s->pid, MSG_TIMESTAMP, sizeof(tpsn_reply_t), tpsn_reply_ptr, SOS_MSG_RELEASE, msg->saddr);
+                    if(msg->saddr == UART_ADDRESS){
+					    sys_post_uart(s->pid, MSG_TIMESTAMP, sizeof(tpsn_reply_t), tpsn_reply_ptr, SOS_MSG_RELEASE, msg->saddr);
+                    } else {
+					    sys_post_net(s->pid, MSG_TIMESTAMP, sizeof(tpsn_reply_t), tpsn_reply_ptr, SOS_MSG_RELEASE, msg->saddr);
+                    }
 					break;					
 				}
 				case TPSN_REPLY:
