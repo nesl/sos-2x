@@ -43,11 +43,12 @@ static inline uint32_t msec_to_ticks(uint32_t msec) {
 #define PROPAGATION_DELAY_FLOAT 1.23F
 #define AVG_PROPAGATION_DELAY 154
 #define SIGMA 10
+#endif
+
+
 #define TIMER3_MAX_GTIME (0x7F00)
 #define INT_MAX_GTIME (TIMER3_MAX_GTIME*0x10000)
 #define FLOAT_MAX_GTIME (18495715) //0x7F000000 in milliseconds
-#endif
-
 
 /**
  * @brief initialize systime kernel device
