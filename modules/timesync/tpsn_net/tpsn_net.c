@@ -69,6 +69,7 @@ static int8_t tpsn_net_module_handler(void *state, Message *msg)
 	{
 		case MSG_INIT:
 		{
+
             msg_adv_level_t* msg_adv_level = (msg_adv_level_t*)sys_malloc(sizeof(msg_adv_level_t));
 			DEBUG("TPSN NET: Started\n");
 			s->pid = msg->did;
@@ -166,7 +167,8 @@ static int8_t tpsn_net_module_handler(void *state, Message *msg)
 
         case MSG_ADV_LEVEL:
         {
-            if ( s->sync_state == SYNCED ){
+            // FIXME: only allow level 1 to reply for now!
+            if ( s->sync_state == SYNCED && s->level < 2){
                 msg_adv_level_t* msg_adv_level = (msg_adv_level_t*)sys_malloc(sizeof(msg_adv_level_t));
                 msg_adv_level->level = s->level;
                 sys_post_net(s->pid, MSG_ADV_REPLY, sizeof(msg_adv_level_t), msg_adv_level, SOS_MSG_RELEASE, msg->saddr);

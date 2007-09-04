@@ -41,7 +41,7 @@
 #include <systime.h>
 #include "tpsn.h"
 
-#define UART_DEBUG 
+//#define UART_DEBUG 
 
 enum {TPSN_REQUEST, TPSN_REPLY};
 enum {EMPTY, FULL};
