@@ -149,7 +149,6 @@ setup:
 	$(INSTALLER) --wr_fuse_e=0xfe
 
 check: $(PROJ).i
-	@$(ROOTDIR)/tools/verify/check $(PROJ).i $(ROOTDIR) $(QUIET)
 
 clean:
 	rm -f *.sos *.o *.s *.srec *.elf *.lst $(PROJ).map $(PROJ).exe $(PROJ).cil.c \

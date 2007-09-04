@@ -133,10 +133,6 @@ all:
 install: $(PLATFORM)_install
 
 check: $(SRCS:.c=.i)
-	for i in `ls *.i`; do \
-        echo "# Warnings for file $$i:"; \
-        $(ROOTDIR)/tools/verify/check $$i $(ROOTDIR) $(QUIET); \
-    done
  
 clean:
 	rm -f *.o *.srec *.ihex *.elf *.lst $(PROJ).map $(PROJ).exe
