@@ -78,7 +78,7 @@ static volatile uint8_t vmac_send_state;
 /*************************************************************************
  * define the maximum number retry times for sending a packet            *
  *************************************************************************/
-#define MAX_RETRIES		3
+#define MAX_RETRIES		5
 
 /*************************************************************************
  * define the maximum number of messages in the MAC queue                *
@@ -141,6 +141,14 @@ static uint8_t seq_count;
  *************************************************************************/
 static uint8_t retry_count;
 
+
+/*************************************************************************
+ * Define arrays for duplicate count                                     *
+ *************************************************************************/
+#define NUM_DUP_CHECK  2
+static uint16_t dup_addr[NUM_DUP_CHECK];
+static uint8_t dup_seq[NUM_DUP_CHECK];
+static uint8_t oldest_dup;
 
 /*************************************************************************
  * get sequence number                                                   *
@@ -473,6 +481,7 @@ void _MacRecvAck(uint8_t ack_seq)
  *************************************************************************/
 void _MacRecvCallBack(int16_t timestamp)
 {
+    uint8_t i;
 #ifdef SOS_USE_PREEMPTION
   HAS_PREEMPTION_SECTION;
   // disable preemption
@@ -503,6 +512,47 @@ void _MacRecvCallBack(int16_t timestamp)
 		ker_free(vd.payload);
 		return;
 	}
+    // Check for duplicates
+    if (ppdu.mpdu.daddr != BCAST_ADDRESS)
+    {
+        uint8_t found = 0;
+        for(i=0; i<NUM_DUP_CHECK; i++)
+        {
+            if(ppdu.mpdu.saddr == dup_addr[i])
+            {
+                if(ppdu.mpdu.seq == dup_seq[i])
+                {
+                    // duplicate message
+                    ker_free(vd.payload);
+                    return;
+                } else {
+                    // same address, but different seq
+                    dup_seq[i] = ppdu.mpdu.seq;
+                    found = 1;
+                    break;
+                }
+            }
+        }
+        if(!found){
+            // not an entry yet. Find an empty spot, or overwrite one
+            found = 0;
+            for(i=0; i<NUM_DUP_CHECK; i++)
+            {
+                if(dup_addr[i] == BCAST_ADDRESS){
+                    dup_addr[i] = ppdu.mpdu.saddr;
+                    dup_seq[i] = ppdu.mpdu.seq;
+                    found = 1;
+                    break;
+                }
+            }
+            if(!found){
+                // overwrite oldest
+                dup_addr[oldest_dup] = ppdu.mpdu.saddr;
+                dup_seq[oldest_dup] = ppdu.mpdu.seq;
+                oldest_dup = (oldest_dup + 1)%NUM_DUP_CHECK;
+            }
+        }
+    }
 
 	Message *msg = msg_create();
 	if( msg == NULL ) {
@@ -567,6 +617,7 @@ static int16_t MacBackoff_congestionBackoff(int8_t retries)
  *************************************************************************/
 void mac_init()
 {
+    uint8_t i;
 	Radio_Init();
 	Radio_Set_Channel(RADIO_CHANNEL);
 	//Radio_Set_Channel(13);
@@ -583,6 +634,11 @@ void mac_init()
 	mq_init(&vmac_pq);	//! Initialize sending queue
 	resetSeq();		//set seq_count 0
 	retry_count = 0; 	//set retries 0
+    for(i=0; i<NUM_DUP_CHECK; i++){
+        dup_addr[i] = BCAST_ADDRESS;
+        dup_seq[i] = 0;
+    }
+    oldest_dup = 0;
 
 	vmac_send_state = VMAC_SEND_STATE_IDLE;
 	vmac_msg = NULL;
