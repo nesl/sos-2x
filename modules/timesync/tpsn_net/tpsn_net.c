@@ -5,7 +5,7 @@
  * Module needs to include <sys_module.h>
  */
 #include <sys_module.h>
-#define LED_DEBUG
+//#define LED_DEBUG
 #include <led_dbg.h>
 #include <timesync/tpsn/tpsn.h>
 #include <systime.h> // needed for msec_to_ticks
@@ -76,6 +76,7 @@ static int8_t tpsn_net_module_handler(void *state, Message *msg)
 			s->tpsn_ptr = NULL;
             s->level = -1;
             s->parent_id = 0;
+            s->last_refresh = 0;
             s->sync_state = INIT;
 
             // try to join the sync tree
@@ -101,10 +102,9 @@ static int8_t tpsn_net_module_handler(void *state, Message *msg)
                 } else {
                     // check for overflow
                     if(cur_time < s->last_refresh){
-                        delta_refresh = (0xFFFFFFFF - s->last_refresh) + cur_time;
-                    } else {
-                        delta_refresh = cur_time - s->last_refresh;
+                        cur_time += 0x7F000000;
                     }
+                    delta_refresh = cur_time - s->last_refresh;
                     if (delta_refresh > REFRESH_INTERVAL){
                         DEBUG("TPSN_NET: Refresh needed refresh: %d\n", delta_refresh);
                         if(s->tpsn_ptr == NULL)
@@ -136,6 +136,7 @@ static int8_t tpsn_net_module_handler(void *state, Message *msg)
             } else {
                 DEBUG("TPSN_NET: clock offset with node %d is %d, synctime: %d\n", s->tpsn_ptr->node_id, s->tpsn_ptr->clock_drift, sys_time32() + s->tpsn_ptr->clock_drift);
             }
+            sys_led(LED_RED_TOGGLE);
             s->clock_drift = s->tpsn_ptr->clock_drift;
             s->last_refresh = sys_time32();
 

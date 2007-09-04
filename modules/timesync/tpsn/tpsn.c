@@ -138,7 +138,6 @@ static int8_t module(void *state, Message *msg)
 			tpsn_req_ptr->type = TPSN_REQUEST;
 			tpsn_req_ptr->seq_no = s->current_seq_no-1;
 			DEBUG("TPSN: Transmitting TPSN packet to node %d with seq_no=%d\n", tpsn_ptr->node_id, tpsn_req_ptr->seq_no);			
-			LED_DBG(LED_GREEN_TOGGLE);
 			sys_post_net(s->pid, MSG_TIMESTAMP, sizeof(tpsn_req_t), tpsn_req_ptr, SOS_MSG_RELEASE, tpsn_ptr->node_id);
 		
 			break;
@@ -150,7 +149,8 @@ static int8_t module(void *state, Message *msg)
 			{
 				case TPSN_REQUEST:
 				{
-					LED_DBG(LED_GREEN_TOGGLE);
+			        LED_DBG(LED_YELLOW_TOGGLE);
+					//LED_DBG(LED_GREEN_TOGGLE);
 					DEBUG("TPSN: Received TPSN_REQUEST (seq_no=%d) from node %d\n", tpsn_req_ptr->seq_no, msg->saddr);
 					DEBUG("TPSN: Transmitting TPSN_REPLY to node %d at time %d\n", msg->saddr, ker_systime32());
 					tpsn_reply_t *tpsn_reply_ptr = (tpsn_reply_t *)sys_malloc(sizeof(tpsn_reply_t));
@@ -167,7 +167,7 @@ static int8_t module(void *state, Message *msg)
 				case TPSN_REPLY:
 				{
 					uint8_t return_msg_type;
-					LED_DBG(LED_YELLOW_TOGGLE);
+					//LED_DBG(LED_YELLOW_TOGGLE);
 
 					DEBUG("TPSN: Received TPSN_REPLY from node %d\n", msg->saddr);
 					tpsn_reply_t *tpsn_reply_ptr = (tpsn_reply_t *)msg->data;
