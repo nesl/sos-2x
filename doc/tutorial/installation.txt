@@ -505,6 +505,8 @@ are already included in the kernel versions >= 2.6.20
 
 - GDB 6.0: The instructions are taken from this German 
 link:http://www.mikrocontroller.net/articles/MSPGCC#gdb[website].
+- On a fresh Ubuntu installation, make sure you have the following things
+installed: 'apt-get install gcc-3.4 ncurses-dev
 
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -563,8 +565,8 @@ Finally, execute
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 $ make
-$ mv libHIL.so /usr/local/lib
-$ ldconfig
+$ mv libHIL.so $SOSMSPTOOLDIR/lib
+$ sudo ldconfig
 $ cd ../..
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -578,17 +580,28 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 $ chmod +x msp430-gdbproxy
 $ mv msp430-gdbproxy $SOSMSPTOOLDIR/bin
-$ mv libMSP430.so /usr/local/lib/
+$ mv libMSP430.so $SOSMSPTOOLDIR/lib/
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Add a rule to udev to select an appropriate configuration of TI USB-serial 
 converter. Look link:http://www.moteiv.com/community/Debugging_Tmote_Sky_with_GDB[here]
-for exact details.
+for exact details. Note that the udev rule file for ubuntu must be called
+"26-ti.rules", instead of "026_ti" or else ubuntu won't detect the TI
+USB-serial converter.
+
+- Make sure that you set the LD_LIBRARY_PATH in your .bashrc as 'export
+LD_LIBRARY_PATH=$SOSMSPTOOLDIR/lib'
 
 - Follow the usage of msp430-gdbproxy and msp430-gdb given 
 link:http://www.eecs.harvard.edu/~mdw/proj/tmote-gdb/[here] to debug your code.
 Add CFLAGS += -g to $SOSROOT/processor/msp430/Makerules before compiling
 your code. Use .elf extension intead of .exe as described in that website.
+An example execution for msp430-gdbproxy looks like this:
+
+[c]
+code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+msp430-gdbproxy --port=200 msp430 /dev/ttyUSB0
+code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - msp430-gdbproxy might complain of older/incompatible firmware version on the 
 TI USB FET when you first connect it to your computer. Follow instructions
