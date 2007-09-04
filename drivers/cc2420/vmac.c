@@ -360,7 +360,7 @@ static void radio_msg_send(Message *msg)
 		}
 		sosmsg_to_mac(msg, &ppdu);
 
-		if(msg->daddr==BCAST_ADDRESS) {
+        if(msg->daddr==BCAST_ADDRESS) {
 			ppdu.mpdu.fcf = BASIC_RF_FCF_NOACK;     //Broadcast: No Ack
 		} else {
 			//ppdu.mpdu.fcf = BASIC_RF_FCF_NOACK;     //Broadcast: No Ack
@@ -375,7 +375,8 @@ static void radio_msg_send(Message *msg)
 		timestamp_outgoing(msg, ker_systime32());
 		Radio_Send_Pack(&vd, &timestamp);
 	
-		if( msg->daddr == BCAST_ADDRESS ) {
+        // do not retransmit broadcast messages nor timestamps!
+		if( msg->daddr == BCAST_ADDRESS) {
 		//if( 1 ) {
 			vmac_send_state = VMAC_SEND_STATE_IDLE;
 			retry_count = 0;
@@ -481,7 +482,6 @@ void _MacRecvAck(uint8_t ack_seq)
  *************************************************************************/
 void _MacRecvCallBack(int16_t timestamp)
 {
-    uint8_t i;
 #ifdef SOS_USE_PREEMPTION
   HAS_PREEMPTION_SECTION;
   // disable preemption
@@ -512,47 +512,6 @@ void _MacRecvCallBack(int16_t timestamp)
 		ker_free(vd.payload);
 		return;
 	}
-    // Check for duplicates
-    if (ppdu.mpdu.daddr != BCAST_ADDRESS)
-    {
-        uint8_t found = 0;
-        for(i=0; i<NUM_DUP_CHECK; i++)
-        {
-            if(ppdu.mpdu.saddr == dup_addr[i])
-            {
-                if(ppdu.mpdu.seq == dup_seq[i])
-                {
-                    // duplicate message
-                    ker_free(vd.payload);
-                    return;
-                } else {
-                    // same address, but different seq
-                    dup_seq[i] = ppdu.mpdu.seq;
-                    found = 1;
-                    break;
-                }
-            }
-        }
-        if(!found){
-            // not an entry yet. Find an empty spot, or overwrite one
-            found = 0;
-            for(i=0; i<NUM_DUP_CHECK; i++)
-            {
-                if(dup_addr[i] == BCAST_ADDRESS){
-                    dup_addr[i] = ppdu.mpdu.saddr;
-                    dup_seq[i] = ppdu.mpdu.seq;
-                    found = 1;
-                    break;
-                }
-            }
-            if(!found){
-                // overwrite oldest
-                dup_addr[oldest_dup] = ppdu.mpdu.saddr;
-                dup_seq[oldest_dup] = ppdu.mpdu.seq;
-                oldest_dup = (oldest_dup + 1)%NUM_DUP_CHECK;
-            }
-        }
-    }
 
 	Message *msg = msg_create();
 	if( msg == NULL ) {
@@ -579,7 +538,51 @@ void _MacRecvCallBack(int16_t timestamp)
 		uint32_t timestp = ker_systime32();
 		memcpy(((uint8_t*)(msg->data) + sizeof(uint32_t)),(uint8_t*)(&timestp),sizeof(uint32_t));
 	}
-	timestamp_incoming(msg, ker_systime32());
+    timestamp_incoming(msg, ker_systime32());
+
+	// Check for duplicates
+    if (msg->saddr != BCAST_ADDRESS)
+    {
+        uint8_t found = 0;
+        uint8_t i;
+        for(i=0; i<NUM_DUP_CHECK; i++)
+        {
+            if(msg->saddr == dup_addr[i])
+            {
+                if(ppdu.mpdu.seq == dup_seq[i])
+                {
+                    // duplicate message
+                    ker_free(vd.payload);
+                    return;
+                } else {
+                    // same address, but different seq
+                    dup_seq[i] = ppdu.mpdu.seq;
+                    found = 1;
+                    break;
+                }
+            }
+        }
+        if(!found){
+            // not an entry yet. Find an empty spot, or overwrite one
+            found = 0;
+            for(i=0; i<NUM_DUP_CHECK; i++)
+            {
+                if(dup_addr[i] == BCAST_ADDRESS){
+                    dup_addr[i] = msg->saddr;
+                    dup_seq[i] = ppdu.mpdu.seq;
+                    found = 1;
+                    break;
+                }
+            }
+            if(!found){
+                // overwrite oldest
+                dup_addr[oldest_dup] = msg->saddr;
+                dup_seq[oldest_dup] = ppdu.mpdu.seq;
+                oldest_dup = (oldest_dup + 1)%NUM_DUP_CHECK;
+            }
+        }
+    }
+
 	handle_incoming_msg(msg, SOS_MSG_RADIO_IO);
 
 #ifdef SOS_USE_PREEMPTION
