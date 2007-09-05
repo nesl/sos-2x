@@ -22,6 +22,21 @@ typedef struct
 
 typedef struct
 {
+    uint32_t time[2];
+    uint8_t type;
+    uint8_t seq_no;
+} PACK_STRUCT tpsn_req_t;
+
+typedef struct
+{
+    uint32_t time[2];
+    uint8_t type;
+    uint8_t seq_no;
+    uint32_t previous_time[2];
+} PACK_STRUCT tpsn_reply_t;
+
+typedef struct
+{
     int8_t level;
 } PACK_STRUCT msg_adv_level_t;
 
