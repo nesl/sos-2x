@@ -65,24 +65,21 @@ static int8_t test_tpsn_net_module_handler(void *state, Message *msg)
 	app_state_t *s = (app_state_t *) state;
 	MsgParam *p = (MsgParam*)(msg->data);
 	
-	/**
-	 * Switch to the correct message handler
-	 */
 	switch (msg->type)
 	{
 		case MSG_INIT:
 		{
-			s->pid = msg->did;
-            sys_register_isr(0, USERINT_FID);
+		  s->pid = msg->did;
+		  sys_register_isr(0, USERINT_FID);		  
+		  s->state = 0;
 
-            s->state = 0;
-            if(sys_id() == 0)
-                sys_timer_start(TRANSMIT_TIMER, TRANSMIT_INTERVAL, TIMER_REPEAT);
-
-            sys_led(LED_RED_OFF);
-            sys_led(LED_GREEN_OFF);
-            sys_led(LED_YELLOW_OFF);
-			return SOS_OK;
+		  // If master node, start the transmit_timer
+		  if(sys_id() == 0) sys_timer_start(TRANSMIT_TIMER, TRANSMIT_INTERVAL, TIMER_REPEAT);
+		  
+		  sys_led(LED_RED_OFF);
+		  sys_led(LED_GREEN_OFF);
+		  sys_led(LED_YELLOW_OFF);
+		  break;
 		}
     	case MSG_GLOBAL_TIME_REPLY:
 		{
@@ -115,12 +112,15 @@ static int8_t test_tpsn_net_module_handler(void *state, Message *msg)
                             s->state = 0;
                         } else {
                             uint32_t timestamp;
-                            msg_global_time_send_t* msg_global_time_send = (msg_global_time_send_t*)sys_malloc(sizeof(msg_global_time_send_t));
+                            msg_global_time_send_t* msg_global_time_send;
+
                             sys_led(LED_GREEN_ON);
                             SETBITHIGH(P2OUT, 3);
                             timestamp = sys_time32();
 
-                            msg_global_time_send->addr = sys_id();
+							// Construct the packet and send it over uart
+							msg_global_time_send = (msg_global_time_send_t*)sys_malloc(sizeof(msg_global_time_send_t));
+                            msg_global_time_send->addr = s->pid;
                             msg_global_time_send->time = timestamp;
                             msg_global_time_send->refreshed = 0;
                             sys_post_uart(s->pid, MSG_GLOBAL_TIME_SEND, sizeof(msg_global_time_send_t), msg_global_time_send, SOS_MSG_RELEASE, BCAST_ADDRESS);
