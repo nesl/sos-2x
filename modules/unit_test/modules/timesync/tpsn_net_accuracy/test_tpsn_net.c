@@ -7,10 +7,11 @@
 #include <sys_module.h>
 #include <led.h>
 #include <timesync/tpsn_net/tpsn_net.h>
+#include <bitsop.h>
 
-#define TRANSMIT_TIMER 0
+enum {TRANSMIT_TIMER, DELAY_TIMER};
 
-#define TRANSMIT_INTERVAL 1024
+#define TRANSMIT_INTERVAL 256
 
 #define USERINT_FID 0
 
@@ -29,6 +30,9 @@ typedef struct
 typedef struct 
 {
 	sos_pid_t pid;
+    uint8_t state;
+    uint32_t time;
+    uint32_t refreshed;
 } app_state_t;
 
 /*
@@ -59,7 +63,7 @@ static const mod_header_t mod_header SOS_MODULE_HEADER =
 static int8_t test_tpsn_net_module_handler(void *state, Message *msg)
 {
 	app_state_t *s = (app_state_t *) state;
-	//MsgParam *p = (MsgParam*)(msg->data);
+	MsgParam *p = (MsgParam*)(msg->data);
 	
 	/**
 	 * Switch to the correct message handler
@@ -70,6 +74,11 @@ static int8_t test_tpsn_net_module_handler(void *state, Message *msg)
 		{
 			s->pid = msg->did;
             sys_register_isr(0, USERINT_FID);
+
+            s->state = 0;
+            if(sys_id() == 0)
+                sys_timer_start(TRANSMIT_TIMER, TRANSMIT_INTERVAL, TIMER_REPEAT);
+
             sys_led(LED_RED_OFF);
             sys_led(LED_GREEN_OFF);
             sys_led(LED_YELLOW_OFF);
@@ -77,16 +86,14 @@ static int8_t test_tpsn_net_module_handler(void *state, Message *msg)
 		}
     	case MSG_GLOBAL_TIME_REPLY:
 		{
-            msg_global_time_send_t* msg_global_time_send = (msg_global_time_send_t*)sys_malloc(sizeof(msg_global_time_send_t));
             msg_global_time_t* msg_global_time = (msg_global_time_t*)msg->data;
 
-            sys_led(LED_GREEN_TOGGLE);
-            msg_global_time_send->addr = sys_id();
-            msg_global_time_send->time = msg_global_time->time;
-            msg_global_time_send->refreshed = msg_global_time->refreshed;
-            sys_post_net(s->pid, MSG_GLOBAL_TIME_SEND, sizeof(msg_global_time_send_t), msg_global_time_send, SOS_MSG_RELEASE, 0);
-            //sys_post_uart(s->pid, MSG_GLOBAL_TIME_SEND, sizeof(msg_global_time_send_t), msg_global_time_send, SOS_MSG_RELEASE, BCAST_ADDRESS);
-            break;
+            s->time = msg_global_time->time;
+            s->refreshed = msg_global_time->refreshed;
+
+            sys_timer_start(DELAY_TIMER, sys_rand()%256, TIMER_ONE_SHOT);
+
+           break;
 		}
 
         case MSG_GLOBAL_TIME_SEND:
@@ -95,16 +102,48 @@ static int8_t test_tpsn_net_module_handler(void *state, Message *msg)
             //sys_led(LED_YELLOW_TOGGLE);
             sys_post_uart(s->pid, MSG_GLOBAL_TIME_SEND, sizeof(msg_global_time_send_t), datamsg, SOS_MSG_RELEASE, BCAST_ADDRESS);
             break;
-
         }
-		
-		case MSG_FINAL:
-		{
-			sys_timer_stop(TRANSMIT_TIMER);
-            sys_deregister_isr(0);
-			return SOS_OK;
-		}
+        case MSG_TIMER_TIMEOUT:
+        {
+            switch(p->byte)
+            {
+                case TRANSMIT_TIMER:
+                    {
+                        if (s->state){
+                            sys_led(LED_GREEN_OFF);
+                            SETBITLOW(P2OUT, 3);
+                            s->state = 0;
+                        } else {
+                            uint32_t timestamp;
+                            msg_global_time_send_t* msg_global_time_send = (msg_global_time_send_t*)sys_malloc(sizeof(msg_global_time_send_t));
+                            sys_led(LED_GREEN_ON);
+                            SETBITHIGH(P2OUT, 3);
+                            timestamp = sys_time32();
 
+                            msg_global_time_send->addr = sys_id();
+                            msg_global_time_send->time = timestamp;
+                            msg_global_time_send->refreshed = 0;
+                            sys_post_uart(s->pid, MSG_GLOBAL_TIME_SEND, sizeof(msg_global_time_send_t), msg_global_time_send, SOS_MSG_RELEASE, BCAST_ADDRESS);
+
+                            s->state = 1;
+                        }
+                        break;
+                    }
+                case DELAY_TIMER:
+                    {
+                        msg_global_time_send_t* msg_global_time_send = (msg_global_time_send_t*)sys_malloc(sizeof(msg_global_time_send_t));
+                        sys_led(LED_GREEN_TOGGLE);
+                        msg_global_time_send->addr = sys_id();
+                        msg_global_time_send->time = s->time;
+                        msg_global_time_send->refreshed = s->refreshed;
+                        sys_post_net(s->pid, MSG_GLOBAL_TIME_SEND, sizeof(msg_global_time_send_t), msg_global_time_send, SOS_MSG_RELEASE, 0);
+             
+                        break;
+                    }
+                }
+
+                break;
+            }
 
 		default:
 			return -EINVAL;
