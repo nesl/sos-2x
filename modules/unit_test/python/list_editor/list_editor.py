@@ -23,6 +23,7 @@ class list_editor_gui():
 	self.gui.signal_autoconnect(self)
 	self.w = self.gui.get_widget
 	self.main_window = self.w('main_window')
+	self.main_window.connect('delete-event', gtk.main_quit)
 
 	#set up old test list
 	self.old_test_list_model = gtk.ListStore(int, str)
@@ -104,12 +105,14 @@ class list_editor_gui():
 	self.curr_test = None
 
     def edit_new_test(self, button=None):
+	if len(self.new_list) == 0: return
 	((index, ), cursor) = self.new_test_list_view.get_cursor()
 
 	self.curr_test = index
         self.edit_test(self.new_list[index])
 
     def edit_old_test(self, button=None):
+	if len(self.old_list) == 0: return
 	((index, ), cursor) = self.old_test_list_view.get_cursor()
 
 	self.edit_test(self.old_list[index])
@@ -147,13 +150,20 @@ class list_editor_gui():
 	    self.new_test_list_model.append((i, test.name))
 	    i+=1
 
+    def add_all_to_list(self, button=None):
+	self.new_list += self.old_list
+
+	self.refresh_new_test_list()
+
     def move_to_new_list(self, button=None):
+	if len(self.old_list) == 0: return
 	((index,), cursor) = self.old_test_list_view.get_cursor()
 
 	self.new_list.append(self.old_list[index])
 	self.refresh_new_test_list()
 
     def remove_from_new_list(self, button=None):
+	if len(self.new_list) == 0: return
 	((index,), cursor) = self.new_test_list_view.get_cursor()
 
 	del self.new_list[index]

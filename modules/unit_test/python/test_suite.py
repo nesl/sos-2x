@@ -300,6 +300,7 @@ def configure_tests(test_list_name):
 
 def make_kernel(platform):
     ''' attempts to compiler the kernel for the given platform.  either micaz, mica2, or avrora.
+	1;2A
         if there are any comipilation issues, it informs the user and exits
 	all output from compiliation is saved in $SOSROOT/modules/unit_test/python/kernel.log
 	'''
@@ -323,7 +324,7 @@ def make_kernel(platform):
 
     time.sleep(5)
 
-def install_on_mica(platform, address, port):
+def install_on_board(platform, address, port):
     ''' assuming the kernel has been properly compiled, this will load a blank kernel onto the programming board
         specified by the value in install_port[port].  the group id of the node will be sos_group, and the address
 	of the port is of course port.
@@ -333,8 +334,10 @@ def install_on_mica(platform, address, port):
     global prog
     global sos_group
 
+    if platform == 'tmote':
+	prog = 'bsl'
     if platform != 'avrora':
-	cmd_install = ["make", "-C", "config/blank", "install", "PROG=%s" %prog, "PORT=%s" %install_port[port], "SOS_GROUP=%s" %sos_group, "ADDRESS=%s" %address]
+	cmd_install = ["make", "-C", "config/blank", platform , "install", "PROG=%s" %prog, "PORT=%s" %install_port[port], "SOS_GROUP=%s" %sos_group, "ADDRESS=%s" %address]
     else:
         print "you shouldn't be doing this"
 	os.exit(0)
@@ -346,7 +349,7 @@ def install_on_mica(platform, address, port):
 	print "please press enter when ready"
 
 	raw_input()
-	install_on_mica(platform, address, port)
+	install_on_board(platform, address, port)
 
 
 def install_on_avrora(node_count):
@@ -549,7 +552,7 @@ if __name__ == '__main__':
 		
 		raw_input()
 
-		install_on_mica(target, number_of_nodes - 1, 0)
+		install_on_board(target, number_of_nodes - 1, 0)
 
 		number_of_nodes -= 1
 
@@ -557,7 +560,7 @@ if __name__ == '__main__':
 	    print "please place it on the programming board, and press enter when ready"
 
 	    raw_input()
-	    install_on_mica(target, 0, 0)
+	    install_on_board(target, 0, 0)
 	    print "this is the base station node, please leave it connected to the programming board"
 	else:
 	    # installing on several programming boards, serially
@@ -568,7 +571,7 @@ if __name__ == '__main__':
 	    raw_input()
 
 	    while (number_of_prog > 0):
-		install_on_mica(target, number_of_prog -1, number_of_prog-1)
+		install_on_board(target, number_of_prog -1, number_of_prog-1)
 
 		print "this nodes address is: %d" %(number_of_prog-1)
 		print "the next node will be installed automatically"
