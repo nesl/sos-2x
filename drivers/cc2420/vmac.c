@@ -145,7 +145,7 @@ static uint8_t retry_count;
 /*************************************************************************
  * Define arrays for duplicate count                                     *
  *************************************************************************/
-#define NUM_DUP_CHECK  2
+#define NUM_DUP_CHECK  3
 static uint16_t dup_addr[NUM_DUP_CHECK];
 static uint8_t dup_seq[NUM_DUP_CHECK];
 static uint8_t oldest_dup;
@@ -189,7 +189,7 @@ static void resetSeq()
 {
 	HAS_CRITICAL_SECTION;
 	ENTER_CRITICAL_SECTION();
-	seq_count = 0;
+	seq_count = 1 + ker_rand()%255;
 	LEAVE_CRITICAL_SECTION();
 }
 
@@ -360,7 +360,7 @@ static void radio_msg_send(Message *msg)
 		}
 		sosmsg_to_mac(msg, &ppdu);
 
-        if(msg->daddr==BCAST_ADDRESS) {
+        if(msg->daddr==BCAST_ADDRESS || msg->type == MSG_TIMESTAMP) {
 			ppdu.mpdu.fcf = BASIC_RF_FCF_NOACK;     //Broadcast: No Ack
 		} else {
 			//ppdu.mpdu.fcf = BASIC_RF_FCF_NOACK;     //Broadcast: No Ack
@@ -376,16 +376,16 @@ static void radio_msg_send(Message *msg)
 		Radio_Send_Pack(&vd, &timestamp);
 	
         // do not retransmit broadcast messages nor timestamps!
-		if( msg->daddr == BCAST_ADDRESS) {
+		if( msg->daddr == BCAST_ADDRESS || msg->type == MSG_TIMESTAMP) {
 		//if( 1 ) {
-			vmac_send_state = VMAC_SEND_STATE_IDLE;
 			retry_count = 0;
 			msg_send_senddone(msg, 1, RADIO_PID);
 			vmac_msg = NULL;
+			vmac_send_state = VMAC_SEND_STATE_IDLE;
 			return;
 		} else {
 			
-			if( (retry_count + 1) <= (uint8_t)MAX_RETRIES ) {
+			if( retry_count < (uint8_t)MAX_RETRIES ) {
 				vmac_send_state = VMAC_SEND_STATE_WAIT_FOR_ACK;
 				vmac_msg = msg;
 				//
@@ -398,19 +398,19 @@ static void radio_msg_send(Message *msg)
 				}
 				retry_count++;
 			} else {
-				vmac_send_state = VMAC_SEND_STATE_IDLE;
 				retry_count = 0;
 				msg_send_senddone(vmac_msg, 0, RADIO_PID);  //to release the memory for this msg
 				vmac_msg = NULL;
+				vmac_send_state = VMAC_SEND_STATE_IDLE;
 				if( getMsgNumOfQueue() != 0 ) {
 					post_short( RADIO_PID, RADIO_PID, MSG_VMAC_TX_NEXT_MSG, 0, 0, 0);
 				}
 			}
 		}
 	} else {
-		if( (retry_count + 1) <= (uint8_t)MAX_RETRIES ) {
-			vmac_msg = msg;
+		if( retry_count < (uint8_t)MAX_RETRIES ) {
 			vmac_send_state = VMAC_SEND_STATE_BACKOFF;
+			vmac_msg = msg;
 			if( ker_timer_restart(RADIO_PID, WAKEUP_TIMER_TID, 
 				MacBackoff_congestionBackoff(retry_count)) != SOS_OK ) 	// setup backoff timer
 			{
@@ -419,10 +419,10 @@ static void radio_msg_send(Message *msg)
 			}
 			retry_count++;
 		} else {
-			vmac_send_state = VMAC_SEND_STATE_IDLE;
 			retry_count = 0;
 			msg_send_senddone(vmac_msg, 0, RADIO_PID);  //to release the memory for this msg
 			vmac_msg = NULL;
+			vmac_send_state = VMAC_SEND_STATE_IDLE;
 			if( getMsgNumOfQueue() != 0 ) {
 				post_short( RADIO_PID, RADIO_PID, MSG_VMAC_TX_NEXT_MSG, 0, 0, 0);
 			}
@@ -472,7 +472,7 @@ void radio_msg_alloc(Message *msg)
 void _MacRecvAck(uint8_t ack_seq)
 {
 	if( (vmac_send_state == VMAC_SEND_STATE_WAIT_FOR_ACK) && (getSeq() == ack_seq) ) {
-		//LED_DBG(LED_GREEN_TOGGLE);
+		//LED_DBG(LED_RED_TOGGLE);
 		post_short( RADIO_PID, RADIO_PID, MSG_VMAC_TX_ACKED, 0, 0, 0 );
 	}
 }
@@ -487,6 +487,7 @@ void _MacRecvCallBack(int16_t timestamp)
   // disable preemption
   DISABLE_PREEMPTION();
 #endif
+
 	VMAC_PPDU ppdu;
 	vhal_data vd;
 
@@ -498,7 +499,7 @@ void _MacRecvCallBack(int16_t timestamp)
 	}
 	Radio_Enable_Interrupt();   //enable interrupt
 	vhal_to_mac(&vd, &ppdu);
-/*
+/* This is now done on the chip with the PANID
 	if( ppdu.mpdu.group     != node_group_id ) {	 
 		ker_free(vd.payload);	 
 		Radio_Enable_Interrupt();		//enable interrupt
@@ -552,7 +553,10 @@ void _MacRecvCallBack(int16_t timestamp)
                 if(ppdu.mpdu.seq == dup_seq[i])
                 {
                     // duplicate message
-                    ker_free(vd.payload);
+                    //ker_free(vd.payload);
+                    //properly dispose of the message.
+                    msg->flag |= SOS_MSG_RELEASE;
+                    msg_dispose(msg);
                     return;
                 } else {
                     // same address, but different seq
@@ -584,7 +588,6 @@ void _MacRecvCallBack(int16_t timestamp)
     }
 
 	handle_incoming_msg(msg, SOS_MSG_RADIO_IO);
-
 #ifdef SOS_USE_PREEMPTION
 	ENABLE_GLOBAL_INTERRUPTS();
 	ENABLE_PREEMPTION(NULL);
@@ -635,7 +638,7 @@ void mac_init()
 	ker_permanent_timer_init(&wakeup_timer, RADIO_PID, WAKEUP_TIMER_TID, TIMER_ONE_SHOT);
 
 	mq_init(&vmac_pq);	//! Initialize sending queue
-	resetSeq();		//set seq_count 0
+	resetSeq();		//set seq_count to random initial number
 	retry_count = 0; 	//set retries 0
     for(i=0; i<NUM_DUP_CHECK; i++){
         dup_addr[i] = BCAST_ADDRESS;
