@@ -2,6 +2,8 @@ import pysos
 
 def func(msg):
     (addr, t1, t2) = pysos.unpack('<HLL', msg['data'])
+    if addr == 0:
+        print 50* "-"
     print "addr: ", addr, "time: ", t1, "refreshed: ", t2
 
 srv = pysos.sossrv()

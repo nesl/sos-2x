@@ -120,7 +120,7 @@ static int8_t test_tpsn_net_module_handler(void *state, Message *msg)
 
 							// Construct the packet and send it over uart
 							msg_global_time_send = (msg_global_time_send_t*)sys_malloc(sizeof(msg_global_time_send_t));
-                            msg_global_time_send->addr = s->pid;
+                            msg_global_time_send->addr = sys_id();
                             msg_global_time_send->time = timestamp;
                             msg_global_time_send->refreshed = 0;
                             sys_post_uart(s->pid, MSG_GLOBAL_TIME_SEND, sizeof(msg_global_time_send_t), msg_global_time_send, SOS_MSG_RELEASE, BCAST_ADDRESS);
