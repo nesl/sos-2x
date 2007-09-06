@@ -5,13 +5,13 @@
  * Module needs to include <sys_module.h>
  */
 #include <sys_module.h>
-#define LED_DEBUG
+//#define LED_DEBUG
 #include <led_dbg.h>
 #include <timesync/tpsn_net/tpsn_net.h>
 
 #define TRANSMIT_TIMER 0
 
-#define TRANSMIT_INTERVAL 1024
+#define TRANSMIT_INTERVAL 256
 
 #define MSG_GLOBAL_TIME_SEND (MSG_GLOBAL_TIME_REPLY + 10)
 
@@ -96,8 +96,8 @@ static int8_t test_tpsn_net_module_handler(void *state, Message *msg)
             msg_global_time_send->addr = sys_id();
             msg_global_time_send->time = msg_global_time->time;
             msg_global_time_send->refreshed = msg_global_time->refreshed;
-            sys_post_net(s->pid, MSG_GLOBAL_TIME_SEND, sizeof(msg_global_time_send_t), msg_global_time_send, 0, BCAST_ADDRESS);
-            sys_post_uart(s->pid, MSG_GLOBAL_TIME_SEND, sizeof(msg_global_time_send_t), msg_global_time_send, SOS_MSG_RELEASE, BCAST_ADDRESS);
+            sys_post_net(s->pid, MSG_GLOBAL_TIME_SEND, sizeof(msg_global_time_send_t), msg_global_time_send, SOS_MSG_RELEASE, BCAST_ADDRESS);
+            //sys_post_uart(s->pid, MSG_GLOBAL_TIME_SEND, sizeof(msg_global_time_send_t), msg_global_time_send, SOS_MSG_RELEASE, BCAST_ADDRESS);
             break;
 		}
 
