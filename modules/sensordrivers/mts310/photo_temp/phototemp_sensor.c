@@ -89,11 +89,9 @@ int8_t phototemp_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, uin
 
 	// post data ready message here
 	if ((flags & 0xC0) == PHOTO_SENSOR_ID) {
-		LED_DBG(LED_YELLOW_TOGGLE);
 		photo_off();
 		sys_sensor_data_ready(MTS310_PHOTO_SID, value, flags);
 	} else {
-		LED_DBG(LED_GREEN_TOGGLE);
 		temp_off();
 		sys_sensor_data_ready(MTS310_TEMP_SID, value, flags);
 	}
@@ -153,6 +151,10 @@ int8_t phototemp_msg_handler(void *state, Message *msg)
 	switch (msg->type) {
 
 		case MSG_INIT:
+			LED_DBG(LED_RED_OFF);
+			LED_DBG(LED_GREEN_OFF);
+			LED_DBG(LED_YELLOW_OFF);
+			LED_DBG(LED_RED_ON);
 			// bind adc channel and register callback pointer
 			sys_adc_proc_bindPort(MTS310_PHOTO_SID, MTS310_PHOTO_HW_CH, PHOTOTEMP_SENSOR_PID, SENSOR_DATA_READY_FID);
 

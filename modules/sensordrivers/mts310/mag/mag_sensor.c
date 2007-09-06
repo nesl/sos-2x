@@ -72,6 +72,7 @@ int8_t magnet_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, uint8_
 	magnet_sensor_state_t *s = (magnet_sensor_state_t*) sys_get_state();
 
 	if(s->callibrate_mode == 0) { // we are NOT calibrating, this is real data
+		LED_DBG(LED_GREEN_TOGGLE);
 		// post data ready message here
 		if (port == MTS310_MAG_0_SID) {
 			sys_sensor_data_ready(MTS310_MAG_0_SID, value, flags);
@@ -144,7 +145,6 @@ int8_t magnet_data_ready_cb(func_cb_ptr cb, uint8_t port, uint16_t value, uint8_
 			}
 
 			else { // we are in the intended middle range
-				LED_DBG(LED_GREEN_TOGGLE);
 
 				if(s->steady_count < STEADY_NUM) {// make sure we are steadily in this range
 					(s->steady_count)++;
@@ -218,8 +218,6 @@ static inline int8_t mag_callibrate(uint8_t x_or_y) {
 
 static int8_t magnet_control(func_cb_ptr cb, uint8_t cmd, void* data) {
 
-	sys_led(LED_YELLOW_ON);
-
 	uint8_t ctx = *(uint8_t*)data;
 	
 	switch (cmd) {
@@ -247,6 +245,7 @@ static int8_t magnet_control(func_cb_ptr cb, uint8_t cmd, void* data) {
 		}
 
 		// POSSIBLE ERROR IN sensor.c,  line 234
+		LED_DBG(LED_RED_TOGGLE);
 
 		// callibrate sensor
 		return mag_callibrate(ctx);
@@ -279,7 +278,10 @@ int8_t magnet_msg_handler(void *state, Message *msg)
 		s->magnet_1_state = MAG_1_SENSOR_ID;
 		sys_sensor_register(MAG_SENSOR_PID, MTS310_MAG_1_SID, SENSOR_CONTROL_FID, (void*)(&s->magnet_1_state));
 
-		sys_led(LED_YELLOW_ON);
+		LED_DBG(LED_YELLOW_OFF);
+		LED_DBG(LED_GREEN_OFF);
+		LED_DBG(LED_RED_OFF);
+		LED_DBG(LED_RED_ON);
 
 		s->callibrate_mode = 0;
 
@@ -298,7 +300,6 @@ int8_t magnet_msg_handler(void *state, Message *msg)
 
 	case MSG_I2C_SEND_DONE:
 
-		LED_DBG(LED_RED_TOGGLE);
 
 		sys_free(s->i2c_data_ptr);
 

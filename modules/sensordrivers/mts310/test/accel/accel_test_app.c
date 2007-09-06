@@ -1,8 +1,7 @@
 /* -*- Mode: C; tab-width:2 -*- */
 /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
 
-#include <module.h>
-#include <malloc.h>
+#include <sys_module.h>
 
 #define LED_DEBUG
 #include <led_dbg.h>
@@ -55,13 +54,12 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 		case MSG_INIT:
 			s->state = ACCEL_TEST_APP_INIT;
 			s->pid = msg->did;
-			ker_timer_init(s->pid, ACCEL_TEST_APP_TID, TIMER_REPEAT);
-			ker_timer_start(s->pid, ACCEL_TEST_APP_TID, ACCEL_TEST_APP_INTERVAL);
-			ker_sensor_enable(s->pid, MTS310_ACCEL_0_SID);
+			sys_timer_start(ACCEL_TEST_APP_TID, ACCEL_TEST_APP_INTERVAL, TIMER_REPEAT);
+			sys_sensor_enable(MTS310_ACCEL_0_SID);
 			break;
 
 		case MSG_FINAL:
-			ker_sensor_disable(s->pid, MTS310_ACCEL_0_SID);
+			sys_sensor_disable(MTS310_ACCEL_0_SID);
 			break;
 
 		case MSG_TIMER_TIMEOUT:
@@ -79,7 +77,7 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 
 					case ACCEL_TEST_APP_ACCEL_0:
 						s->state = ACCEL_TEST_APP_ACCEL_0_BUSY;
-						ker_sensor_get_data(s->pid, MTS310_ACCEL_0_SID);
+						sys_sensor_get_data(MTS310_ACCEL_0_SID);
 						break;
 
 					case ACCEL_TEST_APP_ACCEL_0_BUSY:
@@ -88,7 +86,7 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 						
 					case ACCEL_TEST_APP_ACCEL_1:
 						s->state = ACCEL_TEST_APP_ACCEL_1_BUSY;
-						ker_sensor_get_data(s->pid, MTS310_ACCEL_1_SID);
+						sys_sensor_get_data(MTS310_ACCEL_1_SID);
 						break;
 
 					case ACCEL_TEST_APP_ACCEL_1_BUSY:
@@ -109,14 +107,13 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 
 				LED_DBG(LED_GREEN_TOGGLE);
 
-				data_msg = ker_malloc ( UART_MSG_LEN, s->pid );
+				data_msg = sys_malloc ( UART_MSG_LEN );
 				if ( data_msg ) {
 					data_msg[0] = msg->data[0];
 					data_msg[1] = msg->data[2];
 					data_msg[2] = msg->data[1];
 
-					post_uart ( s->pid,
-							s->pid,
+					sys_post_uart ( s->pid,
 							MSG_DATA_READY,
 							UART_MSG_LEN,
 							data_msg,

@@ -1,7 +1,7 @@
 /* -*- Mode: C; tab-width:2 -*- */
 /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
 
-#include <module.h>
+#include <sys_module.h>
 
 #define LED_DEBUG
 #include <led_dbg.h>
@@ -54,18 +54,17 @@ static int8_t phototemp_test_msg_handler(void *state, Message *msg)
 		case MSG_INIT:
 			s->state = PHOTOTEMP_TEST_APP_INIT;
 			s->pid = msg->did;
-			ker_timer_init(s->pid, PHOTOTEMP_TEST_APP_TID, TIMER_REPEAT);
-			ker_timer_start(s->pid, PHOTOTEMP_TEST_APP_TID, PHOTOTEMP_TEST_APP_INTERVAL);
+			sys_timer_start(PHOTOTEMP_TEST_APP_TID, PHOTOTEMP_TEST_APP_INTERVAL, TIMER_REPEAT);
 			break;
 
 		case MSG_FINAL:
-			ker_sensor_disable(s->pid, MTS310_PHOTO_SID);
-			ker_sensor_disable(s->pid, MTS310_TEMP_SID);
+			sys_sensor_disable(MTS310_PHOTO_SID);
+			sys_sensor_disable(MTS310_TEMP_SID);
 			break;
 
 		case MSG_TIMER_TIMEOUT:
 			{
-				LED_DBG(LED_YELLOW_TOGGLE);
+				LED_DBG(LED_RED_TOGGLE);
 				switch (s->state) {
 					case PHOTOTEMP_TEST_APP_INIT:
 						// do any necessary init here
@@ -77,10 +76,10 @@ static int8_t phototemp_test_msg_handler(void *state, Message *msg)
 						break;
 
 					case PHOTOTEMP_TEST_APP_PHOTO:
-						LED_DBG(LED_GREEN_TOGGLE);
-						ker_sensor_enable(s->pid, MTS310_PHOTO_SID);
+						LED_DBG(LED_YELLOW_TOGGLE);
+						sys_sensor_enable(MTS310_PHOTO_SID);
 						s->state = PHOTOTEMP_TEST_APP_PHOTO_BUSY;
-						ker_sensor_get_data(s->pid, MTS310_PHOTO_SID);
+						sys_sensor_get_data(MTS310_PHOTO_SID);
 						break;
 
 					case PHOTOTEMP_TEST_APP_PHOTO_BUSY:
@@ -88,9 +87,9 @@ static int8_t phototemp_test_msg_handler(void *state, Message *msg)
 						break;
 						
 					case PHOTOTEMP_TEST_APP_TEMP:
-						ker_sensor_enable(s->pid, MTS310_TEMP_SID);
+						sys_sensor_enable(MTS310_TEMP_SID);
 						s->state = PHOTOTEMP_TEST_APP_TEMP_BUSY;
-						ker_sensor_get_data(s->pid, MTS310_TEMP_SID);
+						sys_sensor_get_data(MTS310_TEMP_SID);
 						break;
 
 					case PHOTOTEMP_TEST_APP_TEMP_BUSY:
@@ -98,7 +97,6 @@ static int8_t phototemp_test_msg_handler(void *state, Message *msg)
 						break;
 
 					default:
-						LED_DBG(LED_RED_TOGGLE);
 						s->state = PHOTOTEMP_TEST_APP_INIT;
 						break;
 				}
@@ -110,27 +108,26 @@ static int8_t phototemp_test_msg_handler(void *state, Message *msg)
 				uint8_t *data_msg;
 
 				LED_DBG(LED_GREEN_TOGGLE);
-				data_msg =  ker_malloc ( UART_MSG_LEN, s->pid );
+				data_msg =  sys_malloc ( UART_MSG_LEN );
 				if ( data_msg ) {
 				
 					data_msg[0] = msg->data[0];
 					data_msg[1] = msg->data[2];
 					data_msg[2] = msg->data[1];
 
-					post_uart ( s->pid,
-							s->pid,
+					sys_post_uart ( s->pid,
 							MSG_DATA_READY,
 							UART_MSG_LEN,
 							data_msg,
 							SOS_MSG_RELEASE,
-							UART_ADDRESS);
+							BCAST_ADDRESS);
 				}
 			
 				if (s->state == PHOTOTEMP_TEST_APP_TEMP_BUSY) {
-					ker_sensor_disable(s->pid, MTS310_PHOTO_SID);
+					sys_sensor_disable(MTS310_PHOTO_SID);
 					s->state = PHOTOTEMP_TEST_APP_PHOTO;
 				} else {
-					ker_sensor_disable(s->pid, MTS310_PHOTO_SID);
+					sys_sensor_disable(MTS310_PHOTO_SID);
 					s->state = PHOTOTEMP_TEST_APP_TEMP;
 				}
 			}
