@@ -224,7 +224,7 @@ static int8_t tpsn_net_module_handler(void *state, Message *msg)
                             DEBUG("TPSN_NET: SYNC_TIMER fired. Trying to sync again.\n");
                             start_sync();
                         }
-    
+						break;
                     }
                 default:
                     break;

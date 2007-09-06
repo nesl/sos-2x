@@ -68,10 +68,6 @@ typedef struct Module {
   uint8_t max_sub;
   uint8_t num_sub;
 #endif
-#ifdef USE_PREEMPTION_PROFILER
-  uint32_t average;
-  uint8_t num_runs;
-#endif
 } sos_module_t;
 
 /** 
