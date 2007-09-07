@@ -26,6 +26,7 @@
 #include <kertable_plat.h>      // platform/tmote/include/
 #endif
 
+#include <invent_sensor_init.h>
 
 //----------------------------------------------------------------------------
 //  GLOBAL DATA 
@@ -91,6 +92,10 @@ void hardware_init(void){
 	sos_uart_init();
 #endif
 
+	// I2C
+	//! Limited I2C support for the ARL deployment
+	invent_sensor_init();
+
 	// SPI
 	spi_hardware_init();
 
@@ -99,9 +104,6 @@ void hardware_init(void){
 	//	cc2420_hardware_init();
 	mac_init();
 	//#endif
-
-	// I2C
-	// Currently there is no I2C support
 
 	// ADC
 #ifdef NEW_SENSING_API
