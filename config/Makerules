@@ -92,6 +92,9 @@ endif
 ifeq ($(SB), tmote)
 DEFS += -DTMOTE_SENSOR_BOARD
 endif
+ifeq ($(SB), tmote_invent)
+DEFS += -DTMOTE_INVENT_SENSOR_BOARD
+endif
 ##################################################
 
 SRCS += $(PROJ).c

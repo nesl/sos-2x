@@ -13,6 +13,10 @@
 //#include <kertable_proc.h>      // processor/msp430/include/
 #include <pin_alt_func.h>       // processor/msp430/include/
 
+
+#include <msp430/usart.h>
+
+
 #define LED_DEBUG
 #include <led_dbg.h>
 
@@ -26,7 +30,11 @@
 #include <kertable_plat.h>      // platform/tmote/include/
 #endif
 
+#ifdef NEW_SENSING_API
+#ifdef TMOTE_INVENT_SENSOR_BOARD
 #include <invent_sensor_init.h>
+#endif
+#endif
 
 //----------------------------------------------------------------------------
 //  GLOBAL DATA 
@@ -94,7 +102,11 @@ void hardware_init(void){
 
 	// I2C
 	//! Limited I2C support for the ARL deployment
+#ifdef NEW_SENSING_API
+#ifdef TMOTE_INVENT_SENSOR_BOARD
 	invent_sensor_init();
+#endif
+#endif
 
 	// SPI
 	spi_hardware_init();
