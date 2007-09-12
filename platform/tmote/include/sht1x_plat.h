@@ -26,6 +26,7 @@
 #define make_data_input()    SETBITLOW(P1DIR, 5)
 #define make_clock_output()  SETBITHIGH(P1DIR, 6)
 #define make_enable_output() SETBITHIGH(P1DIR, 7)
+#define select_enable_io()	 SETBITLOW(P1SEL, 7)
 
 #define SHT1x_TEMPERATURE_TIME 240L
 #define SHT1x_HUMIDITY_TIME 70L

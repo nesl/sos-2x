@@ -596,6 +596,9 @@ int8_t sht1x_comm_init() {
 	s.current_request = NULL;
 	reset_active_request_params();
 	s.buf = NULL;
+
+	select_enable_io();
+	make_enable_output();
 	
 	ker_timer_init(SHT1x_COMM_PID, SHT1x_TEMPERATURE_TIMER, TIMER_ONE_SHOT);
 	ker_timer_init(SHT1x_COMM_PID, SHT1x_HUMIDITY_TIMER, TIMER_ONE_SHOT);

@@ -128,7 +128,6 @@ static int8_t sht1x_sensor_feedback(func_cb_ptr cb, sensor_driver_command_t comm
 				case DRIVER_DISABLE: {
 					// Turn ON the sensor, and configure it according to
 					// passed context or default settings.
-                	make_enable_output();
 					s->state = DRIVER_ENABLE;
 					return SOS_OK;
 				}
