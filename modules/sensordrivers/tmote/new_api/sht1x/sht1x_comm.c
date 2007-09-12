@@ -450,7 +450,8 @@ static int8_t task_next_sample() {
 		if (!(s.state & SHT1x_COMM_HW_ON)) {
 			//enable_sht1x();
 			s.state |= SHT1x_COMM_HW_ON;
-			ker_timer_start(SHT1x_COMM_PID, SHT1x_DELAY_TIMER, SHT1x_DELAY_TIME);
+			//ker_timer_start(SHT1x_COMM_PID, SHT1x_DELAY_TIMER, SHT1x_DELAY_TIME);
+			ker_timer_start(SHT1x_COMM_PID, SHT1x_DELAY_TIMER, s.current_request->delay);
 			s.current_request->status = REQUEST_DELAY;
 			return SOS_OK;
 		}
@@ -626,6 +627,9 @@ static int8_t sht1x_get_data (func_cb_ptr cb, sht1x_sensor_command_t command, so
 	// If samples > 0, event_samples <= samples.
 	if ((param->samples > 0) && (param->event_samples > param->samples)) {
 		param->event_samples = param->samples;
+	}
+	if (param->delay < SHT1x_DELAY_TIME) {
+		param->delay = SHT1x_DELAY_TIME;
 	}
 
 	// Take action based on command.
