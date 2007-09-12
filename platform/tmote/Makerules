@@ -33,7 +33,13 @@ ifeq ($(BUILD),_SOS_KERNEL_)
 SRCS +=  led.c sos_uart.c sos_uart_mgr.c  
 SRCS +=  cc2420_hal.c
 SRCS +=  vhal.c vmac.c
+
+ifeq ($(MODE), new_sensing_api)
+ifeq ($(SB), tmote_invent)
 SRCS += invent_sensor_init.c
+endif
+endif
+
 endif
 
 include $(ROOTDIR)/processor/$(PROCESSOR)/Makerules
