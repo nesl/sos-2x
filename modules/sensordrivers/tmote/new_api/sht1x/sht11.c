@@ -246,10 +246,12 @@ static int8_t sht1x_msg_handler(void *state, Message *msg) {
     switch(msg->type) {
         /**
          * \par MSG_INIT
-         * Initialize the driver parameters. Do not enable it right now. 
+         * Initialize the driver parameters.  
          */
 
         case MSG_INIT: { 
+            // enable the driver here. It goes into sleep automatically if not needed
+            enable_sht1x();
 			// Setup the sensor <-> channel mapping.
 			s->map[0].sensor = TEMPERATURE_SENSOR;
 			s->map[0].channel = SHT1x_TEMPERATURE_CH;
@@ -282,6 +284,7 @@ static int8_t sht1x_msg_handler(void *state, Message *msg) {
         case MSG_FINAL: { 
 			sys_sensor_driver_deregister(TEMPERATURE_SENSOR);
 			sys_sensor_driver_deregister(HUMIDITY_SENSOR);
+            disable_sht1x();
 			break; 
 		}   
         default: return -EINVAL;

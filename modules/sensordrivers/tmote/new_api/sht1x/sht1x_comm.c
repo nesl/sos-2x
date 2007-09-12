@@ -442,13 +442,13 @@ static int8_t task_next_sample() {
 	if (s.current_request == NULL) {
 		// Turn off ADC if queue is empty.
 		if (s.state & SHT1x_COMM_HW_ON) {
-			disable_sht1x();
+			//disable_sht1x();
 			s.state = SHT1x_COMM_IDLE;
 		}
 	} else {
 		// Turn ON the SHT1x chip if it was OFF earlier.
 		if (!(s.state & SHT1x_COMM_HW_ON)) {
-			enable_sht1x();
+			//enable_sht1x();
 			s.state |= SHT1x_COMM_HW_ON;
 			ker_timer_start(SHT1x_COMM_PID, SHT1x_DELAY_TIMER, SHT1x_DELAY_TIME);
 			s.current_request->status = REQUEST_DELAY;
@@ -557,8 +557,8 @@ static void reinitialize_comm() {
 	ker_timer_stop(SHT1x_COMM_PID, SHT1x_HUMIDITY_TIMER);
 	ker_timer_stop(SHT1x_COMM_PID, SHT1x_DELAY_TIMER);
 	ker_timer_stop(SHT1x_COMM_PID, SHT1x_SAMPLE_TIMER);
-	// Disable hardware.
-	disable_sht1x();
+	// DO NOT DISABLE SHT1X, or you will get wrong values! SHT1X shuts down automatically. Disable hardware.
+	//disable_sht1x();
 	// Reset hardware state.
 	// Error state is cleared when sensor driver access the get_data
 	// or stop_data interface later.
