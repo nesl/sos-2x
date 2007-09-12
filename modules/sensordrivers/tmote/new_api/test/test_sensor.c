@@ -45,10 +45,12 @@ int8_t test_sensor_msg_handler(void *state, Message *msg) {
 			LED_DBG(LED_GREEN_OFF);
 			LED_DBG(LED_YELLOW_OFF);
 			s->sequence = 0;
-			s->ctx[0].period = 4000;
+      s->ctx[0].delay = 0;
+			s->ctx[0].period = 4000; // this is in ticks from a 32kHz clock
 			s->ctx[0].samples = 64;
 			s->ctx[0].event_samples = 32;
-			s->ctx[1].period = 512;
+      s->ctx[1].delay = 200; // the temperature sensor needs 200ms of warmup
+			s->ctx[1].period = 512; // this is in ticks from the sos timer, e.g. 1024=1second
 			s->ctx[1].samples = 64;
 			s->ctx[1].event_samples = 32;
 			//sys_timer_start(0, 1024*2L, TIMER_REPEAT);
