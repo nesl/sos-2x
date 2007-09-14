@@ -56,4 +56,5 @@ br #ker_adc_get_data					; 50
 br #ker_adc_stop_data					; 51
 br #ker_sys_register_isr				; 52    // Used for user interrupt controller in msp430
 br #ker_sys_deregister_isr				; 53    // Used for user interrupt controller in msp430
-br 0									; 54
+br #ker_sensor_control					; 54
+br 0									; 55

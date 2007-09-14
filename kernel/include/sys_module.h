@@ -69,6 +69,7 @@ int8_t ker_sensor_deregister(sos_pid_t calling_id, uint8_t sensor_id);
 int8_t ker_sensor_enable(uint8_t sensor_id);
 int8_t ker_sensor_disable(uint8_t sensor_id);
 int8_t ker_sensor_data_ready(uint8_t sensor_id, uint16_t sensor_data, uint8_t status);
+int8_t ker_sensor_control(uint8_t sensor_id, void* sensor_new_state);
 
 int8_t ker_sys_sensor_driver_register(sensor_id_t sensor, uint8_t sensor_control_fid);
 int8_t ker_sys_sensor_driver_deregister(sensor_id_t sensor);
@@ -1424,6 +1425,19 @@ static inline int8_t sys_sensor_driver_deregister(sensor_id_t sensor)
 	return ((ker_sys_sensor_driver_deregister_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*47))(sensor);
 #else
 	return ker_sys_sensor_driver_deregister(sensor);
+#endif
+}
+
+/// \cond NOTYPEDEF
+typedef int8_t (*ker_sensor_control_func_t)(uint8_t sensor_id, void* sensor_new_state);
+/// \endcond
+
+static inline int8_t sys_sensor_control(uint8_t sensor_id, void* sensor_new_state)
+{
+#ifdef SYS_JUMP_TBL_START
+	return ((ker_sensor_control_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*54))(sensor_id, sensor_new_state);
+#else
+	return ker_sensor_control(sensor_id, sensor_new_state);
 #endif
 }
 

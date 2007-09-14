@@ -10,27 +10,80 @@
 #define LED_DEBUG
 #include <led_dbg.h>
 
-#define NO_DEVICES 2
-uint8_t devices[NO_DEVICES] = 
-  { 0x2C, //! Microphone Gain Control
-    0x2D  //! Microphone Compression Control
-  };
-uint8_t data[NO_DEVICES] = 
-  { 0x01, //! Microphone Gain Control
-    0x02  //! Microphone Compression Control
-  };
+// Number of devices that need to be initialized
+// over I2C.
+#define NUM_DEVICES 2
+
+uint8_t devices[NUM_DEVICES] = 
+{ 0x2F, //! Accelerometer/Photo Control
+  0x2D, //! Microphone Compression Control
+};
+uint8_t length[NUM_DEVICES] = 
+{ 0x02, //! Accelerometer/Photo Control
+  0x02, //! Microphone Compression Control
+};
+uint8_t accel_data[2] =
+{ 0x18,	//! Turn ON Accel and Photo
+  0x00,	//! Accel tap settings
+};
+uint8_t mic_data[2] =
+{ 0x18,	//! Turn ON microphone 
+  0x00,	//! Microphone conpression control 
+};
+uint8_t *data[NUM_DEVICES] = 
+{ accel_data,
+  mic_data,
+};
 static uint8_t counter = 0;
-//static uint8_t wait_flag = 1;
+static uint8_t ptr = 0;
 
 void invent_sensor_init( void ) 
 {
-  if (NO_DEVICES < 1) return;
+	HAS_CRITICAL_SECTION;
+
+	// Save previous interrupt enable flag.
+	uint8_t ie2 = IE2;
+
+	if (NUM_DEVICES < 1) return;
+
+	// Disable other interrupts (UART1) before enabling global interrupts
+	// for I2C.
+	IE2 &= ~(URXIE1 | UTXIE1); 
+	// Clear interrupt flags.
+	IFG1 = 0;
+	IFG2 = 0;
+	// Enable global interrupts so that we can use I2C interrupts
+	// for data transfer
+	ENABLE_GLOBAL_INTERRUPTS();
+
+	ENTER_CRITICAL_SECTION();
 
 	LED_DBG(LED_RED_OFF);
 	LED_DBG(LED_GREEN_OFF);
 	LED_DBG(LED_YELLOW_OFF);
-	LED_DBG(LED_YELLOW_ON);
-	
+
+	// Diable I2C module before initialization.
+	// Just for safety.
+	// Then, follow the exact procedure as listed here,
+	// otherwise unpredictable behaviour will occur.
+	U0CTL &= ~(I2C | SYNC | I2CEN);
+
+	// Power ON the tmote invent sensor board
+	// Select I/O function for UART0RX (POT_SHDN) pin.
+	P3SEL &= ~BV(5);
+	// Set direction as output
+	P3DIR |= BV(5);
+	// Set output to HIGH to turn ON the sensor board.
+	P3OUT |= BV(5);
+
+	// I2C Module Initialization
+	// Enable the I2C module using SWRST
+	U0CTL = SWRST;
+	// Select I2C operation.
+	U0CTL |= (SYNC | I2C);
+	// Disbale I2C module before configuring it.
+	U0CTL &= ~(I2CEN);
+
 	// Disbale UART and SPI modules
 	U0ME &= ~(UTXE0 | URXE0 | USPIE0);
 	P3SEL &= ~(BV(1) | BV(2) | BV(3) | BV(4) | BV(5));
@@ -40,27 +93,12 @@ void invent_sensor_init( void )
 	// Select module function for SIMO and UCLK
 	P3SEL |= (BV(1) | BV(3));
 
-	// Disable interrupts
-	U0IE &= ~(UTXIE0 | URXIE0);
+	// Disable UART0 and SPI interrupts
+	IE1 &= ~(UTXIE0 | URXIE0);
 
-	// Power ON the tmote invent sensor board
-	// Select I/O function for UART0RX (POT_SHDN) pin.
-	P3SEL &= ~BV(5);
-	// Set direction as output
-	P3DIR |= BV(5);
-	// Set output to LOW to turn ON the sensor board.
-	P3OUT &= ~BV(5);
-
-	// I2C Module Initialization
-	// Enable the I2C module using SWRST
-	U0CTL |= SWRST;
-	// Select I2C operation.
-	U0CTL |= (SYNC | I2C);
-	// Disbale I2C module before configuring it.
-	U0CTL &= ~(I2CEN);
 	// Select Master mode.
 	U0CTL |= MST;
-	// Select clock source (SMCLK).
+	// Select clock source (SMCLK = 1 Mhz), I2C operates at 1/10 Mhz = 100 Khz.
 	I2CTCTL |= I2CSSEL_2;
 	// Setting data length to byte
 	// I2CNDAT controls number of bytes transmitted.
@@ -74,71 +112,79 @@ void invent_sensor_init( void )
 	// Configuration over.
 	// Enable the I2C module again.
 	U0CTL |= I2CEN;
-	// Set transmit mode
-	// I2CSTB: Send START byte when I2CSTT is set
-	I2CTCTL |= (I2CTRX | I2CSTB);
-	// Set master in idle mode
-	I2CTCTL &= ~(I2CSTP | I2CSTT);
-	// Enable interrupts on ARDYIE
-	I2CIE = ARDYIE;
-	I2CIE = 0;
-	I2CIFG = 0;
-	//U0IE |= (URXIE0);
-	//U0IE &= ~(UTXIE0);
+	LEAVE_CRITICAL_SECTION();
 
-	// Sending to the first slave device 
-	I2CSA = devices[counter];
-	I2CNDAT = 1;
+	while (counter < NUM_DEVICES) {
+		ENTER_CRITICAL_SECTION();
 
-	// Start the transmission in master mode 2
-	I2CTCTL |= (I2CSTP | I2CSTT);
-	I2CDR = data[counter++];
+		// Reset the ptr to data bytes.
+		ptr = 0;
+		// Disable I2C before re-configuring it.
+		U0CTL &= ~I2CEN;
+		// Select Master mode.
+		U0CTL |= MST;
+		// Set slave device address 
+		I2CSA = devices[counter];
+		// Set number of bytes to be transmitted
+		I2CNDAT = length[counter];
+		// Enable I2C again.
+		U0CTL |= I2CEN;
+		// Set Tx mode.
+		I2CTCTL |= I2CTRX;
+		// Enable Tx ready and No Ack interrupts
+		I2CIE = TXRDYIE | NACKIE;
+		I2CIFG = 0;
+		// Start the transmission
+		I2CTCTL |= (I2CSTP | I2CSTT);
 
-	// Wait till complete sensor board has
-	// been initialized.
-	while (I2CDCTL & I2CBUSY);
-	LED_DBG(LED_GREEN_ON);
-	//while (wait_flag);
+		LEAVE_CRITICAL_SECTION();
 
-	// Select Master Tx mode.
-	U0CTL |= MST;
-	I2CTCTL |= (I2CTRX | I2CSTB);
-	I2CSA = devices[counter];
-	I2CNDAT = 1;
-	// Start the transmission
-	I2CTCTL |= (I2CSTP | I2CSTT);
-	I2CDR = data[counter++];
+		// Wait till data transmission is complete.
+		while (I2CDCTL & I2CBUSY);
 
-	while (I2CDCTL & I2CBUSY);
-	
-	LED_DBG(LED_RED_ON);
+		// Increment counter to configure next device
+		counter++;
+	}
+
+	DISABLE_GLOBAL_INTERRUPTS();
+
+	LED_DBG(LED_YELLOW_ON);
+
+	// Reset IE2 mask
+	IE2 = ie2;
+	IFG2 = 0;
 
 	// Disable and Reset I2C
 	U0CTL &= ~(I2C | SYNC | I2CEN);
 	U0CTL |= SWRST;
+
 }
 
-/*
-interrupt (USART0RX_VECTOR) i2c_interrupt() 
+interrupt (USART0TX_VECTOR) i2c_tx_interrupt() 
 {
-	LED_DBG(LED_GREEN_TOGGLE);
-	if ((I2CIFG & ARDYIFG) == 1) {
-		if (counter < NO_DEVICES) {
-			I2CSA = devices[counter];
-			I2CNDAT = 1;
-			// Select Master mode.
-			U0CTL |= MST;
-			// Start the transmission
-			I2CTCTL |= (I2CSTP | I2CSTT);
-			I2CDR = data[counter++];
+	volatile uint16_t _value = I2CIV;
+	switch (_value) {
+		case 0x000C: {
+			// Ready to load I2CDR
+			// Clear the TXRDY interrupt flag
+			I2CIFG &= ~TXRDYIFG;
+			// Load the I2CDR with next byte.
+			I2CDR = data[counter][ptr++];
+			if (ptr == length[counter]) {
+				// This is the last byte for current device.
+				I2CIE &= ~TXRDYIE;
+			}
+			break;
 		}
-		else {
-			// Disable and Reset I2C
-			U0CTL &= ~(I2C | SYNC | I2CEN);
-			U0CTL |= SWRST;
-			wait_flag = 0;
+		case 0x0004: {
+			// No ACK from slave
+			// Disable the I2C to clear I2CDTCL flags
+			U0CTL &= ~I2CEN;
+			// Clear the NACK interrupt flag
+			I2CIFG &= ~NACKIFG;
+			break;
 		}
-  }
+		default: break;
+	}
 }
-*/
 

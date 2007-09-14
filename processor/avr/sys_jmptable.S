@@ -60,4 +60,5 @@ jmp 0	; jmp ker_adc_get_data			; 50
 jmp 0	; jmp ker_adc_stop_data			; 51
 jmp 0	; jmp ker_sys_register_isr		; 52 // For interrupt controller in msp430
 jmp 0	; jmp ker_sys_deregister_isr	; 53	
-jmp 0                      				; 54
+jmp ker_sensor_control                  ; 54
+jmp 0                      				; 55

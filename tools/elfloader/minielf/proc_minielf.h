@@ -5,15 +5,15 @@
  */
 
 #if defined(AVR_MCU) || defined(EMU_MICA2)
-#include <avr_minielf.h>
 #ifndef PACK_STRUCT
 #define PACK_STRUCT __attribute__((packed))
 #endif
+#include <avr_minielf.h>
 #elif defined(MSP430_MCU)
-#include <msp430_minielf.h>
 #ifndef PACK_STRUCT
 #define PACK_STRUCT 
 #endif
+#include <msp430_minielf.h>
 #else
 #error No architecture specified
 #endif

@@ -281,7 +281,7 @@ int8_t ker_sensor_disable(uint8_t sensor_id)
 /**
  * @brief reconfigure the sensor
  */
-int8_t ker_sensor_control(sos_pid_t calling_id, uint8_t sensor_id, void* sensor_new_state) 
+int8_t ker_sensor_control(uint8_t sensor_id, void* sensor_new_state) 
 {
 	int8_t ret;
 	if ((sensor_id > MAX_SENSOR_ID) || (st[sensor_id].pid == NULL_PID) || (st[sensor_id].client_pid != NULL_PID)) {

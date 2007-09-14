@@ -119,7 +119,7 @@ extern int8_t ker_sensor_disable(uint8_t sensor_id);
  * @param sensor_id of the sensor whose data is being disaabled
  * @param sensor_new_state pointer to a dynamicly allocated state struct
  */
-extern int8_t ker_sensor_control(sos_pid_t client_pid, uint8_t sensor_id, void* sensor_new_state);
+extern int8_t ker_sensor_control(uint8_t sensor_id, void* sensor_new_state);
 
 
 /**
