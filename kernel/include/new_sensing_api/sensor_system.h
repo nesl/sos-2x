@@ -20,6 +20,7 @@ typedef enum {
 	INTERNAL_TEMPERATURE_SENSOR,
 	ACCEL_X_SENSOR,
 	ACCEL_Y_SENSOR,
+	MIC_SENSOR,
 } sensor_id_t;
 
 // Update this number if the total number of sensors

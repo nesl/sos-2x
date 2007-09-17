@@ -2,6 +2,7 @@
 /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
 /* 
  * Authors: Akhilesh Singhania
+ * 			Rahul Balani
  *
  */
 #include <sos.h>
@@ -12,27 +13,36 @@
 
 // Number of devices that need to be initialized
 // over I2C.
-#define NUM_DEVICES 2
+#define NUM_DEVICES 3
 
 uint8_t devices[NUM_DEVICES] = 
 { 0x2F, //! Accelerometer/Photo Control
+  0x2C, //! Microphone Gain Control
   0x2D, //! Microphone Compression Control
 };
 uint8_t length[NUM_DEVICES] = 
 { 0x02, //! Accelerometer/Photo Control
+  0x02, //! Microphone Gain Control
   0x02, //! Microphone Compression Control
 };
-uint8_t accel_data[2] =
-{ 0x18,	//! Turn ON Accel and Photo
-  0x00,	//! Accel tap settings
+uint8_t photo_data[2] =
+{ 0x08,	//! Turn ON Photo sensor
+  0x00,	//! Dummy data
 };
-uint8_t mic_data[2] =
-{ 0x18,	//! Turn ON microphone 
-  0x00,	//! Microphone conpression control 
+//! Microphone variable gain config written to RDAC 0 of AD5242 Pot
+uint8_t mic_gain_data[2] =
+{ 0x10,	//! Turn ON microphone 
+  0x0D,	//! Microphone default gain (530 ohms, -44 dBV noise gate)
+};
+//! Microphone variable compression config written to RDAC 0 of AD5242 Pot
+uint8_t mic_compression_data[2] =
+{ 0x00,	//! Keep speaker OFF, select RDAC 0 
+  0x0A,	//! Microphone default compression ratio (2:1, 17 kohms)
 };
 uint8_t *data[NUM_DEVICES] = 
-{ accel_data,
-  mic_data,
+{ photo_data,
+  mic_gain_data,
+  mic_compression_data,
 };
 static uint8_t counter = 0;
 static uint8_t ptr = 0;
