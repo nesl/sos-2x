@@ -21,6 +21,8 @@ typedef enum {
 	ACCEL_X_SENSOR,
 	ACCEL_Y_SENSOR,
 	MIC_SENSOR,
+	MAG_X_SENSOR,
+	MAG_Y_SENSOR,
 } sensor_id_t;
 
 // Update this number if the total number of sensors
