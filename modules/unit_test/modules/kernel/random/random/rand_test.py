@@ -1,6 +1,5 @@
 import sys
 import os
-sys.path.append(os.environ['SOSROOT'] + '/modules/unit_test/pysos/')
 import pysos
 import signal
 
@@ -81,7 +80,6 @@ if __name__ == "__main__":
     # we also register our function above with the server so that it is called
     # when the appropriate message type is recieved
     srv = pysos.sossrv()
-    msg = srv.listen()
 
     srv.register_trigger(generic_test, sid=TEST_MODULE, type=MSG_TEST_DATA)
 

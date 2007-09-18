@@ -26,7 +26,6 @@ def sht15_humidity(msg):
 if __name__ == "__main__":
 
     srv = pysos.sossrv()
-    msg = srv.listen()
 
     srv.register_trigger(sht15_temperature, type=SHT15_TEMPERATURE)
     srv.register_trigger(sht15_humidity, type=SHT15_HUMIDITY)

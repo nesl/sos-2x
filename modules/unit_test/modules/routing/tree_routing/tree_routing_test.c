@@ -8,7 +8,6 @@
  */
 
 #include <sys_module.h>
-#include <module.h>
 #define LED_DEBUG
 #include <led_dbg.h>
 #include <routing/tree_routing/tree_routing.h>

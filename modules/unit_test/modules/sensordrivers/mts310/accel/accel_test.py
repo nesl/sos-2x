@@ -1,6 +1,5 @@
 import sys
 import os
-sys.path.append(os.environ['SOSROOT'] + '/modules/unit_test/pysos/')
 import socket
 import signal
 import struct
@@ -57,8 +56,6 @@ def accel_test(msg):
 	    print "the value is acceptedable, for accelid %d, the value is %d" %(accelid+4, value)
 if __name__ == "__main__":
     srv = pysos.sossrv()
-    msg = srv.listen()
-
 
     srv.register_trigger(accel_test, did=TEST_MODULE, type=MSG_DATA_READY)
 
