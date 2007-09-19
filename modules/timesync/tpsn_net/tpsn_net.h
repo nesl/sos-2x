@@ -14,6 +14,11 @@
 
 #define NOT_SYNCED  0xFFFFFFFF
 
+// Definitions for getting synced time using 
+// SOS_CALL
+#define GET_GLOBAL_TIME_FID		0
+typedef uint32_t (*get_global_time_func_t)(func_cb_ptr, uint32_t);
+
 typedef struct
 {
     uint32_t time;

@@ -65,7 +65,7 @@ static const mod_header_t mod_header SOS_MODULE_HEADER =
     .code_id         = ehtons(TPSN_NET_PID),
 	.module_handler  = tpsn_net_module_handler,	
     .funct           = {
-        {get_global_time, "IIz1", TPSN_NET_PID, 0}
+        {get_global_time, "IIz1", TPSN_NET_PID, GET_GLOBAL_TIME_FID}
     },
 };
 
