@@ -6,6 +6,8 @@
 TRG = msp430-
 
 DEFS += -DMSP430_MCU -DLLITTLE_ENDIAN -DNO_PID_PROC 
+DEFS += -DNEW_SENSING_API
+
 #-DSUPPORTS_PACKED
 
 MCU = msp430x1611
@@ -29,16 +31,15 @@ DEFS += -DSYS_JUMP_TBL_START=$(SYS_JUMP_TBL_ADDR)
 DEFS += -DSYS_JUMP_TBL_SIZE=4
 
 ifeq ($(BUILD),_SOS_KERNEL_)
-SRCS += adc_proc_hw.c adc_proc.c flash_api.c uart_hal.c uart.c uart_system.c timer.c systime.c clock_hal.c  spi_hal.c
+# SRCS += adc_proc_hw.c adc_proc.c
+SRCS += flash_api.c uart_hal.c uart.c uart_system.c timer.c systime.c clock_hal.c  spi_hal.c
 SRCS += adc_driver.c interrupt.c
 
-# Include the SHT1x communication driver if new sensing
-# system is being used for Tmote sensor board.
-ifeq ($(MODE), new_sensing_api)
+# Include the SHT1x communication driver if Tmote 
+# Sky sensor board is being used.
 ifeq ($(SB), tmote)
 SRCS += sht1x_comm.c
 VPATH += $(ROOTDIR)/modules/sensordrivers/tmote/new_api/sht1x
-endif
 endif
 
 CFLAGS += -Os -Wa,-adhlmsn=$(notdir $(<:.c=.lst))

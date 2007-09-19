@@ -17,7 +17,7 @@ br #ker_hw_type             ; 11
 br #ker_id                  ; 12
 br #ker_rand                ; 13
 br #ker_systime32           ; 14
-br #ker_sensor_get_data     ; 15
+br 0	; br #ker_sensor_get_data     ; 15 // Old sensing API
 br #ker_led                 ; 16
 br #ker_sys_get_module_state    ; 17
 br #ker_sys_fntable_subscribe   ; 18
@@ -33,14 +33,14 @@ br #ker_sys_shm_stopwait    ; 27
 br #ker_get_current_pid     ; 28
 br #ker_get_caller_pid      ; 29
 br #ker_sys_routing_register    ; 30
-br #ker_adc_proc_bindPort   ; 31
-br #ker_adc_proc_unbindPort ; 32
-br #ker_adc_proc_getData    ; 33
-br #ker_sensor_register     ; 34
-br #ker_sensor_deregister   ; 35
-br #ker_sensor_data_ready   ; 36
-br #ker_sensor_enable       ; 37
-br #ker_sensor_disable      ; 38
+br 0	; br #ker_adc_proc_bindPort   ; 31 // Old sensing API
+br 0	; br #ker_adc_proc_unbindPort ; 32 // Old sensing API
+br 0	; br #ker_adc_proc_getData    ; 33 // Old sensing API
+br 0	; br #ker_sensor_register     ; 34 // Old sensing API
+br 0	; br #ker_sensor_deregister   ; 35 // Old sensing API
+br 0	; br #ker_sensor_data_ready   ; 36 // Old sensing API
+br 0	; br #ker_sensor_enable       ; 37 // Old sensing API
+br 0	; br #ker_sensor_disable      ; 38 // Old sensing API
 br 0    ; br #ker_i2c_reserve_bus     ; 39
 br 0    ; br #ker_i2c_release_bus     ; 40
 br 0    ; br #ker_i2c_send_data       ; 41
@@ -56,5 +56,5 @@ br #ker_adc_get_data					; 50
 br #ker_adc_stop_data					; 51
 br #ker_sys_register_isr				; 52    // Used for user interrupt controller in msp430
 br #ker_sys_deregister_isr				; 53    // Used for user interrupt controller in msp430
-br #ker_sensor_control					; 54
+br 0	; br #ker_sensor_control		; 54 // Old sensing API
 br 0									; 55
