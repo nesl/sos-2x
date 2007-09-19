@@ -4,7 +4,7 @@
 
 #include <sys_module.h>
 
-#define LED_DEBUG
+//#define LED_DEBUG
 #include <led_dbg.h>
 
 #include <sensor.h>
