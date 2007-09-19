@@ -5,7 +5,7 @@
  * Module needs to include <sys_module.h>
  */
 #include <sys_module.h>
-#define LED_DEBUG
+//#define LED_DEBUG
 #include <led_dbg.h>
 #include <systime.h> // needed for msec_to_ticks
 #include <string.h>
@@ -48,6 +48,7 @@ typedef struct
  */
 static int8_t tpsn_net_module_handler(void *state, Message *e);
 static void start_sync();
+static uint32_t get_global_time(func_cb_ptr p, uint32_t time);
 
 /**
  * This is the only global variable one can have.
@@ -58,11 +59,14 @@ static const mod_header_t mod_header SOS_MODULE_HEADER =
 	.mod_id          = TPSN_NET_PID,
 	.state_size      = sizeof(app_state_t),
 	.num_sub_func    = 0,
-	.num_prov_func   = 0,
+	.num_prov_func   = 1,
     .platform_type   = HW_TYPE,
     .processor_type  = MCU_TYPE,
     .code_id         = ehtons(TPSN_NET_PID),
 	.module_handler  = tpsn_net_module_handler,	
+    .funct           = {
+        {get_global_time, "IIz1", TPSN_NET_PID, 0}
+    },
 };
 
 
@@ -140,6 +144,7 @@ static int8_t tpsn_net_module_handler(void *state, Message *msg)
         case MSG_TIMESTAMP:
         {
             DEBUG("TPSN_NET: state: %d\n", s->sync_state);
+            LED_DBG(LED_RED_TOGGLE);
             tpsn_req_t *tpsn_req_ptr = (tpsn_req_t *)msg->data;
             switch(tpsn_req_ptr->type){
                 case TPSN_REQUEST:
@@ -297,6 +302,38 @@ static void start_sync(){
     sys_post_net(s->pid, MSG_TIMESTAMP, sizeof(tpsn_req_t), tpsn_req_ptr, SOS_MSG_RELEASE, s->parent_id);
 
     sys_timer_start(SYNC_TIMER_ID, 50, TIMER_ONE_SHOT);
+
+}
+
+static uint32_t get_global_time(func_cb_ptr p, uint32_t time){
+    app_state_t* s = (app_state_t*)sys_get_state();
+
+    if(s->sync_state == SYNCED || s->sync_state == SYNCING){
+        // we are synced, and thus had at least one time sync exchange
+        // if we are level 1, then just return our time
+        if(s->level == 1){
+            return time;
+        } else {
+            uint32_t delta_refresh = 0;
+            uint32_t cur_time = sys_time32();
+            // check for overflow
+            if(cur_time < s->last_refresh){
+                cur_time += 0x7F000000;
+            }
+            delta_refresh = cur_time - s->last_refresh;
+            // only try to refresh if we are not already syncing.
+            if (s->sync_state == SYNCED && delta_refresh > REFRESH_INTERVAL){
+                DEBUG("TPSN_NET: Refresh needed refresh: %d\n", delta_refresh);
+                s->sync_state = SYNCING;
+
+                start_sync();
+            }
+            // even though we might be syncing, reply with the current estimate.
+            return time + s->clock_drift;
+        }
+    } else {
+        return NOT_SYNCED;
+    }
 
 }
 
