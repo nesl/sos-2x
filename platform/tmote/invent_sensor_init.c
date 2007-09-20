@@ -26,18 +26,18 @@ uint8_t length[NUM_DEVICES] =
   0x02, //! Microphone Compression Control
 };
 uint8_t photo_data[2] =
-{ 0x08,	//! Turn ON Photo sensor
+{ 0x18,	//! Turn ON Accelerometer and Photo sensor
   0x00,	//! Dummy data
 };
 //! Microphone variable gain config written to RDAC 0 of AD5242 Pot
 uint8_t mic_gain_data[2] =
 { 0x10,	//! Turn ON microphone 
-  0x0D,	//! Microphone default gain (530 ohms, -44 dBV noise gate)
+  0x1A,	//! Microphone default gain (530 ohms, -44 dBV noise gate)
 };
 //! Microphone variable compression config written to RDAC 0 of AD5242 Pot
 uint8_t mic_compression_data[2] =
 { 0x00,	//! Keep speaker OFF, select RDAC 0 
-  0x0A,	//! Microphone default compression ratio (2:1, 17 kohms)
+  0x04,	//! Microphone default compression ratio (2:1, 17 kohms)
 };
 uint8_t *data[NUM_DEVICES] = 
 { photo_data,
