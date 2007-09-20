@@ -66,6 +66,7 @@
 // timer control over sampling.
 #define ADC_CONV_SEQUENCE			CONSEQ_1
 #define ADC_CONV_SINGLE				CONSEQ_0
+#define ADC_CONV_SINGLE_REPEAT		CONSEQ_2
 // Multiple sample and conversion for sequence
 // conversion mode.
 #define ADC_MULTIPLE_SAMPLE_CONVERSION	MSC
@@ -78,10 +79,16 @@
 // DMA Trigger source - ADC interrupt flag
 #define DMA0TSEL_6			(6<<0) /* DMA channel 0 transfer select 6:  ADC12IFG */
 #define DMA_0_TRIGGER_ADC	DMA0TSEL_6
-// DMA addressing mode - Block to Block
-#define DMA_ADDR_MODE		(DMASRCINCR_3 | DMADSTINCR_3)
-// DMA Transfer mode - Block
-#define DMA_TRANSFER_MODE	DMADT_1
+// DMA addressing modes
+#define DMA_ADDR_MODE_BLOCK_BLOCK	(DMASRCINCR_3 | DMADSTINCR_3)
+#define DMA_ADDR_MODE_FIXED_BLOCK	(DMASRCINCR_0 | DMADSTINCR_3)
+// Default DMA addressing mode - Block to Block
+#define DMA_ADDR_MODE	DMA_ADDR_MODE_BLOCK_BLOCK
+// DMA Transfer modes
+#define DMA_TRANSFER_MODE_BLOCK		DMADT_1
+#define DMA_TRANSFER_MODE_SINGLE	DMADT_0
+// Default DMA Transfer mode - Block
+#define DMA_TRANSFER_MODE			DMA_TRANSFER_MODE_BLOCK
 // Source - Word to Destination - Word
 #define DMA_SRC_DST_TYPE	DMASWDW
 

@@ -471,18 +471,28 @@ static int8_t adc_start_sampling() {
 	// Set sample time and reference voltage according to sensor parameters.
 	ADC12CTL0 |= (s.current_request->config.sht0 | s.current_request->config.ref2_5);
 
+	if (s.num_channels > 1) {
+		// Use default configuration for DMA
+		// Set DMA tranfer size DMASZ to number of channels
+		DMA0SZ = s.num_channels;
+	} else {
+		// Set DMA tranfer size DMASZ to number of samples per event
+		DMA0SZ = s.target_samples_in_iteration;
+		// Set single transfer mode, fixed to block addressing mode
+		// so as to minimize DMA interrupts
+		DMA0CTL = ( DMA_TRANSFER_MODE_SINGLE | DMA_ADDR_MODE_FIXED_BLOCK | DMA_SRC_DST_TYPE );
+	}
+
 	// Set DMA source address to ADC12MEM0
 	DMA0SA = (unsigned int)(ADC12MEM);
 
 	// Set DMA destination address to first buffer buf[0]
 	DMA0DA = (unsigned int)(s.buf[0]);
 
-	// Set DMA tranfer size DMASZ to number of channels
-	DMA0SZ = s.num_channels;
-
 	// Enable DMA and it's interrupt
 	DMA0CTL |= ( DMAEN | DMAIE );
 
+	// Setup final ADC configuration
 	if (s.current_request->samples == 1) {
 		// Only one sample is requested.
 		s.mode = ADC_SINGLE_SAMPLE;
@@ -498,6 +508,15 @@ static int8_t adc_start_sampling() {
 		s.mode = ADC_PERIODIC_SAMPLE;
 		// ADC conversion is initiated by Timer A, unit 1.
 		ADC12CTL1 |= ADC_CONVERSION_TIMER_A;
+
+		if (s.num_channels == 1) {
+			// First, unset the previous conversion mode
+			ADC12CTL1 &= ~(CONSEQ_0);
+			// Set ADC to sample a single channel repeatedly
+			ADC12CTL1 |= ADC_CONV_SINGLE_REPEAT;
+			// Disable automatic multiple sample conversion
+			ADC12CTL0 &= ~(ADC_MULTIPLE_SAMPLE_CONVERSION);
+		}
 
 		// Configure Timer A, output unit 1.
 		TACTL = TACLR;
@@ -951,7 +970,12 @@ interrupt (DACDMA_VECTOR) dac_dma_interrupt () {
 			 (s.current_request->status != REQUEST_COMPLETE) ) {
 			// Current request is valid and active.
 			// Update number of current samples collected.
-			s.current_sample_cnt++;
+			if (s.num_channels > 1) {
+				s.current_sample_cnt++;
+			} else {
+				s.current_sample_cnt += s.target_samples_in_iteration;
+			}
+			// Check if current buffer is full
 			if (s.current_sample_cnt == s.target_samples_in_iteration) {
 				// Raise data_ready event.
 				// Post task to handle sensor data.
@@ -974,7 +998,11 @@ interrupt (DACDMA_VECTOR) dac_dma_interrupt () {
 						// Switch the DMA buffer.
 						s.buf_ptr = (s.buf_ptr + 1) % 2;
 						DMA0DA = (unsigned int)s.buf[s.buf_ptr];
-						DMA0SZ = s.num_channels;
+						if (s.num_channels > 1) {
+							DMA0SZ = s.num_channels;
+						} else {
+							DMA0SZ = s.target_samples_in_iteration;
+						}
 						DMA0SA = (unsigned int)ADC12MEM;
 						// Toggle ENC bit in ADC.
 						ADC12CTL0 &= ~(ENC);
@@ -991,7 +1019,11 @@ interrupt (DACDMA_VECTOR) dac_dma_interrupt () {
 					// Switch the DMA buffer.
 					s.buf_ptr = (s.buf_ptr + 1) % 2;
 					DMA0DA = (unsigned int)s.buf[s.buf_ptr];
-					DMA0SZ = s.num_channels;
+					if (s.num_channels > 1) {
+						DMA0SZ = s.num_channels;
+					} else {
+						DMA0SZ = s.target_samples_in_iteration;
+					}
 					DMA0SA = (unsigned int)ADC12MEM;
 					// Toggle ENC bit in ADC.
 					ADC12CTL0 &= ~(ENC);
@@ -1003,6 +1035,8 @@ interrupt (DACDMA_VECTOR) dac_dma_interrupt () {
 			} else {
 				// More samples need to be collected in this iteration
 				// before raising the data_ready event.
+				// Control reaches here only if multiple channnels are
+				// being sampled simultaneously.
 				// Advance the DMA buffer pointer by current sample count.
 				DMA0DA = (unsigned int) ( s.buf[s.buf_ptr] + 
 								(s.num_channels * s.current_sample_cnt) );
