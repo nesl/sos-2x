@@ -12,7 +12,7 @@
 // reply from tpsn module
 #define MSG_TPSN_REPLY (MOD_MSG_START + 4)
 
-#define NOT_SYNCED  0xFFFFFFFF
+#define NOT_SYNCED  0xFFFFFFFFL
 
 // Definitions for getting synced time using 
 // SOS_CALL
