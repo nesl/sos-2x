@@ -4,7 +4,7 @@
 #include <sos.h>
 #include <adc_driver_private.h>
 
-#define LED_DEBUG
+//#define LED_DEBUG
 #include <led_dbg.h>
 
 /**
