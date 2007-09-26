@@ -5,7 +5,7 @@ import pysos
 MSG_QUERY_REPLY=34
 
 def result_handler(msg):
-    (sid, qid, sensor, value) = pysos.unpack('<BHBH', msg['data'])
+    (sid, qid, num_remaining, sensor, value) = pysos.unpack('<BHHBH', msg['data'])
 
     print "node id %d" %sid
     print "QueryId %d" %qid
@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
 #    srv.post(daddr = 0, saddr = 0, did=128, sid = 128, type=33, data = data)
 
-    data = pysos.pack('<HIHBBHBH', 2,500, 100, 2,64, 800, 80, 800)
+    data = pysos.pack('<HIHBBHBH', 2,1024, 100, 2,64, 800, 80, 800)
 
     srv.post(daddr = 1, saddr = 1, did=128, sid=128, type=33, data=data)
 

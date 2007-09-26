@@ -87,9 +87,9 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
     .processor_type = MCU_TYPE,
     .code_id = ehtons(MOTE_INTERPRETER_PID),
     .module_handler = interpreter_msg_handler,
-		.funct = {
-			[0] = {error_8, "Cvv0", TREE_ROUTING_PID, MOD_GET_HDR_SIZE_FID},
-		},
+	//	.funct = {
+	//		[0] = {error_8, "Cvv0", TREE_ROUTING_PID, MOD_GET_HDR_SIZE_FID},
+	//	},
 };
 
 static int8_t reply_sender(uint16_t qid, sensor_msg_t *msg){
@@ -98,20 +98,14 @@ static int8_t reply_sender(uint16_t qid, sensor_msg_t *msg){
 	int8_t hdr_size;
 	
 	DEBUG("<INTERPRETER> sending data through tree routing\n");
-//	if (sys_id() != BASE_STATION_ADDRESS){
 		mote_state_t *s;
 
-		sys_led(LED_GREEN_TOGGLE);
+		//sys_led(LED_GREEN_TOGGLE);
 
 		s = (mote_state_t*) sys_get_state();
 		DEBUG("<INTERPRETER> GET STATE ok\n");
 
-#ifdef SOS_SIM
-		hdr_size = sizeof(tr_hdr_t);
-#else
-//		hdr_size = SOS_CALL(s->get_hdr_size, get_hdr_size_proto);
     hdr_size = sizeof(tr_hdr_t);
-#endif
 		DEBUG("<INTERPRETER> get header size ok, size = %d\n", hdr_size);
 		if (hdr_size < 0) {return SOS_OK;}
 
@@ -131,20 +125,8 @@ static int8_t reply_sender(uint16_t qid, sensor_msg_t *msg){
 				d->value,
 				hdr_size + sizeof(query_result_t));
 
-		if (sys_id() == BASE_STATION_ADDRESS){
-			sys_post_uart(s->pid, 35, sizeof(int8_t), &hdr_size, 0, BCAST_ADDRESS);
-		}
 		sys_post(TREE_ROUTING_PID, MSG_SEND_PACKET, hdr_size + sizeof(query_result_t), 
 				(void *) pkt, SOS_MSG_RELEASE);
-/*	} else { 
-		d = (query_result_t *) sys_malloc(sizeof(query_result_t));
-		d->sid = sys_id();
-		d->qid = qid;
-		d->sensor = msg->sensor;
-		d->value = msg->value;
-
-		sys_post_uart(MOTE_INTERPRETER_PID, MSG_QUERY_REPLY, sizeof(query_result_t), d, SOS_MSG_RELEASE, BCAST_ADDRESS);
-	}*/
 	return SOS_OK;
 }
 
@@ -168,11 +150,10 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 
 					s->queries[4].qid = 2;
 					s->queries[4].compare_op = 0;
-					s->queries[4].interval = 500;
-					s->queries[4].num_remaining = 500;
+					s->queries[4].interval = 1024; 
+					s->queries[4].num_remaining = 20;
 
-
-          sys_timer_start(4, 500, TIMER_REPEAT);
+          sys_timer_start(4, 1024, TIMER_REPEAT);
 					sys_led(LED_RED_OFF);
 					sys_led(LED_YELLOW_OFF);
 					sys_led(LED_GREEN_OFF);
@@ -181,14 +162,14 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 
 			case MSG_NEW_QUERY:
 				{
-					if (msg->data == NULL)
-						sys_led(LED_YELLOW_TOGGLE);
+					//if (msg->data == NULL)
+						//sys_led(LED_YELLOW_TOGGLE);
 					
 					uint8_t msg_len = msg->len; 
 					new_query_msg_t *new_query = (new_query_msg_t *) sys_msg_take_data(msg);
 
-					if (new_query == NULL)
-						sys_led(LED_RED_TOGGLE);
+					//if (new_query == NULL)
+						//sys_led(LED_RED_TOGGLE);
 
 					uint8_t i;
 
@@ -211,12 +192,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 							//send error message, saying that we can't service this query
 						}
 					}
-
-					sys_led(LED_GREEN_TOGGLE);
-					if (sys_id() == BASE_STATION_ADDRESS)
-						sys_post_net(s->pid, MSG_NEW_QUERY, msg_len, new_query, SOS_MSG_RELEASE, BCAST_ADDRESS);
-					else
-						sys_free(new_query);
+					sys_post(TREE_ROUTING_PID, MSG_SEND_TO_CHILDREN, msg_len, new_query, SOS_MSG_RELEASE);
 				}
 				break;
 
@@ -229,7 +205,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 
 					DEBUG("<INTERPRETER> Timer Timeout, for sensor %d\n", param->byte);
 
-					sys_led(LED_YELLOW_TOGGLE);
+					//sys_led(LED_YELLOW_TOGGLE);
 					if (param->byte > NUM_SENSORS)
 						break;
 
@@ -252,7 +228,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 					sensor_msg_t *data = (sensor_msg_t *)sys_msg_take_data(msg);
 					sensor_query_t *sq;
 
-					sys_led(LED_RED_TOGGLE);
+					//sys_led(LED_RED_TOGGLE);
 
 					sq = &(s->queries[data->sensor]);
 
@@ -291,12 +267,12 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 
 			case MSG_TR_DATA_PKT:
 				{
-					sys_led(LED_GREEN_TOGGLE);
 					if (sys_id() == BASE_STATION_ADDRESS){
 						uint8_t *payload;
 						uint8_t msg_len;
 						int8_t hdr_size;
 
+					  sys_led(LED_GREEN_TOGGLE);
 						msg_len = msg->len;
 						payload = sys_msg_take_data(msg);
 
@@ -308,11 +284,12 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						DEBUG("<MOTE INTERPRETER> tree routing packet recieved, size = %d\n",msg_len);
 
 #ifndef SOS_SIM
-						sys_post_uart(s->pid, MSG_QUERY_REPLY, sizeof(query_result_t), reply, 0, BCAST_ADDRESS);
+						//sys_post_uart(s->pid, MSG_QUERY_REPLY, sizeof(query_result_t), reply, 0, BCAST_ADDRESS);
+						sys_post_uart(s->pid, MSG_QUERY_REPLY, msg_len, payload, SOS_MSG_RELEASE, BCAST_ADDRESS);
 #else
 						DEBUG("<INTERPRETED> data recieved with: sensor=%d\nvalue=%d\nqid=%d\n", reply->sensor, reply->value, reply->qid);
 #endif
-						sys_free(payload);
+						//sys_free(payload);
 					}
 				}
 				break;
