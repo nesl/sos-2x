@@ -9,6 +9,8 @@
 
 #define MSG_NEW_QUERY (MOD_MSG_START + 1)
 #define MSG_QUERY_REPLY (MOD_MSG_START + 2)
+#define MSG_VALIDATE (MOD_MSG_START + 3)
+#define MSG_DISPATCH (MOD_MSG_START + 4)
 
 #define NUM_SENSORS 8
 #define MOTE_INTERPRETER_PID DFLT_APP_ID0
@@ -19,27 +21,68 @@ enum {
 	LESS_THAN_OP
 };
 
-/* a qid of 0 declares that this particular query is unused
- * a compare_op of 0 declares that there is no comparison needed
- * if compare_op is non-zero, then we will check against compare_val
- * the interval simply declares the period of each timer
- * and num_remaining declares how many samples are left for this query
- */
 typedef struct {
-  uint16_t qid;     //the query id
-  uint8_t  compare_op; // operators to compare values against
-  uint16_t  compare_val; // value to compare against
-  uint32_t interval;
-  uint16_t num_remaining;
-} sensor_query_t;
+	uint8_t sid;
+	uint8_t comp_op_and_relation;
+	uint16_t comp_value;
+} qualifier_t;
 
-// this holds the the query information for each sensor
-// we will use the sensor id to also be the timer id for each 
-// query, when it comes in
+
+typedef struct {
+	uint8_t trig;
+} trigger_t;
+
+/*
+typedef struct {
+	uint16_t qid;
+	uint32_t interval;
+	uint16_t total_samples;
+	uint8_t num_queries;
+	uint8_t num_qualifiers;
+	trigger_t trigger;
+	uint8_t queries[];
+	qualifier_t qualifiers[];
+} new_query_msg_t;
+*/
+
+typedef struct{
+  uint16_t qid;
+	uint16_t total_samples;
+	uint32_t interval;
+	uint8_t num_queries;
+	uint8_t num_qualifiers;
+	trigger_t trigger;
+	uint8_t query;
+} test_query_t;
+
+typedef struct {
+	uint16_t qid;
+	uint16_t total_samples;
+	uint32_t interval;
+	uint8_t num_queries;
+	uint8_t num_qualifiers;
+	trigger_t trigger;
+	uint8_t *queries;
+	qualifier_t *qualifiers;
+	uint16_t *results;           // when a sensor value is recieved we save it here so that we can send them 
+	                             // all out together, or do any comparisons needed
+															 // this only needs to be used when number of qualifiers is non-zero
+	uint8_t recieved;            // a non zero value marks the value as being recieved
+                               // a zero value marks it as non recieved, upon every new epoch, recieved should be set to 0
+															 // this only really has to be used when the number of qualifiers is non-zero	
+} query_details_t;
+
 typedef struct {
   uint8_t pid;
-  sensor_query_t queries[NUM_SENSORS];
-	func_cb_ptr get_hdr_size;
+	uint8_t num_queries;
+	query_details_t *queries[8]; // each time a query comes in, we link it into one of these pointers
+							                 // when a query finishes, the pointer is returned to being null
+	uint8_t sensor_timers[8];    // save the timer id for each sensor value we respond to
+	                             // a timer id of 0 signifies that the sensor is not involved in a query
+															 // the timer id is a combination between two indexes
+															 // the upper 4 bits is the index to the queries of this data structur
+															 // the lower 4 bits is the index to both queries, results and recieved of 
+															 // query_details_t data structure
 } mote_state_t;
 
 typedef struct {
@@ -55,27 +98,10 @@ typedef struct {
 	uint16_t value;
 } sensor_msg_t;
 
-/* this part of the message that will be recieved by the mote
- * it describes all the information needed for a particular query
- * and the values match that of sensor_query_t in meaing
- */
-typedef struct {
-	uint8_t stype_and_op;
-	uint16_t compare_val;
-} query_details_t;
-
-/* this will be the data format for message types of MSG_NEW_QUERY
- * which will be sent from the master node
- */
-typedef struct {
-	uint16_t qid;
-	uint32_t interval;
-	uint16_t num_samples;
-	uint8_t num_sensor_query;
-	query_details_t queries[];
-} new_query_msg_t;
-
 static int8_t interpreter_msg_handler(void *state, Message *msg);
+static int8_t reply_sender(uint16_t qid, sensor_msg_t *msg);
+static int8_t free_query(query_details_t* query, uint8_t q_index);
+static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len);
 
 static const mod_header_t mod_header SOS_MODULE_HEADER = {
     .mod_id = MOTE_INTERPRETER_PID,
@@ -114,7 +140,6 @@ static int8_t reply_sender(uint16_t qid, sensor_msg_t *msg){
 		d = (query_result_t *) (pkt+hdr_size);
 		d->sid = sys_id();
 		d->qid = qid;
-		d->num_remaining = s->queries[msg->sensor].num_remaining;
 		d->sensor = msg->sensor;
 		d->value = msg->value;
 
@@ -141,19 +166,14 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 
 					// initialize all the queries to be unused
 					// and enable all the sensors
-					for (i = 0; i < NUM_SENSORS; i++){
-						s->queries[i].qid = 0;
-#ifndef SOS_SIM 
-						sys_sensor_enable(i);
-#endif
+					s->num_queries = 8;
+					for (i = 0; i < 8; i++){
+						s->queries[i] = NULL;
+						s->sensor_timers[i] = 0;
 					}
 
-					s->queries[4].qid = 2;
-					s->queries[4].compare_op = 0;
-					s->queries[4].interval = 1024; 
-					s->queries[4].num_remaining = 20;
+					sys_timer_start(255, 1024, TIMER_ONE_SHOT);
 
-          sys_timer_start(4, 1024, TIMER_REPEAT);
 					sys_led(LED_RED_OFF);
 					sys_led(LED_YELLOW_OFF);
 					sys_led(LED_GREEN_OFF);
@@ -166,32 +186,48 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						//sys_led(LED_YELLOW_TOGGLE);
 					
 					uint8_t msg_len = msg->len; 
-					new_query_msg_t *new_query = (new_query_msg_t *) sys_msg_take_data(msg);
+					uint8_t *new_query = sys_msg_take_data(msg);
 
 					//if (new_query == NULL)
 						//sys_led(LED_RED_TOGGLE);
 
-					uint8_t i;
+					DEBUG("<INTERPRETER> new query\n");
+					uint8_t i=0, j=0;
+					while (i < s->num_queries && s->queries[i] != NULL)
+						i++;
+
+					if (i < s->num_queries){
+						query_details_t *query; 
+
+						// this will set up the query based on the recieved message
+						query = recieve_new_query(new_query, msg_len);
+
+						DEBUG("<INTERPRETER>\nqid = %d\nnum_queries = %d\ninterval = %d\n", query->qid,
+								query->num_queries, query->interval);
+
+						for (j = 0; j < query->num_queries; j++){
+							DEBUG("<INTERPRETER> adding query for sensor: %d\n", query->queries[j]);
+							if (query->queries[j] < NUM_SENSORS){
+                // test to make sure that the sensor isn't already involved in a query
+								if (s->sensor_timers[query->queries[j]] != 0){
+									free_query(query, i);
+									query = NULL;
+									break;
+								}
+
+								uint8_t tid;
+								tid = (i << 4) | j;
+								s->sensor_timers[query->queries[j]] = tid;
+								sys_timer_start(tid, query->interval, TIMER_REPEAT);
+							}
+							query->results[j] = 0;
+						}
+						s->queries[i] = query;
+					} else
+						DEBUG("<INTERPRETER> No room for a new query\n");
 
 					sys_led(LED_GREEN_TOGGLE);
 
-					for (i = 0; i < new_query->num_sensor_query; i++){
-						query_details_t *q = &( new_query->queries[i] );
-						uint8_t sensor_type = (q->stype_and_op & 0xF0) >> 4;
-						sensor_query_t *sq = &( s->queries[sensor_type] );
-
-						if (sq->qid == 0){
-							sq->qid = new_query->qid;
-							sq->compare_op = (q->stype_and_op & 0x0f);
-							sq->interval = new_query->interval;
-							sq->num_remaining = new_query->num_samples;
-							sq->compare_val = q->compare_val;
-
-							sys_timer_start(sensor_type, sq->interval, TIMER_REPEAT);
-						} else {
-							//send error message, saying that we can't service this query
-						}
-					}
 					sys_post(TREE_ROUTING_PID, MSG_SEND_TO_CHILDREN, msg_len, new_query, SOS_MSG_RELEASE);
 				}
 				break;
@@ -203,67 +239,115 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 					 */
 					MsgParam *param = (MsgParam *) msg->data;
 
-					DEBUG("<INTERPRETER> Timer Timeout, for sensor %d\n", param->byte);
+					DEBUG("<INTERPRETER> Timer Timeout, for timer%d\n", param->byte);
 
 					//sys_led(LED_YELLOW_TOGGLE);
-					if (param->byte > NUM_SENSORS)
+					if (param->byte > NUM_SENSORS && param->byte != 255)
 						break;
 
-					s->queries[param->byte].num_remaining--;
-					if (s->queries[param->byte].num_remaining > 0)
-#ifdef SOS_SIM 
-						sys_post_value(MOTE_INTERPRETER_PID, MSG_DATA_READY, 0x00ffff04, 0);
+					uint8_t q_index;
+					uint8_t s_index;
+					uint8_t sid;
+
+					q_index = param->byte >> 4;
+					s_index = param->byte & 0x0F;
+					if (q_index < NUM_SENSORS && s_index < s->queries[q_index]->num_queries){
+						sid = s->queries[q_index]->queries[s_index];
+
+						DEBUG("<INTERPRETER> getting data for sensor: %d\n", sid);
+						if (sid > NUM_SENSORS){
+							// do some stuff for special ops;
+							// this shouldn't really happen anyways
+						}	else{ 
+#ifndef SOS_SIM
+							sys_sensor_get_data(sid);
 #else
-						sys_sensor_get_data(param->byte);
+							sys_post_value(s->pid, MSG_DATA_READY, 0x00ffff04, 0);
 #endif
-					else{ 
-						s->queries[param->byte].qid = 0;
-						sys_timer_stop(param->byte);
-					}
+						}
+					} else if (param->byte == 255){ // our test case
+						DEBUG("<INTERPRETER> test case\n");
+						test_query_t *test = (test_query_t *) sys_malloc(sizeof(test_query_t));
+
+						test->qid = 4;
+						test->interval = 1235;
+						test->total_samples = 257;
+						test->num_queries = 1;
+						test->num_qualifiers = 0;
+						test->trigger.trig = 0;
+						test->query = 4;
+
+						sys_post(s->pid, MSG_NEW_QUERY, sizeof(test_query_t), test, SOS_MSG_RELEASE);
+					} else
+						sys_led(LED_RED_TOGGLE);
+					
 				}
 				break;
 
 			case MSG_DATA_READY:
 				{
 					sensor_msg_t *data = (sensor_msg_t *)sys_msg_take_data(msg);
-					sensor_query_t *sq;
+					uint8_t q_index;
+					uint8_t s_index;
 
-					//sys_led(LED_RED_TOGGLE);
+					DEBUG("Data Ready\nsensor = %d\nvalue = %d\n", data->sensor, data->value);
 
-					sq = &(s->queries[data->sensor]);
+					if (data->sensor < NUM_SENSORS){
+						q_index = s->sensor_timers[data->sensor] >> 4;
+						s_index = s->sensor_timers[data->sensor] & 0x0F;
 
-					DEBUG("<INTERPRETER> data ready for sensor: %d with value = %d\n", data->sensor, data->value);
-					if (sq->compare_op == 0){
-						DEBUG("<INTERPRETER> compare ok\n");
-						reply_sender(sq->qid, data);
-						// send the value
-				  } else {
-						switch(sq->compare_op){
-							case LESS_THAN_OP:
-								if (data->value < sq->compare_val){
-									reply_sender(sq->qid, data);
-									// send the value
-								}
-								break;
-							case GREATER_THAN_OP:
-								if (data->value > sq->compare_val){
-									reply_sender(sq->qid, data);
-									// send the value
-								}
-								break;
-						  case EQUAL_OP:
-								if (data->value == sq->compare_val){
-									reply_sender(sq->qid, data);
-									//send the value
-								}
-								break;
-							default:
-								break;
-						}
+						DEBUG("<INTERPRETER> q_index=%d  s_index = %d\n", q_index, s_index);
+						s->queries[q_index]->results[s_index] = data->value;
+						s->queries[q_index]->recieved++;
+
+						if (s->queries[q_index]->recieved == s->queries[q_index]->num_queries)
+							sys_post_value(s->pid, MSG_VALIDATE, q_index, SOS_MSG_RELEASE); // this message will dispatch the results since we've gotten all the results
 					}
 					sys_free(data);
 				}
 				break;
+
+			case MSG_VALIDATE:
+				{
+				  uint32_t q_index = *((uint32_t *) msg->data);
+          query_details_t *q = s->queries[q_index];
+
+					DEBUG("msg validate: q_index = %d\n", q_index);
+					if (q->num_qualifiers == 0)
+						sys_post_value(s->pid, MSG_DISPATCH, q_index, SOS_MSG_RELEASE);
+					else {
+						// check according to the qualifiers
+						// TODO!
+					}
+				} 
+				break;
+
+			case MSG_DISPATCH:
+				{
+					uint32_t q_index = *((uint32_t *) msg->data);
+					query_details_t *q = s->queries[q_index];
+					uint8_t i;
+
+					DEBUG("msg dispatch\n");
+
+					for (i = 0; i < q->num_queries; i++){
+						sensor_msg_t *reply = (sensor_msg_t *) sys_malloc(sizeof(sensor_msg_t));
+
+						DEBUG("<INTERPRETER> dispatcher, sensor: %d  value: %d\n", q->queries[i], q->results[i]);
+						reply->sensor = q->queries[i];
+						reply->value = q->results[i];
+						
+            reply_sender(q->qid, reply);
+					}
+
+					q->recieved = 0;
+					q->total_samples--;
+					if (q->total_samples == 0){
+						free_query(q, (uint8_t) q_index);
+						s->queries[q_index] = NULL;
+					}
+				}
+				break;					
 
 			case MSG_TR_DATA_PKT:
 				{
@@ -307,3 +391,58 @@ mod_header_ptr interpreter_get_header(){
 	return sos_get_header_address(mod_header);
 }
 #endif
+
+static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len){
+	query_details_t *q;
+
+	uint8_t i;
+	for (i = 0; i < msg_len; i++){
+		DEBUG("<INTERPRETER> new_query at i = %d\nvalue = %d\n", i, *(new_query + i));
+	}
+	q = (query_details_t *)sys_malloc(sizeof(query_details_t));
+
+	memcpy(q, new_query, sizeof(uint8_t) * 11);
+
+	new_query += 11;
+  q->queries = (uint8_t *) sys_malloc(sizeof(uint8_t) * q->num_queries);
+	q->qualifiers = (qualifier_t *) sys_malloc(sizeof(qualifier_t) * q->num_qualifiers);
+	q->results = (uint16_t *) sys_malloc(sizeof(uint16_t) * q->num_queries);
+
+	DEBUG("<INTERPRETER> forming new query\nnum_queries = %d\nnum_qualifiers = %d\n", q->num_queries, q->num_qualifiers);
+	memcpy(q->queries, new_query, sizeof(uint8_t) * q->num_queries);
+
+	if (q->num_queries > 0){
+		DEBUG("<INTERPRETER> sensor value 1: %d\n", q->queries[0]);
+	  DEBUG("<INTERPRETER> value from new_query: %d\n", *new_query);
+	}
+	
+	new_query += q->num_queries;
+	memcpy(q->qualifiers, new_query, sizeof(qualifier_t) * q->num_qualifiers);
+
+	q->recieved = 0;
+
+	return q;
+}
+
+static int8_t free_query(query_details_t* query, uint8_t q_index){
+  uint8_t i;
+	mote_state_t *s = (mote_state_t *) sys_get_state();
+
+	for (i = 0; i < query->num_queries; i++){
+		uint8_t tid = 0;
+		tid = q_index << 4;
+		tid |= (i & 0x0F);
+		sys_timer_stop(tid);
+
+		if (query->queries[i] < NUM_SENSORS)
+			s->sensor_timers[query->queries[i]] = 0;
+	}
+
+	sys_free(query->queries);
+	sys_free(query->qualifiers);
+	sys_free(query->results);
+	sys_free(query);
+
+	query = NULL;
+	return SOS_OK;
+}

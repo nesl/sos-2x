@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
 #    srv.post(daddr = 0, saddr = 0, did=128, sid = 128, type=33, data = data)
 
-    data = pysos.pack('<HIHBBHBH', 2,1024, 100, 2,64, 800, 80, 800)
+    data = pysos.pack('<HIHBBBB', 123, 1024, 50, 1, 0, 0, 4)
 
     srv.post(daddr = 1, saddr = 1, did=128, sid=128, type=33, data=data)
 
