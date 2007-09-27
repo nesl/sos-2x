@@ -20,6 +20,7 @@ number_of_prog = 1
 tests_to_run = 'test.conf'
 depend_list = 'depend.conf'
 kernel_mode = ''
+kernel_loc = 'config/blank'
 
 def check_dir(loc):
     file_dirs = loc.split('/')
@@ -154,6 +155,7 @@ def configure_setup(config_file='config.sys'):
     global tests_to_run
     global depend_list
     global kernel_mode
+    global kernel_loc
 
     home = '/home/test'
     sos_root = home + '/sos-2x/trunk'
@@ -216,6 +218,10 @@ def configure_setup(config_file='config.sys'):
 	words = re.match(r'kernel_mode = (\S+)(\s*)\n', line)
 	if words:
 	    kernel_mode = words.group(1)
+	    continue
+	words = re.match(r'KERNEL = SOSROOT/(\S+)(\s*)\n', line)
+	if words:
+	    kernel_loc = words.group(1)
 	    continue
 
     number_of_prog = len(install_port)
@@ -304,10 +310,14 @@ def make_kernel(platform):
         if there are any comipilation issues, it informs the user and exits
 	all output from compiliation is saved in $SOSROOT/modules/unit_test/python/kernel.log
 	'''
+
+    global kernel_loc
+
     kernel_f = open(os.environ['SOSTESTDIR'] + "/../python/kernel.log", "w")
 
-    clean("config/blank")
-    cmd_make =  ["make", "-C", "config/blank", platform , 'TEST_MODE=true', 'MODE=%s' %kernel_mode]
+    print kernel_loc
+    clean(kernel_loc)
+    cmd_make =  ["make", "-C", kernel_loc , platform , 'TEST_MODE=true', 'MODE=%s' %kernel_mode]
 
     try:
       subprocess.check_call(cmd_make, stderr=kernel_f, stdout=kernel_f)
@@ -333,11 +343,12 @@ def install_on_board(platform, address, port):
 	'''
     global prog
     global sos_group
+    global kernel_loc
 
     if platform == 'tmote':
 	prog = 'bsl'
     if platform != 'avrora':
-	cmd_install = ["make", "-C", "config/blank", platform , "install", "PROG=%s" %prog, "PORT=%s" %install_port[port], "SOS_GROUP=%s" %sos_group, "ADDRESS=%s" %address]
+	cmd_install = ["make", "-C", kernel_loc, platform , "install", "PROG=%s" %prog, "PORT=%s" %install_port[port], "SOS_GROUP=%s" %sos_group, "ADDRESS=%s" %address]
     else:
         print "you shouldn't be doing this"
 	os.exit(0)
@@ -576,7 +587,7 @@ if __name__ == '__main__':
 		print "this nodes address is: %d" %(number_of_prog-1)
 		print "the next node will be installed automatically"
 
-	    number_of_prog -= 1
+		number_of_prog -= 1
 	    
     print "please make sure all nodes are turned on and that the basestation is still connected"
     print "press enter when ready"
