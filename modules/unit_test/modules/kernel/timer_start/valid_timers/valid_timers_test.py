@@ -68,7 +68,7 @@ if __name__ == "__main__":
     # when the appropriate message type is recieved
     srv = pysos.sossrv()
 
-    srv.register_trigger(generic_test, type=MSG_TEST_DATA)
+    srv.register_trigger(generic_test, type=MSG_TEST_DATA, sid=TEST_MODULE)
 
     # register the signal handler and begin an alarm that will wait for 60 seconds before going off
     # other times for the alarm might be good, use your own judgement based on your test

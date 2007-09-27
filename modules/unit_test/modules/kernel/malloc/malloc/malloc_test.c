@@ -69,6 +69,9 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
 	.processor_type = MCU_TYPE,
 	.code_id = ehtons(TEST_PID),
 	.module_handler = generic_test_msg_handler,
+#ifdef SOS_USE_PREEMPTION
+	.init_priority = 2,
+#endif
 };
 
 static int8_t send_new_data(uint8_t state, uint8_t data){
