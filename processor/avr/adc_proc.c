@@ -109,7 +109,7 @@ static mod_header_t mod_header SOS_MODULE_HEADER =
 {
   .mod_id = ADC_PROC_PID,
 #ifdef SOS_USE_PREEMPTION
-	.state_size = sizeof(func_cb_ptr) * ADC_PROC_PORTMAPSIZE,
+	.state_size = (sizeof(func_cb_ptr) * ADC_PROC_EXTENDED_PORTMAPSIZE),
 #else
 	.state_size = 0,
 #endif
@@ -162,7 +162,7 @@ int8_t adc_proc_init() {
 	}
 #ifdef SOS_USE_PREEMPTION
 	ker_register_module(sos_get_header_address(mod_header));
-	s.cb = ker_get_module_state(KER_SENSOR_PID);
+	s.cb = ker_get_module_state(ADC_PROC_PID);
 #else
 	sched_register_kernel_module(&adc_proc_module, sos_get_header_address(mod_header), &s.cb);
 #endif
@@ -328,13 +328,13 @@ int8_t ker_adc_proc_stopPerodicData(uint8_t port) {
 	
 	return SOS_OK;
 }
-#include <led.h>
 
 adc_proc_interrupt() {
 #ifdef SOS_USE_PREEMPTION
 	HAS_PREEMPTION_SECTION;
 	DISABLE_PREEMPTION();
 #endif
+
 	uint16_t adcValue;
 
 	if (s.state != ADC_PROC_BUSY) {
@@ -349,6 +349,7 @@ adc_proc_interrupt() {
 	if (s.portmap[s.reqPort] == ADC_PROC_BANDGAP) {
 		s.refVal = adcValue;
 	}
+
 	SOS_CALL(s.cb[s.reqPort], adc10_cb_t, s.reqPort, adcValue, s.calling_flags);
 
 	if (!(s.sampleCnt > 0)) {
