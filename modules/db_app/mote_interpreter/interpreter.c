@@ -1,36 +1,14 @@
 /* -*- Mode: C; tab-width:2 -*- */
 /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
 
+#include "interpreter.h"
 #include <sys_module.h>
+#include <pwm.h>
 #include <string.h>
 #include <routing/tree_routing/tree_routing.h>
 #define LED_DEBUG
 #include <led_dbg.h>
 
-#define MSG_NEW_QUERY (MOD_MSG_START + 1)
-#define MSG_QUERY_REPLY (MOD_MSG_START + 2)
-#define MSG_VALIDATE (MOD_MSG_START + 3)
-#define MSG_DISPATCH (MOD_MSG_START + 4)
-
-#define NUM_SENSORS 8
-#define MOTE_INTERPRETER_PID DFLT_APP_ID0
-
-enum {
-	EQUAL_OP = 1,
-	GREATER_THAN_OP,
-	LESS_THAN_OP
-};
-
-typedef struct {
-	uint8_t sid;
-	uint8_t comp_op_and_relation;
-	uint16_t comp_value;
-} qualifier_t;
-
-
-typedef struct {
-	uint8_t trig;
-} trigger_t;
 
 /*
 typedef struct {
@@ -53,24 +31,9 @@ typedef struct{
 	uint8_t num_qualifiers;
 	trigger_t trigger;
 	uint8_t query;
+	uint8_t query2;
 } test_query_t;
 
-typedef struct {
-	uint16_t qid;
-	uint16_t total_samples;
-	uint32_t interval;
-	uint8_t num_queries;
-	uint8_t num_qualifiers;
-	trigger_t trigger;
-	uint8_t *queries;
-	qualifier_t *qualifiers;
-	uint16_t *results;           // when a sensor value is recieved we save it here so that we can send them 
-	                             // all out together, or do any comparisons needed
-															 // this only needs to be used when number of qualifiers is non-zero
-	uint8_t recieved;            // a non zero value marks the value as being recieved
-                               // a zero value marks it as non recieved, upon every new epoch, recieved should be set to 0
-															 // this only really has to be used when the number of qualifiers is non-zero	
-} query_details_t;
 
 typedef struct {
   uint8_t pid;
@@ -85,22 +48,11 @@ typedef struct {
 															 // query_details_t data structure
 } mote_state_t;
 
-typedef struct {
-	uint8_t sid;
-	uint16_t qid;
-	uint16_t num_remaining;
-	uint8_t sensor;
-	uint16_t value;
-} query_result_t;
-
-typedef struct {
-	uint8_t sensor;
-	uint16_t value;
-} sensor_msg_t;
 
 static int8_t interpreter_msg_handler(void *state, Message *msg);
 static int8_t reply_sender(uint16_t qid, sensor_msg_t *msg);
 static int8_t free_query(query_details_t* query, uint8_t q_index);
+static int8_t is_value_qualified(qualifier_t *qual, uint16_t value);
 static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len);
 
 static const mod_header_t mod_header SOS_MODULE_HEADER = {
@@ -136,6 +88,9 @@ static int8_t reply_sender(uint16_t qid, sensor_msg_t *msg){
 		if (hdr_size < 0) {return SOS_OK;}
 
 		pkt = (uint8_t *) sys_malloc(hdr_size + sizeof(query_result_t));
+		if (!pkt)
+			DEBUG("<INTERPRETER> malloc not ok\n");
+
 		DEBUG("<interpreter> malloc ok\n");
 		d = (query_result_t *) (pkt+hdr_size);
 		d->sid = sys_id();
@@ -172,6 +127,9 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						s->sensor_timers[i] = 0;
 					}
 
+					//sys_pwm_hardware_init();
+					//sys_pwm_set_frequency(200, 1024);
+					//sys_pwm_set_width(PWM_CHANNEL_0, 10, 1);
 					sys_timer_start(255, 1024, TIMER_ONE_SHOT);
 
 					sys_led(LED_RED_OFF);
@@ -262,7 +220,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 #ifndef SOS_SIM
 							sys_sensor_get_data(sid);
 #else
-							sys_post_value(s->pid, MSG_DATA_READY, 0x00ffff04, 0);
+							sys_post_value(s->pid, MSG_DATA_READY, 0x00ffff00 | sid, 0);
 #endif
 						}
 					} else if (param->byte == 255){ // our test case
@@ -272,10 +230,11 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						test->qid = 4;
 						test->interval = 1235;
 						test->total_samples = 257;
-						test->num_queries = 1;
+						test->num_queries = 2;
 						test->num_qualifiers = 0;
 						test->trigger.trig = 0;
 						test->query = 4;
+						test->query2= 5;
 
 						sys_post(s->pid, MSG_NEW_QUERY, sizeof(test_query_t), test, SOS_MSG_RELEASE);
 					} else
@@ -287,6 +246,9 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 			case MSG_DATA_READY:
 				{
 					sensor_msg_t *data = (sensor_msg_t *)sys_msg_take_data(msg);
+
+					if (data == NULL)
+						DEBUG("data ready fail\n");
 					uint8_t q_index;
 					uint8_t s_index;
 
@@ -300,8 +262,10 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						s->queries[q_index]->results[s_index] = data->value;
 						s->queries[q_index]->recieved++;
 
-						if (s->queries[q_index]->recieved == s->queries[q_index]->num_queries)
+						if (s->queries[q_index]->recieved == s->queries[q_index]->num_queries){
 							sys_post_value(s->pid, MSG_VALIDATE, q_index, SOS_MSG_RELEASE); // this message will dispatch the results since we've gotten all the results
+					    s->queries[q_index]->total_samples--;
+					  }
 					}
 					sys_free(data);
 				}
@@ -316,8 +280,18 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 					if (q->num_qualifiers == 0)
 						sys_post_value(s->pid, MSG_DISPATCH, q_index, SOS_MSG_RELEASE);
 					else {
-						// check according to the qualifiers
-						// TODO!
+						uint8_t i;
+						for (i=0; i<q->num_qualifiers; i++){
+							if (!is_value_qualified(&(q->qualifiers[i]), q->results[q->qualifiers[i].sid])){
+								if (q->total_samples == 0){
+									free_query(q, (uint8_t) q_index);
+									s->queries[q_index] = NULL;
+								}
+								return SOS_OK;
+							}
+						}
+
+						sys_post_value(s->pid, MSG_DISPATCH, q_index, SOS_MSG_RELEASE);
 					}
 				} 
 				break;
@@ -328,7 +302,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 					query_details_t *q = s->queries[q_index];
 					uint8_t i;
 
-					DEBUG("msg dispatch\n");
+					DEBUG("<INTERPRETER> msg dispatch, with queries remaining=%d\n", q->total_samples);
 
 					for (i = 0; i < q->num_queries; i++){
 						sensor_msg_t *reply = (sensor_msg_t *) sys_malloc(sizeof(sensor_msg_t));
@@ -341,7 +315,6 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 					}
 
 					q->recieved = 0;
-					q->total_samples--;
 					if (q->total_samples == 0){
 						free_query(q, (uint8_t) q_index);
 						s->queries[q_index] = NULL;
@@ -372,6 +345,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						sys_post_uart(s->pid, MSG_QUERY_REPLY, msg_len, payload, SOS_MSG_RELEASE, BCAST_ADDRESS);
 #else
 						DEBUG("<INTERPRETED> data recieved with: sensor=%d\nvalue=%d\nqid=%d\n", reply->sensor, reply->value, reply->qid);
+						sys_free(payload);
 #endif
 						//sys_free(payload);
 					}
@@ -445,4 +419,31 @@ static int8_t free_query(query_details_t* query, uint8_t q_index){
 
 	query = NULL;
 	return SOS_OK;
+}
+
+static int8_t is_value_qualified(qualifier_t *qual, uint16_t value){
+	uint8_t comp_op = (qual->comp_op_and_relation & 0xF0) >> 4;
+
+	switch (comp_op){
+		case LESS_THAN:
+		 return value < qual->comp_value;
+	   break;
+	  case GREATER_THAN:
+		 return value > qual->comp_value;
+		 break;
+		case EQUAL:
+		 return value == qual->comp_value;
+		 break;
+		case NOT_EQUAL:
+		 return value != qual->comp_value;
+		 break;
+		case GREATER_THAN_EQUAL:
+		 return value >= qual->comp_value;
+		 break;
+		case LESS_THAN_EQUAL:
+		 return value <= qual->comp_value;
+		 break;
+	  default:
+		 return true;
+	}
 }
