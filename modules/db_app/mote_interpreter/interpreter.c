@@ -32,6 +32,7 @@ typedef struct{
 	trigger_t trigger;
 	uint8_t query;
 	uint8_t query2;
+	qualifier_t qual1;
 } test_query_t;
 
 
@@ -88,8 +89,10 @@ static int8_t reply_sender(uint16_t qid, sensor_msg_t *msg){
 		if (hdr_size < 0) {return SOS_OK;}
 
 		pkt = (uint8_t *) sys_malloc(hdr_size + sizeof(query_result_t));
-		if (!pkt)
+		if (!pkt){
 			DEBUG("<INTERPRETER> malloc not ok\n");
+			return -EINVAL;
+		}
 
 		DEBUG("<interpreter> malloc ok\n");
 		d = (query_result_t *) (pkt+hdr_size);
@@ -107,6 +110,7 @@ static int8_t reply_sender(uint16_t qid, sensor_msg_t *msg){
 
 		sys_post(TREE_ROUTING_PID, MSG_SEND_PACKET, hdr_size + sizeof(query_result_t), 
 				(void *) pkt, SOS_MSG_RELEASE);
+		sys_free(msg);
 	return SOS_OK;
 }
 
@@ -228,18 +232,23 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						test_query_t *test = (test_query_t *) sys_malloc(sizeof(test_query_t));
 
 						test->qid = 4;
-						test->interval = 1235;
+						test->interval = 500;
 						test->total_samples = 257;
 						test->num_queries = 2;
-						test->num_qualifiers = 0;
+						test->num_qualifiers = 1;
 						test->trigger.trig = 0;
 						test->query = 4;
 						test->query2= 5;
+
+						test->qual1.sid = 4;
+						test->qual1.comp_op_and_relation = (GREATER_THAN << 4);
+						test->qual1.comp_value = 200;
 
 						sys_post(s->pid, MSG_NEW_QUERY, sizeof(test_query_t), test, SOS_MSG_RELEASE);
 					} else
 						sys_led(LED_RED_TOGGLE);
 					
+					sys_free(msg->data);
 				}
 				break;
 
@@ -259,6 +268,8 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						s_index = s->sensor_timers[data->sensor] & 0x0F;
 
 						DEBUG("<INTERPRETER> q_index=%d  s_index = %d\n", q_index, s_index);
+						DEBUG("<INTERPRETER> recieved=%d num_queries=%d\n", s->queries[q_index]->recieved, s->queries[q_index]->num_queries);
+
 						s->queries[q_index]->results[s_index] = data->value;
 						s->queries[q_index]->recieved++;
 
@@ -282,16 +293,18 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 					else {
 						uint8_t i;
 						for (i=0; i<q->num_qualifiers; i++){
-							if (!is_value_qualified(&(q->qualifiers[i]), q->results[q->qualifiers[i].sid])){
+							uint8_t sid_index = s->sensor_timers[q->qualifiers[i].sid] & 0x0F;
+							if (!is_value_qualified(&(q->qualifiers[i]), q->results[sid_index])){
 								if (q->total_samples == 0){
 									free_query(q, (uint8_t) q_index);
 									s->queries[q_index] = NULL;
 								}
+								q->recieved = 0;
 								return SOS_OK;
 							}
 						}
 
-						sys_post_value(s->pid, MSG_DISPATCH, q_index, SOS_MSG_RELEASE);
+						sys_post_value(s->pid, MSG_DISPATCH, q_index, 0);
 					}
 				} 
 				break;
@@ -377,7 +390,7 @@ static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len){
 
 	memcpy(q, new_query, sizeof(uint8_t) * 11);
 
-	new_query += 11;
+	new_query += STATIC_QUERY_SIZE;
   q->queries = (uint8_t *) sys_malloc(sizeof(uint8_t) * q->num_queries);
 	q->qualifiers = (qualifier_t *) sys_malloc(sizeof(qualifier_t) * q->num_qualifiers);
 	q->results = (uint16_t *) sys_malloc(sizeof(uint16_t) * q->num_queries);
@@ -393,6 +406,8 @@ static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len){
 	new_query += q->num_queries;
 	memcpy(q->qualifiers, new_query, sizeof(qualifier_t) * q->num_qualifiers);
 
+	DEBUG("<INTERPRETER> qualifiers: comp_value=%d\nsid=%d\n", q->qualifiers[0].comp_value, q->qualifiers[0].sid);
+
 	q->recieved = 0;
 
 	return q;
@@ -401,6 +416,8 @@ static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len){
 static int8_t free_query(query_details_t* query, uint8_t q_index){
   uint8_t i;
 	mote_state_t *s = (mote_state_t *) sys_get_state();
+
+  DEBUG("<INTERPRETER> freeing query\n");
 
 	for (i = 0; i < query->num_queries; i++){
 		uint8_t tid = 0;
@@ -424,11 +441,13 @@ static int8_t free_query(query_details_t* query, uint8_t q_index){
 static int8_t is_value_qualified(qualifier_t *qual, uint16_t value){
 	uint8_t comp_op = (qual->comp_op_and_relation & 0xF0) >> 4;
 
+	DEBUG("<INTERPRETER> qualifier: valu=%d comp_value=%d comparitor=%d\n", value, qual->comp_value, comp_op);
 	switch (comp_op){
 		case LESS_THAN:
 		 return value < qual->comp_value;
 	   break;
 	  case GREATER_THAN:
+		 DEBUG("<INTERPRETER> greater than=%d\n", value>qual->comp_value);
 		 return value > qual->comp_value;
 		 break;
 		case EQUAL:
