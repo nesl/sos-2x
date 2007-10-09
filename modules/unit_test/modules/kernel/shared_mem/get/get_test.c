@@ -179,20 +179,18 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 				switch(s->state){
 				  case TEST_APP_INIT:
 					  {
-							if (s->count < 10){
+							uint8_t i;
+							
+							s->count = 0;
+							for (i = 0; i < 10; i++){
 								uint8_t *d;
 								
 								d = (uint8_t*) sys_malloc(sizeof(uint8_t));
-								*d = s->count;
+								*d = i;
 								
-								sys_shm_open(sys_shm_name(TEST_PID, s->count), d);
-								s->count++;
-              } else {
-								s->state = TEST_APP_FINAL;
-								s->count = 0;
+								sys_shm_open(sys_shm_name(TEST_PID, i), d);
 							}
-
-							send_new_data(s->state, s->count);
+							s->state = TEST_APP_FINAL;
 						}
 						break;
 

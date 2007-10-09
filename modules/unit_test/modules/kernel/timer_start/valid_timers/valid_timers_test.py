@@ -52,7 +52,7 @@ def generic_test(msg):
     if (node_state == 0):
 	state[node_id] = data
     if (node_state == 155):
-	print >> sys.stderr, "initialization for timer %d failed" %data
+	print >> sys.stderr, "initialization for timer on count %d failed" %data
     if (node_state == 255):
 	print "initialization for timer %d succeded" %data
     if (node_state == 1 and state[node_id] != data):

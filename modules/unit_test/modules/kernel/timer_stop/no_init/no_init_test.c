@@ -16,7 +16,7 @@
 
 /* this is the timer specifications */
 #define TEST_APP_TID 0
-#define TEST_APP_INTERVAL 50
+#define TEST_APP_INTERVAL 200 
 
 /* messagees for when MSG_INIT and MSG_FINAL are sent
  */

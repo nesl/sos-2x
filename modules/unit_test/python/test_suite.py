@@ -354,6 +354,7 @@ def install_on_board(platform, address, port):
 	os.exit(0)
     
     try:
+      print cmd_install
       subprocess.check_call(cmd_install)
     except subprocess.CalledProcessError:
 	print "problem installing on board: %s, please be sure that the board is connected propperly" %install_port[port]
@@ -444,12 +445,13 @@ def run_tests(test_list, platform, dep_dict):
 	driver's location
 	'''
     failed_tests = []
+    list_of_errors = []
 
     cmd_erase = ["sos_tool.exe", "--rmmod=0"]
     for test in test_list:
 	subprocess.call(cmd_erase)
 
-	print "running test" + test.name
+	print "installing test" + test.name
         driver_location = os.environ['SOSROOT'] + test.driver_location
 	test_location = os.environ['SOSTESTDIR'] + test.test_location
 	
@@ -462,6 +464,8 @@ def run_tests(test_list, platform, dep_dict):
 
         # next install the test driver for the sensor
 	run_and_log(test.test_name, test_location, platform, '%s/install_%s' %(test_location, test.test_name))
+
+	print "now running test %s" %test.name
 
         #now run the python script to verify the output 
 	# and wait for the specified amount of time
@@ -479,6 +483,7 @@ def run_tests(test_list, platform, dep_dict):
 	    os.waitpid(child, 0)
 	    if (os.stat("%s/%s.bad" %(test_location, test.test_name))[stat.ST_SIZE] > 0):
 		failed_tests.append(test)
+                list_of_errors.append("%s/%s.bad" %(test_location, test.test_name))
 		print "test %s had failures" %test.test_name
 	    else:
 		print "test %s passed" %test.test_name
@@ -489,7 +494,7 @@ def run_tests(test_list, platform, dep_dict):
 		for line in test_out_f:
 		    print line
 	    
-    return failed_tests
+    return (failed_tests, list_of_errors)
 
 def usage():
     print "test_suite options:\n\
@@ -500,13 +505,14 @@ def usage():
 
 def process_args(argv):
     try:
-	opts, args = getopt.getopt(argv, "hnd", ["help", "no_make", "debug", "platform="])
+	opts, args = getopt.getopt(argv, "hndc", ["help", "no_make", "debug", "compile_errors", "platform="])
     except getopt.GetoptError:
 	usage()
 	sys.exit(2)
     global _debug 
     _debug=0
     build_kernel = True
+    compile_errors = False;
     platform = 'micaz'
 
     for opt, arg in opts:
@@ -516,11 +522,13 @@ def process_args(argv):
 	elif opt in ('-d', '--debug'):
 	    _debug = 1
 	elif opt in ('-n', '--no_make'):
-	    build_kernel = False;
+	    build_kernel = False
+	elif opt in ('-c', '--compile_errors'):
+	    compile_errors = True
 	elif opt in ('-p', '--platform'):
 	    platform = arg
 
-    return (build_kernel, platform)
+    return (build_kernel, compile_errors, platform)
 
 if __name__ == '__main__':
     avrora_child = 0
@@ -528,7 +536,7 @@ if __name__ == '__main__':
     build_kernel = True
        
     accepted_targets = ['micaz', 'mica2', 'avrora', 'tmote']
-    (build_kernel, target) = process_args(sys.argv[1:])
+    (build_kernel, compile_errors, target) = process_args(sys.argv[1:])
     if target not in accepted_targets:
 	print "invalid target type, exiting"
 	sys.exit(1)
@@ -597,11 +605,15 @@ if __name__ == '__main__':
     sos_child = run_sossrv(target)
 
     print "now running tests"
-    failed_tests = run_tests(test_list, target, dep_dict)
+    (failed_tests, list_of_errors) = run_tests(test_list, target, dep_dict)
     print "tests now completed"
 
     for test in failed_tests:
 	print "test %s had failures, please check the .bad file for it" %test.name
+	if compile_errors:
+	    tar_cmd = ['tar', '-cf', 'errors.tar'] + list_of_errors
+	    print tar_cmd
+	    subprocess.call(tar_cmd)
 
     # killing any child processes that are running
     if (sos_child > 0):

@@ -16,7 +16,7 @@
 
 /* this is the timer specifications */
 #define TEST_APP_TID 0
-#define TEST_APP_INTERVAL 50
+#define TEST_APP_INTERVAL 200 
 
 /* messagees for when MSG_INIT and MSG_FINAL are sent
  */
@@ -166,14 +166,20 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 				  case TEST_APP_INIT:
 					  {
 							uint8_t i;
+							MsgParam *param = (MsgParam*) msg->data;
 
-							for (i=1; i < 11;i++)
-							{
-								if (sys_timer_start(i, TEST_APP_INTERVAL, TIMER_REPEAT) != SOS_OK)
-									send_new_data(155, s->count);
-							  else
-									send_new_data(255, s->count);
-						  }
+							if (param->byte == 0){
+
+								for (i=1; i < 11;i++)
+								{
+									if (sys_timer_start(i, 1024, TIMER_REPEAT) != SOS_OK)
+										send_new_data(155, s->count);
+									else {
+										sys_timer_stop(i);
+										send_new_data(255, s->count);
+									}
+								}
+							}
 
 							s->count++;
 						}

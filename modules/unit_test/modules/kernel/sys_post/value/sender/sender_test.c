@@ -178,7 +178,7 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 						{
 							uint32_t d = 0;
 
-							d |= s->state;
+							d |= 255;
 							d = d << 16;
 							d |= s->count;
 

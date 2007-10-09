@@ -86,7 +86,7 @@ int8_t tr_test_module(void *state, Message *msg)
 		uint8_t* pkt;
 		tr_test_pkt_t* testpkt;
 		int8_t hdr_size;
-		LED_DBG(LED_YELLOW_TOGGLE);
+		//LED_DBG(LED_YELLOW_TOGGLE);
 		hdr_size = SOS_CALL(s->get_hdr_size, get_hdr_size_proto);
 		if (hdr_size < 0) {return SOS_OK;}
 		pkt = (uint8_t*)sys_malloc(hdr_size + sizeof(tr_test_pkt_t));
