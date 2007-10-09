@@ -1,0 +1,50 @@
+Building a Generic Kernel Test
+==============================
+Keith Stevens <fozziethebeat@gmail.com>
+v1.0, Sep 2007
+
+Introduction
+------------
+
+In order to simplify the process of building a sensor test for use in the SOS Test Suite, a program is provided to do the common work for you. By running the python script provided, and specifying the required locations, everything else is done automatically.
+ 
+What the Generic Module Provides
+--------------------------------
+
+Since most sensor tests have a very simple structure, this generic module tries to have as much of the common functionality as possible.  It provides a module with a simple state machine, and along with a function to send simple pass or fail codes to the server via the UART or network. Upon the initialization of the test module, a timer is started, and one sensor will be enabled.  The specifics of what timing interval you want, and which sensors to enable will need to be modfied after using this script.  
+
+Also provided is a python script to be run on the sever.  It will connect to sossrv via pysos, and then confirm that the messesages recieved are as expected.  In most cases, the script will check that the recieved sensor value is within some acceptable range.
+
+Running make_new.py
+-------------------
+
+Unlike the generic kernel module, this one will require two modules to be specified.  The first one specified will have to be a sensor driver that already exists, and the second module specified will be the one you wish to have made.
+
+Using 5 Arguements
+~~~~~~~~~~~~~~~~~~
+
+    1) sensor name
+    2) sensor location
+    3) test 2 name
+    4) test 2 location
+    5) test durration
+ 
+for example:
+
+  python make_new.py accel_sensor /modules/sensordrivers/mts310/accel accel_test sensordrivers/mts310/accel 3
+  
+This will result in test.conf having the following new entry:
+
+ 	@generic_sensor_test:
+        accel_sensor
+        /modules/sensordrivers/mts310/accel
+        accel_test
+        /sensordrivers/mts310/accel
+        3
+
+So a new directory will be made in $SOSROOT/modules/unit_test/modules/sensordrivers/mts310/accel and will have three files:
+  accel_test.c
+  Makefile
+  accel_test.py
+
+Before you can compile the test module and run it, you have to make sure you include the correct sensor driver headers, and modify the Makefile to have the correct include directory.

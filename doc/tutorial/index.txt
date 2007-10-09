@@ -67,6 +67,12 @@ A detailed description of the programming concepts for modules in SOS.
 
 link:module_prog_guide.html[Module Programming Guide]
 
+Running the Test Suite
+----------------------
+A tutorial on how to use the SOS test suite for running a batch of applications in an automated way.
+
+link:test_suite.html[Test Suite Guide]
+
 Adding System Calls
 -------------------
 

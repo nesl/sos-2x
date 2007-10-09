@@ -1,0 +1,74 @@
+Building a Generic Kernel Test
+==============================
+Keith Stevens <fozziethebeat@gmail.com>
+v1.0, Sep 2007
+
+Introduction
+------------
+
+In order to simplify the process of building a kernel test for use in the SOS Test Suite, a program is provided to do the common work for you. By running the python script provided, and specifying the required locations, everything else is done automatically.
+ 
+What the Generic Module Provides
+--------------------------------
+
+Since most kernel tests have a very simple structure, this generic module tries to have as much of the common functionality as possible.  It provides a module with a simple state machine, and along with a function to send simple pass or fail codes to the server via the UART or network.  
+
+Also provided is a python script to be run on the sever.  It will connect to sossrv via pysos, and then confirm that the messesages recieved are as expected.  In most cases, a value of either TEST_PASS or TEST_FAIL will be sent to declare that results of running the test on the module.
+
+Running make_new.py
+-------------------
+
+the make_new script accepts two set of arguements, either 3 arguements, or 5.
+
+Using 3 Arguements
+~~~~~~~~~~~~~~~~~~
+
+The arguements required are: 
+
+    1) test name 
+    2) test location
+    3) test durration
+
+this will create a single new test in in the specified location with the name given. Also, since no sensor driver is specified, a dummy one is used and added to the test list file for you
+
+so after executing:
+
+  python make_new.py malloc /kernel/malloc/test1 3
+ 
+a folder will be made in $SOSROOT/modules/unit_test/modules/kernel/malloc/test1.  Then produce a malloc.c and malloc.py file, and an associated Makefile. 
+
+In the test.conf file, a new entry will have:
+
+	@generic_kernel_test
+	accel_test
+	/modules/sensordrivers/mts310/accel
+	malloc
+	/kernel/malloc/test1
+	3
+
+Using 5 Arguements
+~~~~~~~~~~~~~~~~~~
+this time, we need a few more things to be specified, specificly:
+
+    1) test 1 name
+    2) test 1 location
+    3) test 2 name
+    4) test 2 location
+    5) test durration
+ 
+for example:
+
+  python make_new.py malloc1 /kernel/malloc/test1 malloc2 /kernel/malloc/test2 3
+  
+This will result in test.conf having the following new entry:
+
+ 	@generic_kernel_test
+	malloc1
+	/modules/unit_test/modules/kernel/malloc/test1
+	malloc2
+	/kernel/malloc/test2
+	3
+
+This option will create two seperate modules, each with the name specified in the location specificed.  The first module will be located in $SOSROOT/whatever_you_specify, and the second module will be located in $SOSROOT/modules/unit_test/modules/whatver_you_specify.
+
+Also note that in order to load both modules, the process ID of one of th emodules will need to be changed.   
