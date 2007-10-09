@@ -712,7 +712,11 @@ int8_t ker_sys_timer_start(uint8_t tid, int32_t interval, uint8_t type)
 #ifdef SOS_USE_PREEMPTION
 	ATOMIC_ENABLE_PREEMPTION();
 #endif
+#ifdef SOS_TEST_SUITE
+	return -EINVAL;
+#else
 	return ker_mod_panic(my_id);                                 
+#endif
   }                                                         
 #ifdef SOS_USE_PREEMPTION
   ATOMIC_ENABLE_PREEMPTION();
