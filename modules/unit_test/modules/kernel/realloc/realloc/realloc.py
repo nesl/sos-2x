@@ -54,7 +54,7 @@ def generic_test(msg):
 	state[node_id] = 1
     if (node_state == 0 and data == 255):
 	if (state[node_id] != 1):
-	    print >> sys.stderr, "something has gone wrong and is out of order"
+	    print >> sys.stderr, "something has gone wrong and is out of order on node %d" %node_id
 	state[node_id] = 0
     if (node_state == 155):
 	print >> sys.stderr, "realloc failed to correctly copy the %dth value" %data

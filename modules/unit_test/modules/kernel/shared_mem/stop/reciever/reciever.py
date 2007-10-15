@@ -54,7 +54,7 @@ def generic_test(msg):
     if (node_state == 0):
 	state[node_id] = data
     if (node_state == TEST_FAIL):
-	print >> sys.stderr, "the test for item %d has failed" %data
+	print >> sys.stderr, "the test for item %d has failed on node %d" %(data, node_id)
     if (node_state == TEST_PASS):
 	print "the test for item %d has passed" %data
     if (node_state == 1 and state[node_id] != data):

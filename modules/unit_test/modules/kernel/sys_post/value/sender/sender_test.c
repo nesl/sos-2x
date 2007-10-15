@@ -162,15 +162,6 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
     	}
 			break;
 
-		case MSG_PKT_SENDDONE:
-			{
-				if (msg->flag == 0)
-					send_new_data(255, s->count);
-				else 
-					send_new_data(155, s->count);
-			}
-			break;
-
 		case MSG_TIMER_TIMEOUT:
 			{
 				switch(s->state){
@@ -178,15 +169,13 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 						{
 							uint32_t d = 0;
 
-							d |= 255;
-							d = d << 16;
-							d |= s->count;
+							d = 0x0000ff00 | s->count;
 
 							sys_post_value(
 									OTHER_PID,
 									MSG_SINGLE_DATA,
 									d,
-									SOS_MSG_RELIABLE);
+									0);
 
 							s->count++;
 						}

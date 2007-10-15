@@ -6,7 +6,7 @@ import signal
 # these two variables should be changed depending on the test drivers PID
 # and the type of message it will be sending, If you are using the generic_test.c 
 # then it is likely these two values can stay the same
-TEST_MODULE = 0x80
+TEST_MODULE = 0x81
 MSG_TEST_DATA= 33
 ALARM_LEN = 60
 
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     # when the appropriate message type is recieved
     srv = pysos.sossrv()
 
-    srv.register_trigger(generic_test, type=MSG_TEST_DATA)
+    srv.register_trigger(generic_test, type=MSG_TEST_DATA, sid=TEST_MODULE)
 
     # register the signal handler and begin an alarm that will wait for 60 seconds before going off
     # other times for the alarm might be good, use your own judgement based on your test

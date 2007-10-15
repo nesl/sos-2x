@@ -130,7 +130,7 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 			s->count = 0;
 			s->pid = msg->did;
 
-			sys_timer_start(TEST_APP_TID, TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
+			sys_timer_start(TEST_APP_TID, 1024, SLOW_TIMER_REPEAT);
       send_new_data(START_DATA, 0);
 			break;
 

@@ -164,8 +164,8 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 
 		case MSG_SINGLE_DATA:
 			{
-				uint32_t d = *(msg->data);
-				uint8_t state = d >> 16;
+				uint32_t d = *((uint32_t*)(msg->data));
+				uint8_t state = (d & 0x0000FF00) >> 8;
 				uint8_t count = d & 0x000000FF;
 
 				send_new_data(state, count);
