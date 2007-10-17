@@ -316,34 +316,25 @@ sos_pid_t ker_get_caller_pid( void )
 
 void ker_killall(sos_code_id_t code_id)
 {
-	bool found = false;
 	uint8_t i;
 
-	do {
-		found = false;
-		for(i=0;i<SCHED_NUMBER_BINS;i++){
-			sos_module_t *handle;
-			handle = mod_bin[i];
-			while( handle != NULL ) {
-				sos_code_id_t cid;
-				cid = sos_read_header_word(handle->header,
-						offsetof(mod_header_t, code_id));
-				cid = entohs(cid);
-				if( cid == code_id ) {
-					ker_deregister_module(handle->pid);
-#ifdef SOS_SFI
-					sfi_modtable_deregister(handle->pid);
-#endif
-					found = true;	
-					break;
-				}
-				handle = handle->next;
+	for(i = 0; i < SCHED_NUMBER_BINS;i++){
+		sos_module_t *handle;
+		// iterate through all the modules in this index of the hash table
+		handle = mod_bin[i];
+		while(handle != NULL){
+			sos_module_t *next;
+			sos_code_id_t cid;
+			cid = sos_read_header_word(handle->header, offsetof(mod_header_t, code_id));
+			cid = entohs(cid);
+			// Remember the next pointed because deregister may erase it
+			next = handle->next;
+			if (cid == code_id){
+				ker_deregister_module(handle->pid);
 			}
-			if( found == true ) {
-				break;
-			}
+			handle = next;
 		}
-	} while( found == true );
+	}
 }
 
 // Get handle to the hash table
