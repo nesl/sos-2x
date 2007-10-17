@@ -609,22 +609,22 @@ your code. Use .elf extension intead of .exe as described in that website.
 An example execution for msp430-gdbproxy looks like this:
 
 [c]
-code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 msp430-gdbproxy --port=2000 msp430 /dev/ttyUSB0
-code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - msp430-gdbproxy might complain of older/incompatible firmware version on the 
 TI USB FET when you first connect it to your computer. Fortunately, gdbproxy contains the code to do just that. If your USB FET is unresponsive about the firmware version, you can upgrade the USB FET through the following command:
 
 [c]
-code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 msp430-gdbproxy.exe msp430 --update-usb-fet TIUSB
-code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following output should be produced:
 
 [c]
-code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 $ msp430-gdbproxy.exe msp430 --update-usb-fet TIUSB
 notice:    msp430: TI USB FET update requested
 notice:    msp430: Initializing bootloader...
@@ -635,7 +635,7 @@ notice:    msp430: 0% programmed.
 ....
 notice:    msp430: Finishing...
 notice:    msp430: Update Complete.
-code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - References:
 	* link:http://www.mikrocontroller.net/articles/MSPGCC[http://www.mikrocontroller.net/articles/MSPGCC]
