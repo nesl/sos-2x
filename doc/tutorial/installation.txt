@@ -584,8 +584,18 @@ $ mv libMSP430.so $SOSMSPTOOLDIR/lib/
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Add a rule to udev to select an appropriate configuration of TI USB-serial 
-converter. Look link:http://www.moteiv.com/community/Debugging_Tmote_Sky_with_GDB[here]
-for exact details. Note that the udev rule file for ubuntu must be called
+converter. The file needs to go to "/etc/udev/rules.d/26-ti.rules" under
+Ubuntu Linux and should contain:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+SUBSYSTEM=="usb_device" ACTION=="add" \
+  SYSFS{product}=="MSP-FET430UIF JTAG Tool", \
+  SYSFS{bNumConfigurations}=="2", \
+  SYSFS{bConfigurationValue}=="1", \
+  RUN+="/bin/sh -c 'echo 2 >/sys%p/device/bConfigurationValue'"
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Note that the udev rule file for ubuntu must be called
 "26-ti.rules", instead of "026_ti" or else ubuntu won't detect the TI
 USB-serial converter.
 
@@ -600,17 +610,35 @@ An example execution for msp430-gdbproxy looks like this:
 
 [c]
 code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-msp430-gdbproxy --port=200 msp430 /dev/ttyUSB0
+msp430-gdbproxy --port=2000 msp430 /dev/ttyUSB0
 code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - msp430-gdbproxy might complain of older/incompatible firmware version on the 
-TI USB FET when you first connect it to your computer. Follow instructions
-link:http://www.moteiv.com/community/Debugging_Tmote_Sky_with_GDB#Updating_the_USB_FET_firmware[here]
-to update the firmware.
+TI USB FET when you first connect it to your computer. Fortunately, gdbproxy contains the code to do just that. If your USB FET is unresponsive about the firmware version, you can upgrade the USB FET through the following command:
+
+[c]
+code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+msp430-gdbproxy.exe msp430 --update-usb-fet TIUSB
+code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following output should be produced:
+
+[c]
+code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ msp430-gdbproxy.exe msp430 --update-usb-fet TIUSB
+notice:    msp430: TI USB FET update requested
+notice:    msp430: Initializing bootloader...
+notice:    msp430: Erasing interrupt vectors...
+notice:    msp430: Erasing firmware...
+notice:    msp430: Programming new firmware...
+notice:    msp430: 0% programmed.
+....
+notice:    msp430: Finishing...
+notice:    msp430: Update Complete.
+code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - References:
 	* link:http://www.mikrocontroller.net/articles/MSPGCC[http://www.mikrocontroller.net/articles/MSPGCC]
-	* link:http://www.moteiv.com/community/Debugging_Tmote_Sky_with_GDB[Moteiv]
 	* link:http://www.eecs.harvard.edu/~mdw/proj/tmote-gdb/[Matt Welsh]
 
 [[mica]]
