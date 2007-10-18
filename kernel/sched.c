@@ -331,6 +331,9 @@ void ker_killall(sos_code_id_t code_id)
 			next = handle->next;
 			if (cid == code_id){
 				ker_deregister_module(handle->pid);
+#ifdef SOS_SFI
+				sfi_modtable_deregister(handle->pid);
+#endif
 			}
 			handle = next;
 		}
