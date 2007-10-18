@@ -81,6 +81,13 @@ user modules.
 
 link:add_syscall.html[System Calls]
 
+Using the Ceiling Array
+-----------------------
+
+Brief instructions on how to connect and use the ceiling array with SOS
+
+link:ceiling_array.html[Ceiling Array]
+
 Other Documentation
 -------------------
 

@@ -1,0 +1,32 @@
+Using the Ceiling Array (ie the mib600)
+=======================================
+Keith Stevens <fozziethebeat@gmail.com>
+v1.0, Oct 2007
+
+Introduction
+------------
+Our lab provides a large array of micaz or mica2 motes installed on the ceiling.  These are all attached to a mib600 programming board that is powered by an ethernet cable and can be addressed via an ip address.  This brief tutorial explains what commands you will need to use these mots when installing a kernel, and then connecting using sossrv.
+
+Installing the Kernel
+---------------------
+
+The IP addresses for the ceiling array have already been configured, but if you need to set up your own network using the mib600 board you will have to do this yourself.  
+The IP range is:
+172.17.4.170 to 172.17.4.190
+
+If you want to install a new kernel on one of these motes, use the command:
+
+----
+ make install PROG=stk500 IP=<ip address>
+----
+
+Connecting with SoSSrv
+----------------------
+
+Once the kernel has been installed, it is quite easy to connect with sossrv. The command is:
+
+----
+sossrv.exe -n <ip address>:10002
+----
+
+From this point on, using sossrv and sos_tool to load modules remains the same.
