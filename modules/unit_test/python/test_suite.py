@@ -14,6 +14,8 @@ INF = -1.0
 prog = 'mib510'
 install_port = ['/dev/ttyUSB0']
 listen_port = '/dev/ttyUSB1'
+ip_list = []
+listen_ip = ''
 sos_group = '0'
 number_of_nodes = 1
 number_of_prog = 1
@@ -156,13 +158,30 @@ def configure_setup(config_file='config.sys'):
     global depend_list
     global kernel_mode
     global kernel_loc
+    global listen_ip
 
     home = '/home/test'
     sos_root = home + '/sos-2x/trunk'
     sos_tool_dir = home + '/local'
     test_dir = sos_root + '/modules/unit_test'
+    ip_ranges = []
+    ip_mask = ''
 
     for line in config_f:
+	words = re.match(r'listen_ip = (\S+)(\s*)\n', line)
+	if words:
+	    listen_ip = words.group(1)
+	    print listen_ip
+	    continue
+	words = re.match(r'ip_mask = (\S+)(\s*)\n', line)
+	#this is wrong, but i will fix this later
+	if words:
+	    ip_mask = words.group(1)
+	    continue
+        words = re.match(r'ip_range = (\d+),(\d+)(\s*)\n', line)
+	if words:
+	    ip_ranges.append((range(int(words.group(1)), int(words.group(2)))))
+	    continue
 	words = re.match(r'test_list = (\S+)(\s*)\n', line)
 	if words:
 	    tests_to_run = words.group(1)
@@ -225,6 +244,14 @@ def configure_setup(config_file='config.sys'):
 	    continue
 
     number_of_prog = len(install_port)
+
+    if prog == 'stk500':
+	for group in ip_ranges:
+	    for ip in group:
+		ip_list.append(ip_mask + str(ip))
+        number_of_prog = len(ip_list)
+	number_of_nodes = len(ip_list)
+
     if os.environ['SOSROOT'] == '':
 	os.environ['SOSROOT'] = home + sos_root
     if os.environ['SOSTOOLDIR'] == '':
@@ -347,7 +374,9 @@ def install_on_board(platform, address, port):
 
     if platform == 'tmote':
 	prog = 'bsl'
-    if platform != 'avrora':
+    if prog == 'stk500':
+	cmd_install = ['make', '-C', kernel_loc, platform, 'install', 'PROG=%s' %prog, 'IP=%s' %ip_list[port], 'SOS_GROUP=%s' %sos_group, 'ADDRESS=%s' %address]
+    elif platform != 'avrora':
 	cmd_install = ["make", "-C", kernel_loc, platform , "install", "PROG=%s" %prog, "PORT=%s" %install_port[port], "SOS_GROUP=%s" %sos_group, "ADDRESS=%s" %address]
     else:
         print "you shouldn't be doing this"
@@ -357,10 +386,12 @@ def install_on_board(platform, address, port):
       print cmd_install
       subprocess.check_call(cmd_install)
     except subprocess.CalledProcessError:
-	print "problem installing on board: %s, please be sure that the board is connected propperly" %install_port[port]
+	print "problem installing on board: %s, please be sure that the board is connected propperly" %address 
 	print "please press enter when ready"
 
-	raw_input()
+        s = raw_input()
+	if (s == 's'):
+	  return
 	install_on_board(platform, address, port)
 
 
@@ -377,14 +408,17 @@ def install_on_avrora(node_count):
 	return ret
     
 
-def run_sossrv(target):
+def run_sossrv(target, ):
     ''' start up sossrv.  for targets mica2 or micaz, it will run sossrv on the listen port specified.  
         for avrora taget, it will set up on localhost:2390, which is the port avrora expects on default
 	output from sossrv will be directed to $SOSROOT/modules/unit_test/python/sossrv.log '''
-    if target != 'avrora':
+    if target != 'avrora' and prog != 'stk500':
 	cmd_run = ['sossrv.exe', '-s', listen_port]
+    elif prog == 'stk500':
+	cmd_run = ['sossrv.exe', '-n', '%s:10002' %listen_ip]
     else:
 	cmd_run = ['sossrv.exe', '-n', '127.0.0.1:2390']
+    print cmd_run
 
     time.sleep(10)
 
@@ -610,11 +644,11 @@ if __name__ == '__main__':
 
     for test in failed_tests:
 	print "test %s had failures, please check the .bad file for it" %test.name
-	if compile_errors:
-	    tar_cmd = ['tar', '-cf', 'errors.tar'] + list_of_errors
-	    print tar_cmd
-	    subprocess.call(tar_cmd)
 
+    if compile_errors:
+	tar_cmd = ['tar', '-cf', 'errors.tar'] + list_of_errors
+	print tar_cmd
+	subprocess.call(tar_cmd)
     # killing any child processes that are running
     if (sos_child > 0):
 	print "killing sossrv"
