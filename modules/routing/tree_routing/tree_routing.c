@@ -36,6 +36,7 @@
 #include <sys_module.h>
 //#include <module.h>
 #include "tree_routing.h"
+#include <string.h>
 #include <routing/neighbor/neighbor.h>
 #define LED_DEBUG
 #include <led_dbg.h>
@@ -55,6 +56,8 @@
 typedef struct {                                                           
 	tr_shared_t sr;   // shared state
 	int16_t seq_no;	
+	uint16_t children[10];
+	uint8_t curr_child;
 } tree_route_state_t;   
 
 //-------------------------------------------------------------
@@ -107,7 +110,17 @@ static int8_t tree_routing_module(void *state, Message *msg)
 	{
 
 	  // Initialize the state
-		s->seq_no = 0;
+	  s->seq_no = 0;
+
+	  sys_led(LED_RED_OFF);
+	  sys_led(LED_YELLOW_ON);
+	  sys_led(LED_GREEN_OFF);
+
+	  uint8_t i;
+	  s->children[0] = BCAST_ADDRESS;
+	  for (i = 1; i < 10;i++)
+			s->children[i] = sys_id();
+	  s->curr_child = 0;
 
 	  if(sys_id() == BASE_STATION_ADDRESS) {
 		  s->sr.parent = sys_id();
@@ -124,10 +137,34 @@ static int8_t tree_routing_module(void *state, Message *msg)
 	  return SOS_OK;
 	}
 
+  case MSG_NEW_CHILD:
+	{
+	  uint16_t new_child;
+	  uint8_t new_index = 10;
+	  uint8_t i;
+
+	  new_child = msg->saddr; 
+      sys_led(LED_YELLOW_TOGGLE);
+	  sys_led(LED_RED_TOGGLE);
+      for (i=0;i<10;i++){
+		  if (s->children[i] == new_child)
+			  return SOS_OK;
+		  else if (s->children[i] == sys_id() || s->children[i] == BCAST_ADDRESS ){
+			  new_index = i;
+		      break;
+		  }
+	  }
+
+	  if (new_index < 10)
+		  s->children[new_index] = new_child;
+	  // TODO: add some stuff to remove dead children?
+	}
+
   case MSG_TR_DATA_PKT:
 	{
 	  uint16_t my_id = sys_id();
 	  DEBUG("<TR> RECV DATA from %d to %d\n", msg->saddr, msg->daddr);
+	  sys_led(LED_YELLOW_TOGGLE);
 	  if(msg->daddr == my_id){
 		// Packet was addressed to us
 		uint8_t msg_len = msg->len;
@@ -161,6 +198,42 @@ static int8_t tree_routing_module(void *state, Message *msg)
       DEBUG("<TR> Request to send data\n");
 	  return tr_send_data(s, msg_len, msg->saddr, hdr);
 	}
+
+  case MSG_SEND_TO_CHILDREN:
+	{
+	  uint8_t msg_len = msg->len;
+	  uint8_t *payload = sys_msg_take_data(msg);
+
+	  while (s->curr_child < 10 && s->children[s->curr_child] == sys_id())
+		  s->curr_child++;
+
+	  if (s->curr_child == 10){
+		  sys_free(payload);
+		  s->curr_child = 0;
+		  DEBUG("<TR> Request to send data to children complete\n");
+		  return SOS_OK;
+	  }
+
+	  uint8_t *hdr = sys_malloc(msg_len); 
+	  if (hdr){
+		  memcpy(hdr, payload, msg_len);
+
+		  sys_led(LED_RED_TOGGLE);
+		  DEBUG("<TR> Request to send data to child %d\n", curr_child);
+
+		  sys_post_net(
+				 msg->sid, 
+				 (MOD_MSG_START + 1),
+				 msg_len, 
+				 hdr,     
+				 SOS_MSG_RELEASE, 
+				 s->children[s->curr_child]);
+		  s->curr_child++;
+	  }
+	  sys_post(TREE_ROUTING_PID, MSG_SEND_TO_CHILDREN, msg_len, payload, SOS_MSG_RELEASE);
+	  return SOS_OK;
+	}
+
   case MSG_SHM:
 	{
 		DEBUG("SHM update\n");
@@ -245,6 +318,12 @@ static void choose_parent(tree_route_state_t *s)
 	s->sr.parent = pNewParent->id;
 	s->sr.hop_count = bNewHopCount + 1;
 	
+	// inform new parent that we are now a child
+	uint16_t *my_id;
+	my_id = (uint16_t *) sys_malloc(sizeof(uint16_t));
+	*my_id = sys_id();
+
+	sys_post_net(TREE_ROUTING_PID, MSG_NEW_CHILD, sizeof(uint16_t),my_id,SOS_MSG_RELEASE, s->sr.parent);
   }
 #ifdef PC_PLATFORM
   else {

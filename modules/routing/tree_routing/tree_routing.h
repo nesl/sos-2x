@@ -21,6 +21,8 @@ typedef struct {
 #define TREE_ROUTING_MSG_START MOD_MSG_START
 enum {
    MSG_TR_DATA_PKT = TREE_ROUTING_MSG_START + 2,  //! beacon packet type
+   MSG_NEW_CHILD,
+   MSG_SEND_TO_CHILDREN,
 };
 
 //-------------------------------------------------------------
