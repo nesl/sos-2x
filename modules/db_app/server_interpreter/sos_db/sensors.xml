@@ -1,0 +1,19 @@
+<mts310>
+    <sensor>
+    	<provided-sensors>
+		<name>x-accel</name>
+		<name>y-accel</name>
+    	</provided-sensors>
+   	<location>/modules/sensordrivers/mts310/accel</location>
+    	<file-name>accel.c</file-name>
+    </sensor>
+    <sensor>
+	<provided-sensors>
+	    <name>mag-1</name>
+	    <name>mag-2</name>
+	</provided-sensors>
+	<location>/modules/sensordrivers/mts310/mag</location>
+	<file-name>mag.c</file-name>
+    </sensor>
+</mts310>
+    

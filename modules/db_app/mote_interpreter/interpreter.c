@@ -5,7 +5,7 @@
 #include <sys_module.h>
 #include <pwm.h>
 #include <string.h>
-#include <routing/tree_routing/tree_routing.h>
+//#include <routing/tree_routing/tree_routing.h>
 #define LED_DEBUG
 #include <led_dbg.h>
 
@@ -33,10 +33,12 @@ typedef struct{
 	uint8_t query;
 	uint8_t query2;
 	qualifier_t qual1;
+	qualifier_t qual2;
 } test_query_t;
 
 
 typedef struct {
+	func_cb_ptr get_hdr_size;
   uint8_t pid;
 	uint8_t num_queries;
 	query_details_t *queries[8]; // each time a query comes in, we link it into one of these pointers
@@ -51,68 +53,28 @@ typedef struct {
 
 
 static int8_t interpreter_msg_handler(void *state, Message *msg);
-static int8_t reply_sender(uint16_t qid, sensor_msg_t *msg);
 static int8_t free_query(query_details_t* query, uint8_t q_index);
 static int8_t is_value_qualified(qualifier_t *qual, uint16_t value);
+static uint8_t perform_rel_op(bool prev, bool curr, uint8_t rel_op);
 static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len);
 
 static const mod_header_t mod_header SOS_MODULE_HEADER = {
     .mod_id = MOTE_INTERPRETER_PID,
     .state_size = sizeof(mote_state_t),
     .num_timers = 0,
-    .num_sub_func = 0,
+    .num_sub_func = 1,
     .num_prov_func = 0,
     .platform_type = HW_TYPE,
     .processor_type = MCU_TYPE,
     .code_id = ehtons(MOTE_INTERPRETER_PID),
     .module_handler = interpreter_msg_handler,
+		.funct = {
+			[0] = {error_8, "Cvv0", ROUTING_PID, MOD_GET_HDR_SIZE_FID},
+		},
 	//	.funct = {
 	//		[0] = {error_8, "Cvv0", TREE_ROUTING_PID, MOD_GET_HDR_SIZE_FID},
 	//	},
 };
-
-static int8_t reply_sender(uint16_t qid, sensor_msg_t *msg){
-	query_result_t *d;
-	uint8_t *pkt;
-	int8_t hdr_size;
-	
-	DEBUG("<INTERPRETER> sending data through tree routing\n");
-		mote_state_t *s;
-
-		//sys_led(LED_GREEN_TOGGLE);
-
-		s = (mote_state_t*) sys_get_state();
-		DEBUG("<INTERPRETER> GET STATE ok\n");
-
-    hdr_size = sizeof(tr_hdr_t);
-		DEBUG("<INTERPRETER> get header size ok, size = %d\n", hdr_size);
-		if (hdr_size < 0) {return SOS_OK;}
-
-		pkt = (uint8_t *) sys_malloc(hdr_size + sizeof(query_result_t));
-		if (!pkt){
-			DEBUG("<INTERPRETER> malloc not ok\n");
-			return -EINVAL;
-		}
-
-		DEBUG("<interpreter> malloc ok\n");
-		d = (query_result_t *) (pkt+hdr_size);
-		d->sid = sys_id();
-		d->qid = qid;
-		d->sensor = msg->sensor;
-		d->value = msg->value;
-
-		DEBUG("<MOTE INTERPRETER> Sending sensor data: \nsid = %d\nqid = %d\nsensor = %d\nvalue = %d\npacket size = %d\n",
-				d->sid,
-				d->qid,
-				d->sensor,
-				d->value,
-				hdr_size + sizeof(query_result_t));
-
-		sys_post(TREE_ROUTING_PID, MSG_SEND_PACKET, hdr_size + sizeof(query_result_t), 
-				(void *) pkt, SOS_MSG_RELEASE);
-		sys_free(msg);
-	return SOS_OK;
-}
 
 static int8_t interpreter_msg_handler(void *state, Message *msg){
     mote_state_t *s = (mote_state_t *) state;
@@ -131,9 +93,6 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						s->sensor_timers[i] = 0;
 					}
 
-					//sys_pwm_hardware_init();
-					//sys_pwm_set_frequency(200, 1024);
-					//sys_pwm_set_width(PWM_CHANNEL_0, 10, 1);
 					sys_timer_start(255, 1024, TIMER_ONE_SHOT);
 
 					sys_led(LED_RED_OFF);
@@ -168,6 +127,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 								query->num_queries, query->interval);
 
 						for (j = 0; j < query->num_queries; j++){
+							sys_led(LED_YELLOW_TOGGLE);
 							DEBUG("<INTERPRETER> adding query for sensor: %d\n", query->queries[j]);
 							if (query->queries[j] < NUM_SENSORS){
                 // test to make sure that the sensor isn't already involved in a query
@@ -188,9 +148,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 					} else
 						DEBUG("<INTERPRETER> No room for a new query\n");
 
-					sys_led(LED_GREEN_TOGGLE);
-
-					sys_post(TREE_ROUTING_PID, MSG_SEND_TO_CHILDREN, msg_len, new_query, SOS_MSG_RELEASE);
+					sys_post(ROUTING_PID, MSG_SEND_TO_CHILDREN, msg_len, new_query, SOS_MSG_RELEASE);
 				}
 				break;
 
@@ -231,11 +189,11 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						DEBUG("<INTERPRETER> test case\n");
 						test_query_t *test = (test_query_t *) sys_malloc(sizeof(test_query_t));
 
-						test->qid = 4;
+						test->qid = 5;
 						test->interval = 500;
-						test->total_samples = 257;
+						test->total_samples = 1;
 						test->num_queries = 2;
-						test->num_qualifiers = 1;
+						test->num_qualifiers = 2;
 						test->trigger.trig = 0;
 						test->query = 4;
 						test->query2= 5;
@@ -243,6 +201,10 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						test->qual1.sid = 4;
 						test->qual1.comp_op_and_relation = (GREATER_THAN << 4);
 						test->qual1.comp_value = 200;
+
+						test->qual2.sid = 5;
+						test->qual2.comp_op_and_relation = (LESS_THAN << 4) | AND_NOT;
+						test->qual2.comp_value = 200;
 
 						sys_post(s->pid, MSG_NEW_QUERY, sizeof(test_query_t), test, SOS_MSG_RELEASE);
 					} else
@@ -292,19 +254,26 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						sys_post_value(s->pid, MSG_DISPATCH, q_index, SOS_MSG_RELEASE);
 					else {
 						uint8_t i;
+						bool is_curr_valid = false;
+						bool is_prev_valid = true;
+						uint8_t rel_op;
 						for (i=0; i<q->num_qualifiers; i++){
 							uint8_t sid_index = s->sensor_timers[q->qualifiers[i].sid] & 0x0F;
-							if (!is_value_qualified(&(q->qualifiers[i]), q->results[sid_index])){
+							rel_op = q->qualifiers[i].comp_op_and_relation & 0x0F;
+							is_curr_valid = is_value_qualified(&(q->qualifiers[i]), q->results[sid_index]);
+              is_prev_valid = perform_rel_op(is_prev_valid, is_curr_valid, rel_op);
+						}
+
+						DEBUG("<INTERPRETER> is_prev_valid=%d\n", is_prev_valid);
+            if (is_prev_valid)
+							sys_post_value(s->pid, MSG_DISPATCH, q_index, 0);
+						else {
+								q->recieved = 0;
 								if (q->total_samples == 0){
 									free_query(q, (uint8_t) q_index);
 									s->queries[q_index] = NULL;
 								}
-								q->recieved = 0;
-								return SOS_OK;
-							}
 						}
-
-						sys_post_value(s->pid, MSG_DISPATCH, q_index, 0);
 					}
 				} 
 				break;
@@ -313,19 +282,40 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 				{
 					uint32_t q_index = *((uint32_t *) msg->data);
 					query_details_t *q = s->queries[q_index];
+					query_result_t *reply;
+					uint8_t *pkt;
+					int8_t hdr_size;
+					uint8_t msg_len;
 					uint8_t i;
 
 					DEBUG("<INTERPRETER> msg dispatch, with queries remaining=%d\n", q->total_samples);
 
-					for (i = 0; i < q->num_queries; i++){
-						sensor_msg_t *reply = (sensor_msg_t *) sys_malloc(sizeof(sensor_msg_t));
+					//hdr_size = sizeof(tr_hdr_t);
+					hdr_size = SOS_CALL(s->get_hdr_size, get_hdr_size_proto);
+					DEBUG("<INTERPRETER> hdr size = %d\n", hdr_size);
+					if (hdr_size < 0) {return SOS_OK;}
 
-						DEBUG("<INTERPRETER> dispatcher, sensor: %d  value: %d\n", q->queries[i], q->results[i]);
-						reply->sensor = q->queries[i];
-						reply->value = q->results[i];
-						
-            reply_sender(q->qid, reply);
+					msg_len =  hdr_size + sizeof(query_result_t) + sizeof(sensor_msg_t)*q->num_queries;
+					pkt = (uint8_t *) sys_malloc(msg_len);
+
+					if (!pkt){
+						DEBUG("<INTERPRETER> malloc not ok\n");
+						return -EINVAL;
 					}
+
+					reply = (query_result_t *) (pkt+hdr_size);
+					for (i = 0; i < q->num_queries; i++){
+						reply->results[i].sensor = q->queries[i];
+						reply->results[i].value = q->results[i];
+					}
+
+					reply->group_id = sys_group_id();
+					reply->qid = q->qid;
+					reply->num_remaining = q->total_samples;
+					reply->num_results = q->num_queries;
+
+					sys_post(ROUTING_PID, MSG_SEND_PACKET, msg_len, 
+								(void *) pkt, SOS_MSG_RELEASE);
 
 					q->recieved = 0;
 					if (q->total_samples == 0){
@@ -340,16 +330,10 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 					if (sys_id() == BASE_STATION_ADDRESS){
 						uint8_t *payload;
 						uint8_t msg_len;
-						int8_t hdr_size;
 
 					  sys_led(LED_GREEN_TOGGLE);
 						msg_len = msg->len;
 						payload = sys_msg_take_data(msg);
-
-						query_result_t *reply;
-						hdr_size = sizeof(tr_hdr_t);
-						
-						reply = (query_result_t*)(payload + hdr_size);
 
 						DEBUG("<MOTE INTERPRETER> tree routing packet recieved, size = %d\n",msg_len);
 
@@ -357,7 +341,6 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						//sys_post_uart(s->pid, MSG_QUERY_REPLY, sizeof(query_result_t), reply, 0, BCAST_ADDRESS);
 						sys_post_uart(s->pid, MSG_QUERY_REPLY, msg_len, payload, SOS_MSG_RELEASE, BCAST_ADDRESS);
 #else
-						DEBUG("<INTERPRETED> data recieved with: sensor=%d\nvalue=%d\nqid=%d\n", reply->sensor, reply->value, reply->qid);
 						sys_free(payload);
 #endif
 						//sys_free(payload);
@@ -380,6 +363,7 @@ mod_header_ptr interpreter_get_header(){
 #endif
 
 static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len){
+	sys_led(LED_GREEN_TOGGLE);
 	query_details_t *q;
 
 	uint8_t i;
@@ -388,7 +372,11 @@ static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len){
 	}
 	q = (query_details_t *)sys_malloc(sizeof(query_details_t));
 
-	memcpy(q, new_query, sizeof(uint8_t) * 11);
+	memcpy(q, new_query, sizeof(uint8_t) * 12);
+
+	//test message
+	sys_post_uart(MOTE_INTERPRETER_PID, MSG_QUERY_REPLY, sizeof(uint8_t) * 12, q, 0, BCAST_ADDRESS);
+
 
 	new_query += STATIC_QUERY_SIZE;
   q->queries = (uint8_t *) sys_malloc(sizeof(uint8_t) * q->num_queries);
@@ -415,6 +403,7 @@ static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len){
 
 static int8_t free_query(query_details_t* query, uint8_t q_index){
   uint8_t i;
+	sys_led(LED_RED_TOGGLE);
 	mote_state_t *s = (mote_state_t *) sys_get_state();
 
   DEBUG("<INTERPRETER> freeing query\n");
@@ -466,3 +455,29 @@ static int8_t is_value_qualified(qualifier_t *qual, uint16_t value){
 		 return true;
 	}
 }
+
+static uint8_t perform_rel_op(bool prev, bool curr, uint8_t rel_op){
+	uint8_t ret;
+	switch (rel_op){
+		case AND:
+		  ret = prev && curr;
+			break;
+	  case OR:
+			ret = prev || curr;
+			break;
+	  case AND_NOT:
+			ret = prev && ~curr;
+			break;
+		case OR_NOT:
+			ret = prev || ~curr;
+      break;
+		case NOT:
+			ret = ~curr;
+		  break;
+	  default:
+			ret = true;
+	}
+	DEBUG("<INTERPRETER> rel_op = %d, rel_val = %d\n",rel_op,  ret);
+	return ret;
+}
+	   	 
