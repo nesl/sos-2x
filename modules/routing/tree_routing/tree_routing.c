@@ -113,7 +113,7 @@ static int8_t tree_routing_module(void *state, Message *msg)
 	  s->seq_no = 0;
 
 	  sys_led(LED_RED_OFF);
-	  sys_led(LED_YELLOW_ON);
+	  sys_led(LED_YELLOW_OFF);
 	  sys_led(LED_GREEN_OFF);
 
 	  uint8_t i;
@@ -144,8 +144,8 @@ static int8_t tree_routing_module(void *state, Message *msg)
 	  uint8_t i;
 
 	  new_child = msg->saddr; 
-      sys_led(LED_YELLOW_TOGGLE);
-	  sys_led(LED_RED_TOGGLE);
+      //sys_led(LED_YELLOW_TOGGLE);
+	  //sys_led(LED_RED_TOGGLE);
       for (i=0;i<10;i++){
 		  if (s->children[i] == new_child)
 			  return SOS_OK;
@@ -164,7 +164,7 @@ static int8_t tree_routing_module(void *state, Message *msg)
 	{
 	  uint16_t my_id = sys_id();
 	  DEBUG("<TR> RECV DATA from %d to %d\n", msg->saddr, msg->daddr);
-	  sys_led(LED_YELLOW_TOGGLE);
+	  //sys_led(LED_YELLOW_TOGGLE);
 	  if(msg->daddr == my_id){
 		// Packet was addressed to us
 		uint8_t msg_len = msg->len;
@@ -218,7 +218,7 @@ static int8_t tree_routing_module(void *state, Message *msg)
 	  if (hdr){
 		  memcpy(hdr, payload, msg_len);
 
-		  sys_led(LED_RED_TOGGLE);
+		  //sys_led(LED_RED_TOGGLE);
 		  DEBUG("<TR> Request to send data to child %d\n", curr_child);
 
 		  sys_post_net(
@@ -243,6 +243,8 @@ static int8_t tree_routing_module(void *state, Message *msg)
 
   case MSG_FINAL:
 	{
+	  sys_shm_stopwait( sys_shm_name(NBHOOD_PID, SHM_NBR_LIST) );
+	  sys_shm_close( sys_shm_name(TREE_ROUTING_PID, SHM_TR_VALUE));
 	  return SOS_OK;
 	}
 
