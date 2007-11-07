@@ -3,7 +3,6 @@
 
 #include "interpreter.h"
 #include <sys_module.h>
-#include <pwm.h>
 #include <string.h>
 //#include <routing/tree_routing/tree_routing.h>
 #define LED_DEBUG
@@ -309,7 +308,6 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						reply->results[i].value = q->results[i];
 					}
 
-					reply->group_id = sys_group_id();
 					reply->qid = q->qid;
 					reply->num_remaining = q->total_samples;
 					reply->num_results = q->num_queries;
@@ -373,10 +371,6 @@ static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len){
 	q = (query_details_t *)sys_malloc(sizeof(query_details_t));
 
 	memcpy(q, new_query, sizeof(uint8_t) * 12);
-
-	//test message
-	sys_post_uart(MOTE_INTERPRETER_PID, MSG_QUERY_REPLY, sizeof(uint8_t) * 12, q, 0, BCAST_ADDRESS);
-
 
 	new_query += STATIC_QUERY_SIZE;
   q->queries = (uint8_t *) sys_malloc(sizeof(uint8_t) * q->num_queries);

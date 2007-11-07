@@ -1,19 +1,46 @@
-<mts310>
+<board>
+  <board-name>mts310</board-name>
     <sensor>
     	<provided-sensors>
-		<name>x-accel</name>
-		<name>y-accel</name>
+		<pair>
+			<name>x-accel</name>
+			<value>4</value>
+		</pair>
+		<pair>
+			<name>y-accel</name>
+			<value>5</value>
+		</pair>
     	</provided-sensors>
    	<location>/modules/sensordrivers/mts310/accel</location>
-    	<file-name>accel.c</file-name>
+    	<file-name>accel_sensor</file-name>
     </sensor>
     <sensor>
 	<provided-sensors>
+	<pair>
 	    <name>mag-1</name>
+					<value>6</value>
+	</pair>
+	<pair>
 	    <name>mag-2</name>
+					<value>7</value>
+	</pair>
 	</provided-sensors>
 	<location>/modules/sensordrivers/mts310/mag</location>
-	<file-name>mag.c</file-name>
+	<file-name>mag_sensor</file-name>
     </sensor>
-</mts310>
+	<sensor>
+	  <provided-sensors>
+			<pair>
+			  <name>photo</name>
+					<value>1</value>
+			</pair>
+			<pair>
+			  <name>temp</name>
+					<value>2</value>
+			</pair>
+			</provided-sensors>
+			<location>/modules/sensordrivers/mts310/photo_temp</location>
+			<file-name>phototemp_sensor</file-name>
+	</sensor>
+</board>
     

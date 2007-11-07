@@ -77,7 +77,6 @@ typedef struct {
 
 #define STATIC_QUERY_SIZE 12
 typedef struct {
-        uint8_t group_id;
 	uint16_t qid;
 	uint16_t num_remaining;
 	uint8_t num_results;
