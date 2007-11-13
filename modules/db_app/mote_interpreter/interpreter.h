@@ -7,6 +7,7 @@
 #define MSG_QUERY_REPLY (MOD_MSG_START + 2)
 #define MSG_VALIDATE (MOD_MSG_START + 3)
 #define MSG_DISPATCH (MOD_MSG_START + 4)
+#define MSG_REMOVE (MOD_MSG_START + 5)
 
 #define NUM_SENSORS 8
 #define BASE_STATION_ADDRESS 1
@@ -49,7 +50,8 @@ typedef struct {
 
 
 typedef struct {
-	uint16_t trig;
+	uint8_t command;
+	uint8_t value;
 } trigger_t;
 
 typedef struct {
@@ -80,6 +82,7 @@ typedef struct {
 	uint16_t qid;
 	uint16_t num_remaining;
 	uint8_t num_results;
+	uint8_t node_id;
 	sensor_msg_t results[];
 } query_result_t;
 

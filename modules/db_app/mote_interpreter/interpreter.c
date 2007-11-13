@@ -55,6 +55,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg);
 static int8_t free_query(query_details_t* query, uint8_t q_index);
 static int8_t is_value_qualified(qualifier_t *qual, uint16_t value);
 static uint8_t perform_rel_op(bool prev, bool curr, uint8_t rel_op);
+static uint8_t execute_trigger(trigger_t trig);
 static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len);
 
 static const mod_header_t mod_header SOS_MODULE_HEADER = {
@@ -89,14 +90,26 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 					s->num_queries = 8;
 					for (i = 0; i < 8; i++){
 						s->queries[i] = NULL;
-						s->sensor_timers[i] = 0;
+						s->sensor_timers[i] = 0xff;
 					}
-
-					sys_timer_start(255, 1024, TIMER_ONE_SHOT);
 
 					sys_led(LED_RED_OFF);
 					sys_led(LED_YELLOW_OFF);
 					sys_led(LED_GREEN_OFF);
+				}
+				break;
+
+			case MSG_REMOVE:
+				{
+					// this message will remove all current queries from the node
+					//uint8_t msg_len = msg->len;
+					//uint8_t *payload = sys_msg_take_data(msg);
+					int i;
+					for (i = 0; i < s->num_queries;i++){
+						free_query(s->queries[i], i);
+						s->queries[i] = NULL;
+					}
+					//sys_post(ROUTING_PID, MSG_SEND_TO_CHILDREN, msg_len, payload, SOS_MSG_RELEASE);
 				}
 				break;
 
@@ -110,6 +123,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 
 					//if (new_query == NULL)
 						//sys_led(LED_RED_TOGGLE);
+					sys_led(LED_GREEN_TOGGLE);
 
 					DEBUG("<INTERPRETER> new query\n");
 					uint8_t i=0, j=0;
@@ -126,12 +140,13 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 								query->num_queries, query->interval);
 
 						for (j = 0; j < query->num_queries; j++){
-							sys_led(LED_YELLOW_TOGGLE);
+							//sys_led(LED_YELLOW_TOGGLE);
 							DEBUG("<INTERPRETER> adding query for sensor: %d\n", query->queries[j]);
 							if (query->queries[j] < NUM_SENSORS){
                 // test to make sure that the sensor isn't already involved in a query
-								if (s->sensor_timers[query->queries[j]] != 0){
+								if (s->sensor_timers[query->queries[j]] != 0xff){
 									free_query(query, i);
+									sys_led(LED_RED_TOGGLE);
 									query = NULL;
 									break;
 								}
@@ -144,8 +159,10 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 							query->results[j] = 0;
 						}
 						s->queries[i] = query;
-					} else
+					} else {
+						//sys_led(LED_GREEN_TOGGLE);
 						DEBUG("<INTERPRETER> No room for a new query\n");
+					}
 
 					sys_post(ROUTING_PID, MSG_SEND_TO_CHILDREN, msg_len, new_query, SOS_MSG_RELEASE);
 				}
@@ -186,28 +203,9 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						}
 					} else if (param->byte == 255){ // our test case
 						DEBUG("<INTERPRETER> test case\n");
-						test_query_t *test = (test_query_t *) sys_malloc(sizeof(test_query_t));
-
-						test->qid = 5;
-						test->interval = 500;
-						test->total_samples = 1;
-						test->num_queries = 2;
-						test->num_qualifiers = 2;
-						test->trigger.trig = 0;
-						test->query = 4;
-						test->query2= 5;
-
-						test->qual1.sid = 4;
-						test->qual1.comp_op_and_relation = (GREATER_THAN << 4);
-						test->qual1.comp_value = 200;
-
-						test->qual2.sid = 5;
-						test->qual2.comp_op_and_relation = (LESS_THAN << 4) | AND_NOT;
-						test->qual2.comp_value = 200;
-
-						sys_post(s->pid, MSG_NEW_QUERY, sizeof(test_query_t), test, SOS_MSG_RELEASE);
-					} else
-						sys_led(LED_RED_TOGGLE);
+					} else {
+						//sys_led(LED_RED_TOGGLE);
+					}
 					
 					sys_free(msg->data);
 				}
@@ -249,9 +247,10 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
           query_details_t *q = s->queries[q_index];
 
 					DEBUG("msg validate: q_index = %d\n", q_index);
-					if (q->num_qualifiers == 0)
+					if (q->num_qualifiers == 0){
+						execute_trigger(q->trigger);
 						sys_post_value(s->pid, MSG_DISPATCH, q_index, SOS_MSG_RELEASE);
-					else {
+					}	else {
 						uint8_t i;
 						bool is_curr_valid = false;
 						bool is_prev_valid = true;
@@ -264,9 +263,10 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						}
 
 						DEBUG("<INTERPRETER> is_prev_valid=%d\n", is_prev_valid);
-            if (is_prev_valid)
+            if (is_prev_valid){
+							execute_trigger(q->trigger);
 							sys_post_value(s->pid, MSG_DISPATCH, q_index, 0);
-						else {
+						} else {
 								q->recieved = 0;
 								if (q->total_samples == 0){
 									free_query(q, (uint8_t) q_index);
@@ -311,6 +311,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 					reply->qid = q->qid;
 					reply->num_remaining = q->total_samples;
 					reply->num_results = q->num_queries;
+					reply->node_id = sys_id();
 
 					sys_post(ROUTING_PID, MSG_SEND_PACKET, msg_len, 
 								(void *) pkt, SOS_MSG_RELEASE);
@@ -329,7 +330,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						uint8_t *payload;
 						uint8_t msg_len;
 
-					  sys_led(LED_GREEN_TOGGLE);
+					  //sys_led(LED_GREEN_TOGGLE);
 						msg_len = msg->len;
 						payload = sys_msg_take_data(msg);
 
@@ -361,7 +362,7 @@ mod_header_ptr interpreter_get_header(){
 #endif
 
 static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len){
-	sys_led(LED_GREEN_TOGGLE);
+	//sys_led(LED_GREEN_TOGGLE);
 	query_details_t *q;
 
 	uint8_t i;
@@ -397,7 +398,9 @@ static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len){
 
 static int8_t free_query(query_details_t* query, uint8_t q_index){
   uint8_t i;
-	sys_led(LED_RED_TOGGLE);
+	//sys_led(LED_RED_TOGGLE);
+	if (query == NULL)
+		return SOS_OK;
 	mote_state_t *s = (mote_state_t *) sys_get_state();
 
   DEBUG("<INTERPRETER> freeing query\n");
@@ -409,7 +412,7 @@ static int8_t free_query(query_details_t* query, uint8_t q_index){
 		sys_timer_stop(tid);
 
 		if (query->queries[i] < NUM_SENSORS)
-			s->sensor_timers[query->queries[i]] = 0;
+			s->sensor_timers[query->queries[i]] = 0xff;
 	}
 
 	sys_free(query->queries);
@@ -418,6 +421,17 @@ static int8_t free_query(query_details_t* query, uint8_t q_index){
 	sys_free(query);
 
 	query = NULL;
+	return SOS_OK;
+}
+
+static uint8_t execute_trigger(trigger_t trig){
+  switch (trig.command){
+		case 1:
+			sys_led(trig.value);
+			break;
+		default:
+			break;
+	}
 	return SOS_OK;
 }
 

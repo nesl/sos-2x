@@ -6,6 +6,11 @@ import os
 from struct import unpack
 import readline
 
+provided_triggers = {'led':1}
+provided_values = {'RED_ON':1, 'GREEN_ON':2, 'YELLOW_ON':3,
+	                  'RED_OFF':4, 'GREEN_OFF':5, 'YELLOW_OFF':6,
+																			'RED_TOGGLE':7, 'GREEN_TOGGLE':8, 'YELLOW_TOGGLE':9}
+
 class Sensor_Driver():
   def __init__(self, n, v, l, f):
     self.name = n
@@ -88,11 +93,11 @@ class DB_Interface():
 				  
 	def response_handler(self, msg):
 		data = msg['data']
-		trash = data[:10]
-		hdrstr = data[10:15]
-		valuesstr = data[15:]
+		trash = data[:30]
+		hdrstr = data[30:36]
+		valuesstr = data[36:]
 
-		hdr = unpack('<HHB', hdrstr)
+		hdr = unpack('<HHBB', hdrstr)
 		values = unpack('<'+hdr[2]*'BH', valuesstr)
 
 		print hdr
@@ -118,7 +123,7 @@ class DB_Interface():
 	# trigger_list = leave this blank right now
 	# sensor_list = list of integers which should exist in the list of installed drivers
 	# qual_list = list of byte codes declaring the specific qualifiactions needed
-	def insert_new_query(self,qid, total_samples, interval,  trigger_list, sensor_list, qual_list):
+	def insert_new_query(self,qid, total_samples, interval,  trigger_list =[0,0], sensor_list=[], qual_list= []):
 		print qid
 		print total_samples
 		print interval
@@ -134,20 +139,30 @@ class DB_Interface():
 		num_sensor = len(sensor_list)
 		num_qual = 0 #len(qual_list)
 
-		data = pysos.pack('<HHIBBH' + num_sensor*'B' + num_qual * 'BBH', 
+		data = pysos.pack('<HHIBBBB' + num_sensor*'B' + num_qual * 'BBH', 
 			qid,
 			total_samples, 
 			interval,
 			num_sensor,
 			num_qual,
-			0,
+			trigger_list[0],
+			trigger_list[1],
 			*(i for i in sensor_list))
 
 		self.srv.post(daddr = 1, saddr = 0, did = 128,
 		sid = 128, type = 33, data = data)
 		return True
 	
+	def remove_queries(self):
+	  self.srv.post(daddr =1, saddr=0, did=128, sid=128, type=37, )
+
 	def parse_query(self, query):
+			# first check for the remove query command
+			words = re.match(r'remove all', query)
+			if words:
+					self.remove_queries()
+					return
+
 			# first get the values we want to read, and the board type
 			print query
 			words = re.match(r'select (\S+) from ([a-zA-Z0-9]+) (.+)+', query)
@@ -173,17 +188,34 @@ class DB_Interface():
 					rest = words.group(len(words.groups()))
 
 			# now get the interval and sample number
-			words = re.match(r'with sample_rate (\d+) number_samples (\d+)(.*)', rest)
+			words = re.match(r'with sample_rate (\d+) number_samples (\d+)\s*(.*)', rest)
 			if words:
 					sample_rate = int(words.group(1))
 					num_samples = int(words.group(2))
- 			else:
+					rest = words.group(len(words.groups()))
+			else:
+				print "incorrect declaration of query details"
 				return
 
+			trig_list = [0,0]
+   # now get any triggers that exist, currntly we only support one trigger per query
+			words = re.match(r'on fire trigger\(\s*([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_]+)\s*\)(.*)', rest)
+			if words:
+					command = words.group(1)
+					value = words.group(2)
+					if command in provided_triggers.keys():
+					  trig_list[0] = provided_triggers[command]
+					if value in provided_values.keys():
+					  trig_list[1] = provided_values[value]
+			else:
+					print "invalid trigger list"
+					print rest
+							
+			print trig_list
 			q_list  = []
 			for s in s_list:
 				q_list.append( self.sensor[board][s].get_value())
- 			ret = self.insert_new_query(self.curr_id, num_samples, sample_rate, [], q_list, [])
+ 			ret = self.insert_new_query(self.curr_id, num_samples, sample_rate, trig_list, q_list, [])
  			if ret:
  				print "your query id is: %d" %self.curr_id
  			self.curr_id += 1
@@ -198,6 +230,6 @@ if __name__ == '__main__':
  			q = raw_input('--> ')
 
 #		db.parse_query("select x-accel from mts310 where y-accel > 123 and x-accel < 1 with sample_rate 1024 number_samples 20")
-		db.parse_query("select mag-1 from mts310 with sample_rate 4024 number_samples 100")
+#		db.parse_query("select mag-1 from mts310 with sample_rate 4024 number_samples 100")
 #		db.insert_new_query(2, 20, 1024, [], [4], [])
 
