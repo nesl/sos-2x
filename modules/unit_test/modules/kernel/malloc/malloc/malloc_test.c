@@ -107,7 +107,7 @@ static int8_t send_new_data(uint8_t state, uint8_t data){
 						sizeof(data_msg_t),
 						data_msg,
 						SOS_MSG_RELEASE,
-						0);
+						BCAST_ADDRESS);
 			}
 		} else
 			sys_led(LED_RED_ON);
@@ -151,19 +151,33 @@ static int8_t generic_test_msg_handler(void *state, Message *msg)
 		 */
 		case MSG_TEST_DATA:
 			{
-				uint8_t *payload;
+				data_msg_t *payload;
 				uint8_t msg_len;
 
 				msg_len = msg->len;
-				payload = sys_msg_take_data(msg);
+				payload = (data_msg_t *)sys_msg_take_data(msg);
 
-				sys_post_uart(
-						s->pid, 
-						MSG_TEST_DATA,
-						msg_len,
-						payload,
-						SOS_MSG_RELEASE,
-						BCAST_ADDRESS);
+				if (payload->id != sys_id()){
+					if (sys_id() == 0){
+					sys_post_uart(
+							s->pid, 
+							MSG_TEST_DATA,
+							msg_len,
+							payload,
+							SOS_MSG_RELEASE,
+							BCAST_ADDRESS);
+					} else {
+					sys_post_net(
+							s->pid, 
+							MSG_TEST_DATA,
+							msg_len,
+							payload,
+							SOS_MSG_RELEASE,
+							BCAST_ADDRESS);
+					}
+				}
+				else
+					sys_free(payload);
     	}
 			break;
 

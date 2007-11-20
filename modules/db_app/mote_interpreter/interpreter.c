@@ -12,8 +12,8 @@
 /*
 typedef struct {
 	uint16_t qid;
-	uint32_t interval;
 	uint16_t total_samples;
+	uint32_t interval;
 	uint8_t num_queries;
 	uint8_t num_qualifiers;
 	trigger_t trigger;
@@ -28,16 +28,15 @@ typedef struct{
 	uint32_t interval;
 	uint8_t num_queries;
 	uint8_t num_qualifiers;
+	uint16_t num_trigs;
 	trigger_t trigger;
 	uint8_t query;
-	uint8_t query2;
-	qualifier_t qual1;
-	qualifier_t qual2;
 } test_query_t;
 
 
 typedef struct {
 	func_cb_ptr get_hdr_size;
+	func_cb_ptr set_chld_msg;
   uint8_t pid;
 	uint8_t num_queries;
 	query_details_t *queries[8]; // each time a query comes in, we link it into one of these pointers
@@ -55,7 +54,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg);
 static int8_t free_query(query_details_t* query, uint8_t q_index);
 static int8_t is_value_qualified(qualifier_t *qual, uint16_t value);
 static uint8_t perform_rel_op(bool prev, bool curr, uint8_t rel_op);
-static uint8_t execute_trigger(trigger_t trig);
+static uint8_t execute_trigger(trigger_t *trig,uint8_t num_trigs);
 static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len);
 
 static const mod_header_t mod_header SOS_MODULE_HEADER = {
@@ -70,10 +69,8 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
     .module_handler = interpreter_msg_handler,
 		.funct = {
 			[0] = {error_8, "Cvv0", ROUTING_PID, MOD_GET_HDR_SIZE_FID},
+			[1] = {error_8, "CCv1", ROUTING_PID, MOD_SET_CHLD_MSG_FID},
 		},
-	//	.funct = {
-	//		[0] = {error_8, "Cvv0", TREE_ROUTING_PID, MOD_GET_HDR_SIZE_FID},
-	//	},
 };
 
 static int8_t interpreter_msg_handler(void *state, Message *msg){
@@ -93,6 +90,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						s->sensor_timers[i] = 0xff;
 					}
 
+					sys_timer_start(255, 1024, TIMER_ONE_SHOT);
 					sys_led(LED_RED_OFF);
 					sys_led(LED_YELLOW_OFF);
 					sys_led(LED_GREEN_OFF);
@@ -102,28 +100,25 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 			case MSG_REMOVE:
 				{
 					// this message will remove all current queries from the node
-					//uint8_t msg_len = msg->len;
-					//uint8_t *payload = sys_msg_take_data(msg);
-					int i;
-					for (i = 0; i < s->num_queries;i++){
-						free_query(s->queries[i], i);
-						s->queries[i] = NULL;
+					uint8_t msg_len = msg->len;
+					uint8_t *payload = sys_msg_take_data(msg);
+					if (payload && *payload == 0){
+						int i;
+						for (i = 0; i < s->num_queries;i++){
+							free_query(s->queries[i], i);
+							s->queries[i] = NULL;
+						}
+						SOS_CALL(s->set_chld_msg, set_chld_msg_proto, MSG_REMOVE);
+						sys_post(ROUTING_PID, MSG_SEND_TO_CHILDREN, msg_len, payload, SOS_MSG_RELEASE);
+						SOS_CALL(s->set_chld_msg, set_chld_msg_proto, MSG_NEW_QUERY);
 					}
-					//sys_post(ROUTING_PID, MSG_SEND_TO_CHILDREN, msg_len, payload, SOS_MSG_RELEASE);
 				}
 				break;
 
 			case MSG_NEW_QUERY:
 				{
-					//if (msg->data == NULL)
-						//sys_led(LED_YELLOW_TOGGLE);
-					
 					uint8_t msg_len = msg->len; 
 					uint8_t *new_query = sys_msg_take_data(msg);
-
-					//if (new_query == NULL)
-						//sys_led(LED_RED_TOGGLE);
-					sys_led(LED_GREEN_TOGGLE);
 
 					DEBUG("<INTERPRETER> new query\n");
 					uint8_t i=0, j=0;
@@ -140,7 +135,6 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 								query->num_queries, query->interval);
 
 						for (j = 0; j < query->num_queries; j++){
-							//sys_led(LED_YELLOW_TOGGLE);
 							DEBUG("<INTERPRETER> adding query for sensor: %d\n", query->queries[j]);
 							if (query->queries[j] < NUM_SENSORS){
                 // test to make sure that the sensor isn't already involved in a query
@@ -155,12 +149,12 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 								tid = (i << 4) | j;
 								s->sensor_timers[query->queries[j]] = tid;
 								sys_timer_start(tid, query->interval, TIMER_REPEAT);
+								DEBUG("<INTERPRETER> timer id: %d for sensor %d\n", tid, j);
 							}
 							query->results[j] = 0;
 						}
 						s->queries[i] = query;
 					} else {
-						//sys_led(LED_GREEN_TOGGLE);
 						DEBUG("<INTERPRETER> No room for a new query\n");
 					}
 
@@ -177,7 +171,6 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 
 					DEBUG("<INTERPRETER> Timer Timeout, for timer%d\n", param->byte);
 
-					//sys_led(LED_YELLOW_TOGGLE);
 					if (param->byte > NUM_SENSORS && param->byte != 255)
 						break;
 
@@ -198,10 +191,22 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 #ifndef SOS_SIM
 							sys_sensor_get_data(sid);
 #else
-							sys_post_value(s->pid, MSG_DATA_READY, 0x00ffff00 | sid, 0);
+							sys_post_value(s->pid, MSG_DATA_READY, 0x00ffff00 | (sid << 24), 0);
 #endif
 						}
 					} else if (param->byte == 255){ // our test case
+						test_query_t *q = (test_query_t*)sys_malloc(sizeof(test_query_t));
+						q->qid = 4;
+						q->total_samples=10;
+						q->interval = 1024;
+						q->num_queries = 1;
+						q->num_qualifiers = 0;
+						q->num_trigs = 1;
+						q->trigger.command = 1;
+						q->trigger.value = 7;
+						q->query = 5;
+
+						sys_post(s->pid, MSG_NEW_QUERY,sizeof(test_query_t), q, SOS_MSG_RELEASE); 
 						DEBUG("<INTERPRETER> test case\n");
 					} else {
 						//sys_led(LED_RED_TOGGLE);
@@ -248,7 +253,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 
 					DEBUG("msg validate: q_index = %d\n", q_index);
 					if (q->num_qualifiers == 0){
-						execute_trigger(q->trigger);
+						execute_trigger(q->triggers, q->num_triggers);
 						sys_post_value(s->pid, MSG_DISPATCH, q_index, SOS_MSG_RELEASE);
 					}	else {
 						uint8_t i;
@@ -264,7 +269,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 
 						DEBUG("<INTERPRETER> is_prev_valid=%d\n", is_prev_valid);
             if (is_prev_valid){
-							execute_trigger(q->trigger);
+							execute_trigger(q->triggers, q->num_triggers);
 							sys_post_value(s->pid, MSG_DISPATCH, q_index, 0);
 						} else {
 								q->recieved = 0;
@@ -374,31 +379,40 @@ static query_details_t* recieve_new_query(uint8_t *new_query, uint8_t msg_len){
 	memcpy(q, new_query, sizeof(uint8_t) * 12);
 
 	new_query += STATIC_QUERY_SIZE;
+	q->triggers = (trigger_t *) sys_malloc(sizeof(trigger_t) * q->num_triggers);
   q->queries = (uint8_t *) sys_malloc(sizeof(uint8_t) * q->num_queries);
 	q->qualifiers = (qualifier_t *) sys_malloc(sizeof(qualifier_t) * q->num_qualifiers);
 	q->results = (uint16_t *) sys_malloc(sizeof(uint16_t) * q->num_queries);
 
-	DEBUG("<INTERPRETER> forming new query\nnum_queries = %d\nnum_qualifiers = %d\n", q->num_queries, q->num_qualifiers);
-	memcpy(q->queries, new_query, sizeof(uint8_t) * q->num_queries);
+	DEBUG("<INTERPRETER> forming new query\nnum_triggers = %d\nnum_queries = %d\nnum_qualifiers = %d\n", q->num_triggers, q->num_queries, q->num_qualifiers);
+	DEBUG("<INTERPRETER> interval = %d\n qid = %d\n", q->interval, q->qid);
+	memcpy(q->triggers, new_query, sizeof(trigger_t) * q->num_triggers);
+	new_query += q->num_triggers*2;
 
+	memcpy(q->queries, new_query, sizeof(uint8_t) * q->num_queries);
+	new_query += q->num_queries;
+
+	if (q->num_triggers > 0){
+		DEBUG("<INTERPRETER> trigger_command 1: %d \t value: %d\n", q->triggers[0].command, q->triggers[0].value);
+	}
 	if (q->num_queries > 0){
 		DEBUG("<INTERPRETER> sensor value 1: %d\n", q->queries[0]);
 	  DEBUG("<INTERPRETER> value from new_query: %d\n", *new_query);
 	}
 	
-	new_query += q->num_queries;
 	memcpy(q->qualifiers, new_query, sizeof(qualifier_t) * q->num_qualifiers);
 
-	DEBUG("<INTERPRETER> qualifiers: comp_value=%d\nsid=%d\n", q->qualifiers[0].comp_value, q->qualifiers[0].sid);
+	if (q->num_qualifiers > 0)
+	  DEBUG("<INTERPRETER> qualifiers: comp_value=%d\nsid=%d\n", q->qualifiers[0].comp_value, q->qualifiers[0].sid);
 
 	q->recieved = 0;
 
+	DEBUG("<INTERPRETER> new query built correctly\n");
 	return q;
 }
 
 static int8_t free_query(query_details_t* query, uint8_t q_index){
   uint8_t i;
-	//sys_led(LED_RED_TOGGLE);
 	if (query == NULL)
 		return SOS_OK;
 	mote_state_t *s = (mote_state_t *) sys_get_state();
@@ -424,13 +438,17 @@ static int8_t free_query(query_details_t* query, uint8_t q_index){
 	return SOS_OK;
 }
 
-static uint8_t execute_trigger(trigger_t trig){
-  switch (trig.command){
-		case 1:
-			sys_led(trig.value);
-			break;
-		default:
-			break;
+static uint8_t execute_trigger(trigger_t *trig,uint8_t num_trigs){
+	int i;
+	for (i = 0; i < num_trigs; i++){
+		switch (trig->command){
+			case 1:
+				sys_led(trig->value);
+				break;
+			default:
+				break;
+		}
+		trig++;
 	}
 	return SOS_OK;
 }

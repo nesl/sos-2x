@@ -344,7 +344,7 @@ def make_kernel(platform):
 
     print kernel_loc
     clean(kernel_loc)
-    cmd_make =  ["make", "-C", kernel_loc , platform , 'TEST_MODE=true', 'MODE=%s' %kernel_mode]
+    cmd_make =  ["make", "-C", kernel_loc , platform , 'TEST_MODE=true', 'MODE=%s' %kernel_mode, 'SOS_GROUP=%s' %sos_group]
 
     try:
       subprocess.check_call(cmd_make, stderr=kernel_f, stdout=kernel_f)
@@ -375,9 +375,9 @@ def install_on_board(platform, address, port):
     if platform == 'tmote':
 	prog = 'bsl'
     if prog == 'stk500':
-	cmd_install = ['make', '-C', kernel_loc, platform, 'install', 'PROG=%s' %prog, 'IP=%s' %ip_list[port], 'SOS_GROUP=%s' %sos_group, 'ADDRESS=%s' %address]
+	cmd_install = ['make', '-C', kernel_loc, platform, 'install', 'PROG=%s' %prog, 'IP=%s' %ip_list[port], 'ADDRESS=%s' %address]
     elif platform != 'avrora':
-	cmd_install = ["make", "-C", kernel_loc, platform , "install", "PROG=%s" %prog, "PORT=%s" %install_port[port], "SOS_GROUP=%s" %sos_group, "ADDRESS=%s" %address]
+	cmd_install = ["make", "-C", kernel_loc, platform , "install", "PROG=%s" %prog, "PORT=%s" %install_port[port], "ADDRESS=%s" %address]
     else:
         print "you shouldn't be doing this"
 	os.exit(0)
@@ -624,7 +624,7 @@ if __name__ == '__main__':
 	    raw_input()
 
 	    while (number_of_prog > 0):
-		install_on_board(target, number_of_prog -1, number_of_prog-1)
+		install_on_board(target, number_of_prog , number_of_prog-1)
 
 		print "this nodes address is: %d" %(number_of_prog-1)
 		print "the next node will be installed automatically"

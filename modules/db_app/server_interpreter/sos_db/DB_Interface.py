@@ -6,6 +6,9 @@ import os
 from struct import unpack
 import readline
 
+comp_ops = {'<':1, '>':2, '=':3, '<=':4, '>=':5, '!=':6}
+rel_ops = {'and':1, 'or':2, 'and not':3, 'or not':4, 'not':5}
+
 provided_triggers = {'led':1}
 provided_values = {'RED_ON':1, 'GREEN_ON':2, 'YELLOW_ON':3,
 	                  'RED_OFF':4, 'GREEN_OFF':5, 'YELLOW_OFF':6,
@@ -123,11 +126,11 @@ class DB_Interface():
 	# trigger_list = leave this blank right now
 	# sensor_list = list of integers which should exist in the list of installed drivers
 	# qual_list = list of byte codes declaring the specific qualifiactions needed
-	def insert_new_query(self,qid, total_samples, interval,  trigger_list =[0,0], sensor_list=[], qual_list= []):
+	def insert_new_query(self,qid, total_samples, interval,  trig_list =[], sensor_list=[], qual_list= []):
 		print qid
 		print total_samples
 		print interval
-		print trigger_list
+		print trig_list 
 		print sensor_list
 		print qual_list
 
@@ -136,25 +139,39 @@ class DB_Interface():
 			return False
 
 		self.curr_queries[qid] = 1
+		num_trigs = len(trig_list)
 		num_sensor = len(sensor_list)
-		num_qual = 0 #len(qual_list)
+		num_qual = len(qual_list)
 
-		data = pysos.pack('<HHIBBBB' + num_sensor*'B' + num_qual * 'BBH', 
+ 		sub = []
+ 		for i in trig_list:
+			sub.append(i[0])
+ 			sub.append(i[1])
+
+ 		qual = []
+		for i in qual_list:
+			qual.append(i[0])
+ 			qual.append(i[1])
+ 			qual.append(i[2])
+
+ 		data_list = [i for i in sub] + [i for i in sensor_list] + [i for i in qual]
+
+		data = pysos.pack('<HHIBBH' + num_trigs*'BB' + num_sensor*'B' + num_qual * 'BBH', 
 			qid,
 			total_samples, 
 			interval,
 			num_sensor,
 			num_qual,
-			trigger_list[0],
-			trigger_list[1],
-			*(i for i in sensor_list))
+			num_trigs,
+			*(i for i in data_list))
 
 		self.srv.post(daddr = 1, saddr = 0, did = 128,
 		sid = 128, type = 33, data = data)
 		return True
 	
 	def remove_queries(self):
-	  self.srv.post(daddr =1, saddr=0, did=128, sid=128, type=37, )
+	  data = pysos.pack('<B', 0)
+	  self.srv.post(daddr =1, saddr=0, did=128, sid=128, type=37,data=data )
 
 	def parse_query(self, query):
 			# first check for the remove query command
@@ -165,30 +182,49 @@ class DB_Interface():
 
 			# first get the values we want to read, and the board type
 			print query
-			words = re.match(r'select (\S+) from ([a-zA-Z0-9]+) (.+)+', query)
+			words = re.match(r'select\s+(\S+)\s+from\s+([a-zA-Z0-9]+)\s*(.*)', query)
 			if words:
 				sensors = words.group(1)
 				board = words.group(2)
 #self.install_drivers(board)
 				rest = words.group(3)
 			else:
+				print "invalid select statement"
 				return
 
 			# now split all the sensor types
 			words = re.match(r'([a-zA-Z0-9\-_()]+)((,)([a-zA-Z0-9\-_()]+))*', sensors)
 			s_list = []
 			if words:
-					s_list = [e for e in words.groups() if e != None and e[0] != ',']
+					s_list = [self.sensor[board][e].get_value() for e in words.groups() if e != None and e[0] != ',' and e in self.sensor[board].keys() ]
 			else:
+					print "invalid list of sensors"
 					return
 				
+			qual_list = []
 			# now get the qualifiers
-			words = re.match(r'where ([a-zA-Z0-9\-_]+) ([<>=]) (\d+) ((and|or) ([a-zA-Z0-9\-_]+) ([<>=]) (\d+))* (.*)', rest)
+			words = re.match(r'where\s+([a-zA-Z0-9\-_]+)\s+([<>=])\s+(\d+)\s+(and|or\s+[a-zA-Z0-9\-_]+\s+[<>=]\s+\d+)*\s*(.*)', rest)
 			if words:
+					if words.group(1) in self.sensor[board].keys():
+						sen = self.sensor[board][words.group(1)]
+					else:
+						print "invalid sensor %s" %words.group(1)
+						return
+
+ 					if words.group(2) in comp_ops.keys():
+						op = comp_ops[words.group(2)] << 4
+						op = op | rel_ops['and']
+ 					else:
+						print "invalid comparison operator %s" %words.group(2)
+						return
+					value = int(words.group(3))
+					if sen.get_value() not in s_list:
+						s_list.append(sen.get_value())
+					qual_list.append([sen.get_value(), op, value])
 					rest = words.group(len(words.groups()))
 
 			# now get the interval and sample number
-			words = re.match(r'with sample_rate (\d+) number_samples (\d+)\s*(.*)', rest)
+			words = re.match(r'with\s+sample_rate\s+(\d+)\s+number_samples\s+(\d+)\s*(.*)', rest)
 			if words:
 					sample_rate = int(words.group(1))
 					num_samples = int(words.group(2))
@@ -197,25 +233,26 @@ class DB_Interface():
 				print "incorrect declaration of query details"
 				return
 
-			trig_list = [0,0]
-   # now get any triggers that exist, currntly we only support one trigger per query
-			words = re.match(r'on fire trigger\(\s*([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_]+)\s*\)(.*)', rest)
+			trig_list = []
+			# now get any triggers that exist, currntly we only support one trigger per query
+			words = re.match(r'on\s+fire\s+(.*)', rest)
 			if words:
-					command = words.group(1)
-					value = words.group(2)
-					if command in provided_triggers.keys():
-					  trig_list[0] = provided_triggers[command]
-					if value in provided_values.keys():
-					  trig_list[1] = provided_values[value]
-			else:
-					print "invalid trigger list"
-					print rest
-							
-			print trig_list
-			q_list  = []
-			for s in s_list:
-				q_list.append( self.sensor[board][s].get_value())
- 			ret = self.insert_new_query(self.curr_id, num_samples, sample_rate, trig_list, q_list, [])
+					rest = words.group(1)
+ 					print rest
+					words = re.match(r'trigger\s*\(\s*([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_]+)\s*\)\s*(.*)', rest)
+					while words:
+						command = words.group(1)
+						value = words.group(2)
+						new_trig = [0,0]
+						if command in provided_triggers.keys():
+							new_trig[0] = provided_triggers[command]
+						if value in provided_values.keys():
+							new_trig[1] = provided_values[value]
+						trig_list.append(new_trig)
+						rest = words.group(3)
+						words = re.match(r'trigger\s*\(\s*([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_]+)\s*\)\s*(.*)', rest)
+			
+ 			ret = self.insert_new_query(self.curr_id, num_samples, sample_rate, trig_list, s_list, qual_list)
  			if ret:
  				print "your query id is: %d" %self.curr_id
  			self.curr_id += 1

@@ -19,6 +19,7 @@
 #define MSG_SEND_TO_CHILDREN (MOD_MSG_START + 4)
 #define ROUTING_PID TREE_ROUTING_PID
 
+// comparison ops
 enum{
     LESS_THAN=1,
     GREATER_THAN,
@@ -28,6 +29,7 @@ enum{
     NOT_EQUAL,
 };
 
+// relation ops
 enum{
     AND=1,
     OR,
@@ -36,10 +38,12 @@ enum{
     NOT,
 };
 
-typedef uint8_t (*get_hdr_size_proto) (func_cb_ptr);
+typedef uint8_t (*get_hdr_size_proto) (func_cb_ptr p);
+typedef uint8_t (*set_chld_msg_proto) (func_cb_ptr p, uint8_t new_type);
 
 enum{
     MOD_GET_HDR_SIZE_FID = 1,
+				MOD_SET_CHLD_MSG_FID = 3,
 };
 
 typedef struct {
@@ -60,7 +64,8 @@ typedef struct {
 	uint32_t interval;
 	uint8_t num_queries;
 	uint8_t num_qualifiers;
-	trigger_t trigger;
+	uint16_t num_triggers;
+	trigger_t *triggers;
 	uint8_t *queries;
 	qualifier_t *qualifiers;
 	uint16_t *results;           // when a sensor value is recieved we save it here so that we can send them 

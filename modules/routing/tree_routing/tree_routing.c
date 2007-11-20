@@ -57,6 +57,7 @@ typedef struct {
 	tr_shared_t sr;   // shared state
 	int16_t seq_no;	
 	uint16_t children[10];
+	uint8_t child_msg_type;
 	uint8_t curr_child;
 } tree_route_state_t;   
 
@@ -71,6 +72,7 @@ typedef struct {
 //-------------------------------------------------------------
 static int8_t tree_routing_module(void *state, Message *msg);
 static uint8_t tr_get_hdr_size(func_cb_ptr p) ; 
+static uint8_t tr_set_child_msg_type(func_cb_ptr p, uint8_t new_type);
 static uint32_t evaluateCost(uint8_t sendEst, uint8_t receiveEst) ;
 static void choose_parent(tree_route_state_t *s) ;
 static int8_t tr_send_data(tree_route_state_t *s, uint8_t msg_len, uint16_t saddr, tr_hdr_t* hdr);
@@ -86,13 +88,14 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
   .state_size     =  sizeof(tree_route_state_t),
   .num_timers     =  0,
   .num_sub_func   =  0,
-  .num_prov_func  =  1,
+  .num_prov_func  =  2,
   .code_id        =  ehtons(TREE_ROUTING_PID),
   .platform_type  = HW_TYPE /* or PLATFORM_ANY */,
   .processor_type = MCU_TYPE,
   .module_handler =  tree_routing_module,
   .funct = {
 	[0] = {tr_get_hdr_size, "Cvv0", TREE_ROUTING_PID, MOD_GET_HDR_SIZE_FID},
+	[1] = {tr_set_child_msg_type, "CCv1", TREE_ROUTING_PID, MOD_SET_CHLD_MSG_FID}, 
   },
 };
 
@@ -117,10 +120,10 @@ static int8_t tree_routing_module(void *state, Message *msg)
 	  sys_led(LED_GREEN_OFF);
 
 	  uint8_t i;
-	  s->children[0] = BCAST_ADDRESS;
-	  for (i = 1; i < 10;i++)
+	  for (i = 0; i < 10;i++)
 			s->children[i] = sys_id();
 	  s->curr_child = 0;
+	  s->child_msg_type = (MOD_MSG_START + 1);
 
 	  if(sys_id() == BASE_STATION_ADDRESS) {
 		  s->sr.parent = sys_id();
@@ -136,6 +139,19 @@ static int8_t tree_routing_module(void *state, Message *msg)
 	  //
 	  return SOS_OK;
 	}
+
+  case MSG_REMOVE_CHILD:
+	{
+		uint16_t old_child;
+		uint8_t i;
+
+		old_child = msg->saddr;
+		for (i = 0; i < 10; i++){
+			if(s->children[i] == old_child)
+				s->children[i] = sys_id();
+		}
+	}
+	break;
 
   case MSG_NEW_CHILD:
 	{
@@ -159,6 +175,7 @@ static int8_t tree_routing_module(void *state, Message *msg)
 		  s->children[new_index] = new_child;
 	  // TODO: add some stuff to remove dead children?
 	}
+	break;
 
   case MSG_TR_DATA_PKT:
 	{
@@ -195,6 +212,8 @@ static int8_t tree_routing_module(void *state, Message *msg)
  	  hdr->dst_pid = msg->sid; 
  	  hdr->originhopcount = s->sr.hop_count;
 	  hdr->parentaddr = s->sr.parent;
+	  memcpy(hdr->children, s->children, 10*sizeof(uint16_t));
+
       DEBUG("<TR> Request to send data\n");
 	  return tr_send_data(s, msg_len, msg->saddr, hdr);
 	}
@@ -222,8 +241,8 @@ static int8_t tree_routing_module(void *state, Message *msg)
 		  DEBUG("<TR> Request to send data to child %d\n", curr_child);
 
 		  sys_post_net(
-				 msg->sid, 
-				 (MOD_MSG_START + 1),
+				 DFLT_APP_ID0, 
+				 s->child_msg_type,
 				 msg_len, 
 				 hdr,     
 				 SOS_MSG_RELEASE, 
@@ -325,6 +344,9 @@ static void choose_parent(tree_route_state_t *s)
 	my_id = (uint16_t *) sys_malloc(sizeof(uint16_t));
 	*my_id = sys_id();
 
+	// first we remove ourself from anyone within our range
+	sys_post_net(TREE_ROUTING_PID, MSG_REMOVE_CHILD, sizeof(uint16_t), my_id, SOS_MSG_RELEASE, BCAST_ADDRESS);
+	// and then tell our new parent that we are the new child
 	sys_post_net(TREE_ROUTING_PID, MSG_NEW_CHILD, sizeof(uint16_t),my_id,SOS_MSG_RELEASE, s->sr.parent);
   }
 #ifdef PC_PLATFORM
@@ -402,6 +424,11 @@ static uint8_t tr_get_hdr_size(func_cb_ptr p)
   return sizeof(tr_hdr_t);
 }
 
+static uint8_t tr_set_child_msg_type(func_cb_ptr p, uint8_t new_type){
+    tree_route_state_t *s = (tree_route_state_t *) sys_get_state();	
+	s->child_msg_type = new_type;
+	return SOS_OK;
+}
 
 #ifndef _MODULE_
 mod_header_ptr tree_routing_get_header()
