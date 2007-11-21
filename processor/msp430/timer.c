@@ -77,6 +77,7 @@ void timer_setInterval(int32_t val)
   uint16_t interval;
 
 
+  // convert val from msec into clocktics
   interval = val << TIMERB_ASYNC_SHIFT_VAL;
   
   ENTER_CRITICAL_SECTION();
