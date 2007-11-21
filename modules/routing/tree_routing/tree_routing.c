@@ -167,7 +167,6 @@ static int8_t tree_routing_module(void *state, Message *msg)
 			  return SOS_OK;
 		  else if (s->children[i] == sys_id() || s->children[i] == BCAST_ADDRESS ){
 			  new_index = i;
-		      break;
 		  }
 	  }
 

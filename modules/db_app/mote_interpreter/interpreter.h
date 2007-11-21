@@ -3,11 +3,13 @@
 
 #include <sys_module.h>
 
-#define MSG_NEW_QUERY (MOD_MSG_START + 1)
+#define MSG_FROM_PARENT (MOD_MSG_START + 1)
 #define MSG_QUERY_REPLY (MOD_MSG_START + 2)
 #define MSG_VALIDATE (MOD_MSG_START + 3)
 #define MSG_DISPATCH (MOD_MSG_START + 4)
-#define MSG_REMOVE (MOD_MSG_START + 5)
+
+#define REMOVE 1
+#define NEW_QUERY 2
 
 #define NUM_SENSORS 8
 #define BASE_STATION_ADDRESS 1

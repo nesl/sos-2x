@@ -6,6 +6,7 @@ import os
 from struct import unpack
 import readline
 
+NEW_QUERY = 2
 comp_ops = {'<':1, '>':2, '=':3, '<=':4, '>=':5, '!=':6}
 rel_ops = {'and':1, 'or':2, 'and not':3, 'or not':4, 'not':5}
 
@@ -65,13 +66,24 @@ class DB_Interface():
 			self.sensor[b_name] = s_list
 	
 		default_board = 'mts310'
+		self.query_files = {}
 		self.curr_board = ""
 		self.curr_queries = {}
 		self.curr_id = 1
 		self.install_drivers(default_board)
 		self.srv.register_trigger(self.response_handler, sid=128, type=34)
-		self.out = 0
+		self.out = self.standard_out
 
+	def standard_out(self, hdr, values):
+		qid = hdr[0]
+		if qid in self.query_files.keys():
+			f = self.query_files[qid]
+			out_str = ";".join([str(e) for e in hdr] + [str(e) for e in values])
+			f.write("%s\n" %out_str)
+		else:
+			print hdr
+			print values
+	  
 	def setup_output(self, output_method):
 		self.out = output_method
 
@@ -103,8 +115,7 @@ class DB_Interface():
 		hdr = unpack('<HHBB', hdrstr)
 		values = unpack('<'+hdr[2]*'BH', valuesstr)
 
-		print hdr
-		print values
+		self.out(hdr, values)
 		
 #		(qid, n_remain, n_results) = pysos.unpack('<HHB', msg['data'])
 #		results = pysos.unpack('<'+n_results*'BH', msg['data'])
@@ -156,7 +167,8 @@ class DB_Interface():
 
  		data_list = [i for i in sub] + [i for i in sensor_list] + [i for i in qual]
 
-		data = pysos.pack('<HHIBBH' + num_trigs*'BB' + num_sensor*'B' + num_qual * 'BBH', 
+		data = pysos.pack('<BHHIBBH' + num_trigs*'BB' + num_sensor*'B' + num_qual * 'BBH', 
+			NEW_QUERY,
 			qid,
 			total_samples, 
 			interval,
@@ -170,8 +182,8 @@ class DB_Interface():
 		return True
 	
 	def remove_queries(self):
-	  data = pysos.pack('<B', 0)
-	  self.srv.post(daddr =1, saddr=0, did=128, sid=128, type=37,data=data )
+	  data = pysos.pack('<BB',1, 0)
+	  self.srv.post(daddr =1, saddr=0, did=128, sid=128, type=33,data=data )
 
 	def parse_query(self, query):
 			# first check for the remove query command
@@ -251,7 +263,14 @@ class DB_Interface():
 						trig_list.append(new_trig)
 						rest = words.group(3)
 						words = re.match(r'trigger\s*\(\s*([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_]+)\s*\)\s*(.*)', rest)
-			
+
+			words = re.match(r'to\s+file\s+(\S+)\s*(.*)', rest)
+			if words:
+				rest = words.group(2)
+ 				out_f_name = words.group(1)
+ 				out_f = open(out_f_name, 'w')
+				self.query_files[self.curr_id] = out_f
+
  			ret = self.insert_new_query(self.curr_id, num_samples, sample_rate, trig_list, s_list, qual_list)
  			if ret:
  				print "your query id is: %d" %self.curr_id

@@ -97,74 +97,77 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 				}
 				break;
 
-			case MSG_REMOVE:
+			case MSG_FROM_PARENT:
 				{
-					// this message will remove all current queries from the node
 					uint8_t msg_len = msg->len;
 					uint8_t *payload = sys_msg_take_data(msg);
-					if (payload && *payload == 0){
-						int i;
-						for (i = 0; i < s->num_queries;i++){
-							free_query(s->queries[i], i);
-							s->queries[i] = NULL;
-						}
-						SOS_CALL(s->set_chld_msg, set_chld_msg_proto, MSG_REMOVE);
-						sys_post(ROUTING_PID, MSG_SEND_TO_CHILDREN, msg_len, payload, SOS_MSG_RELEASE);
-						SOS_CALL(s->set_chld_msg, set_chld_msg_proto, MSG_NEW_QUERY);
-					}
-				}
-				break;
+					if (!payload)
+						break;
+					
+					switch (payload[0]){
+					  case REMOVE:
+						  if (payload[1] == 0){
+						    int i;
+						    for (i = 0; i < s->num_queries;i++){
+						      free_query(s->queries[i], i);
+						      s->queries[i] = NULL;
+						    }
+					      sys_post(ROUTING_PID, MSG_SEND_TO_CHILDREN, msg_len, payload, SOS_MSG_RELEASE);
+						  }
+						  break;
+						case NEW_QUERY:
+					    {
+								DEBUG("<INTERPRETER> new query\n");
+								uint8_t i=0, j=0;
+								uint8_t *new_query = payload + 1;
 
-			case MSG_NEW_QUERY:
-				{
-					uint8_t msg_len = msg->len; 
-					uint8_t *new_query = sys_msg_take_data(msg);
+								while (i < s->num_queries && s->queries[i] != NULL)
+									i++;
 
-					DEBUG("<INTERPRETER> new query\n");
-					uint8_t i=0, j=0;
-					while (i < s->num_queries && s->queries[i] != NULL)
-						i++;
+								if (i < s->num_queries){
+									query_details_t *query; 
 
-					if (i < s->num_queries){
-						query_details_t *query; 
+									// this will set up the query based on the recieved message
+									query = recieve_new_query(new_query, msg_len);
 
-						// this will set up the query based on the recieved message
-						query = recieve_new_query(new_query, msg_len);
+									DEBUG("<INTERPRETER>\nqid = %d\nnum_queries = %d\ninterval = %d\n", query->qid,
+											query->num_queries, query->interval);
 
-						DEBUG("<INTERPRETER>\nqid = %d\nnum_queries = %d\ninterval = %d\n", query->qid,
-								query->num_queries, query->interval);
-
-						for (j = 0; j < query->num_queries; j++){
-							DEBUG("<INTERPRETER> adding query for sensor: %d\n", query->queries[j]);
-							if (query->queries[j] < NUM_SENSORS){
-                // test to make sure that the sensor isn't already involved in a query
-								if (s->sensor_timers[query->queries[j]] != 0xff){
-									free_query(query, i);
-									sys_led(LED_RED_TOGGLE);
-									query = NULL;
-									break;
+									for (j = 0; j < query->num_queries; j++){
+										DEBUG("<INTERPRETER> adding query for sensor: %d\n", query->queries[j]);
+										if (query->queries[j] < NUM_SENSORS){
+											// test to make sure that the sensor isn't already involved in a query
+											if (s->sensor_timers[query->queries[j]] != 0xff){
+												free_query(query, i);
+												sys_led(LED_RED_TOGGLE);
+											query = NULL;
+											break;
+											}
+											uint8_t tid;
+											tid = (i << 4) | j;
+											s->sensor_timers[query->queries[j]] = tid;
+											sys_timer_start(tid, query->interval, TIMER_REPEAT);
+											DEBUG("<INTERPRETER> timer id: %d for sensor %d\n", tid, j);
+										}
+										query->results[j] = 0;
+									}
+									
+									s->queries[i] = query;
+								} else {
+									DEBUG("<INTERPRETER> No room for a new query\n");
 								}
-
-								uint8_t tid;
-								tid = (i << 4) | j;
-								s->sensor_timers[query->queries[j]] = tid;
-								sys_timer_start(tid, query->interval, TIMER_REPEAT);
-								DEBUG("<INTERPRETER> timer id: %d for sensor %d\n", tid, j);
+							  sys_post(ROUTING_PID, MSG_SEND_TO_CHILDREN, msg_len, payload, SOS_MSG_RELEASE);
 							}
-							query->results[j] = 0;
-						}
-						s->queries[i] = query;
-					} else {
-						DEBUG("<INTERPRETER> No room for a new query\n");
+							break;
+					default:
+							break;
 					}
-
-					sys_post(ROUTING_PID, MSG_SEND_TO_CHILDREN, msg_len, new_query, SOS_MSG_RELEASE);
 				}
 				break;
 
 			case MSG_TIMER_TIMEOUT:
-				{
-					/* for this message type, the byte value in MsgParam holds the timer id
+					{
+						/* for this message type, the byte value in MsgParam holds the timer id
 					 * we can now also use this as the sensor id, and as an index for our query type
 					 */
 					MsgParam *param = (MsgParam *) msg->data;
@@ -195,6 +198,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 #endif
 						}
 					} else if (param->byte == 255){ // our test case
+						/*
 						test_query_t *q = (test_query_t*)sys_malloc(sizeof(test_query_t));
 						q->qid = 4;
 						q->total_samples=10;
@@ -208,6 +212,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 
 						sys_post(s->pid, MSG_NEW_QUERY,sizeof(test_query_t), q, SOS_MSG_RELEASE); 
 						DEBUG("<INTERPRETER> test case\n");
+						*/
 					} else {
 						//sys_led(LED_RED_TOGGLE);
 					}
