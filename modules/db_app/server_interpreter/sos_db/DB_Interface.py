@@ -78,8 +78,10 @@ class DB_Interface():
 		qid = hdr[0]
 		if qid in self.query_files.keys():
 			f = self.query_files[qid]
-			out_str = ";".join([str(e) for e in hdr] + [str(e) for e in values])
-			f.write("%s\n" %out_str)
+			hdr_str = ";".join([str(e) for e in hdr])
+			val_str = ";".join([str(e) for e in values])
+			f.write("hdr: %s\tvalues: %s\n" %(hdr_str, val_str))
+			f.flush()
 		else:
 			print hdr
 			print values
@@ -215,25 +217,27 @@ class DB_Interface():
 				
 			qual_list = []
 			# now get the qualifiers
-			words = re.match(r'where\s+([a-zA-Z0-9\-_]+)\s+([<>=])\s+(\d+)\s+(and|or\s+[a-zA-Z0-9\-_]+\s+[<>=]\s+\d+)*\s*(.*)', rest)
+			words = re.match(r'where\s+([a-zA-Z0-9\-_]+)\s+([<>=])\s+(\d+)\s+(.*)', rest)
 			if words:
-					if words.group(1) in self.sensor[board].keys():
-						sen = self.sensor[board][words.group(1)]
-					else:
-						print "invalid sensor %s" %words.group(1)
-						return
-
- 					if words.group(2) in comp_ops.keys():
-						op = comp_ops[words.group(2)] << 4
-						op = op | rel_ops['and']
- 					else:
-						print "invalid comparison operator %s" %words.group(2)
-						return
-					value = int(words.group(3))
-					if sen.get_value() not in s_list:
-						s_list.append(sen.get_value())
-					qual_list.append([sen.get_value(), op, value])
+					new_qual = self.parse_qualifier(board, words.group(1), words.group(2), words.group(3))
+					if new_qual[0] not in s_list:
+						s_list.append(new_qual[0])
+					qual_list.append(new_qual)
 					rest = words.group(len(words.groups()))
+ 					print words.groups()
+ 					while (rest[0] != 'w'):
+						words = re.match(r'(and|or)\s+([a-zA-Z0-9\-_]+)\s+([<>=])\s+(\d+)\s+(.*)', rest)
+						if words:
+							new_qual = self.parse_qualifier(board, words.group(2), words.group(3), words.group(4))
+							print words.group(1)
+							print words.group(2)
+							print words.group(3)
+							print words.group(4)
+							if new_qual[0] not in s_list:
+								s_list.append(new_qual[0])
+							qual_list.append(new_qual)
+							rest = words.group(len(words.groups()))
+
 
 			# now get the interval and sample number
 			words = re.match(r'with\s+sample_rate\s+(\d+)\s+number_samples\s+(\d+)\s*(.*)', rest)
@@ -275,6 +279,22 @@ class DB_Interface():
  			if ret:
  				print "your query id is: %d" %self.curr_id
  			self.curr_id += 1
+
+	def parse_qualifier(self, board, sensor_name, compare_op, compare_val):
+		if sensor_name in self.sensor[board].keys():
+			sen = self.sensor[board][sensor_name]
+		else:
+			print "invalid sensor %s" %sensor_name
+			return
+
+		if compare_op in comp_ops.keys():
+			op = comp_ops[compare_op] << 4
+			op = op | rel_ops['and']
+		else:
+			print "invalid comparison operator %s" %compare_op
+			return
+		value = int(compare_val)
+		return [sen.get_value(), op, value]
 
 if __name__ == '__main__':
 		db = DB_Interface()

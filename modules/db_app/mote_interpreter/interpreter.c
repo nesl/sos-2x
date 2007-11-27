@@ -112,6 +112,9 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 						      free_query(s->queries[i], i);
 						      s->queries[i] = NULL;
 						    }
+								sys_led(LED_RED_OFF);
+								sys_led(LED_GREEN_OFF);
+								sys_led(LED_YELLOW_OFF);
 					      sys_post(ROUTING_PID, MSG_SEND_TO_CHILDREN, msg_len, payload, SOS_MSG_RELEASE);
 						  }
 						  break;
@@ -138,6 +141,7 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 										if (query->queries[j] < NUM_SENSORS){
 											// test to make sure that the sensor isn't already involved in a query
 											if (s->sensor_timers[query->queries[j]] != 0xff){
+												DEBUG("<INTERPRETER> collison for query on sensor: %d\n", query->queries[j]);
 												free_query(query, i);
 												sys_led(LED_RED_TOGGLE);
 											query = NULL;
@@ -173,9 +177,6 @@ static int8_t interpreter_msg_handler(void *state, Message *msg){
 					MsgParam *param = (MsgParam *) msg->data;
 
 					DEBUG("<INTERPRETER> Timer Timeout, for timer%d\n", param->byte);
-
-					if (param->byte > NUM_SENSORS && param->byte != 255)
-						break;
 
 					uint8_t q_index;
 					uint8_t s_index;
