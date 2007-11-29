@@ -1,0 +1,60 @@
+SOS Database Guide
+==================
+
+The SOS Database is a new application with the intent on fascilitating the gathering of sensor data.  In many ways, it is similar to link:http://telegraph.cs.berkeley.edu/tinydb/[TinyDB] and link:http://research.cens.ucla.edu/projects/2007/Systems/Tenet/[Tenet], both of which are built for TinyOS.  
+
+SOS DB uses a simple SQL subset intended on getting data from sensors.  At a later date it will be extended to allow more advanced functionality on the data sets, some possibilities are computing the fft, or a curve of best fit.  The purpose of this tutorial are to explain how to set up a network using SOS DB, the required modules, and the SQL commands needed.
+
+Currently the SOS DB uses the Tree Routing, and Neighboor modules to handle the routing of messages, but it is possible to use an alternative routing module, as long as it provides some specific capabilities, and response to some specific message types.  This is explained in more detail link:sos_db_routing.html[here].
+
+Setting up the Motes
+--------------------
+As with most SOS applications, SOS db requiers:
+
+- A micro server that loads additional modules, and query commands, into the deployed sensor network .  
+
+- At least one node with a connection to a micro server.  This node is able to recieve new modules, and query commands, from the micro server.  With a routing protocol, this node will typically be the root node, and is in charge of also sending query results to the micro server.
+
+- Additional sensor nodes that can communicate with the root node.
+
+When everything is installed on the nodes, the SOS Server needs to be started.
+
+Building the SOS DB Kernel
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+All of the nodes can run the same set of applications regardless of wether they are the root node or not.  To build the SOS DB kernel:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/modules/sos_db/mote_interpreter/app/
+make micaz 
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Installing the SOS DB Kernel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Next you need to install this kernel on all of the nodes which will be a part of the network, specifying the node connected to the micro-serve with address 1.
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cd $SOSROOT/modules/sos_db/mote_interpreter/app/
+make micaz install PROG=mib510 PORT=/dev/ttyUSB0 ADDRESS=1
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+With a new address value for each node.
+
+If you are using a different programming board, such as those on the Ceiling Array, the PROG and PORT values need to be changed.  
+
+Alternative
+~~~~~~~~~~~
+One could also install install all of the modules seperately.  To do this, you will do the following:
+
+- Install a Blank Kernel
+- Install the neighboor module
+- Install the tree_routing module
+- Install the mote_interpreter module
+
+Inserting Queries
+-----------------
+
+A Python application is provided which implements the SQL-subset, and allows for easy interaction with the SOS DB network.  
+
+Next: link:sos_db_interpreter.html[Overview of the SOS DB interpreter]

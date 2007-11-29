@@ -1,0 +1,139 @@
+SOS DB Server Interpreter
+=========================
+
+The Server Interpreter is provided to as a simple implementation of how to interact with the Mote Interpreter, running on the nodes.
+
+It allows a user to specify a number of sensor drivers to use via xml files, interprets a small subset of SQL, and can log the sensor results.
+
+Running the Interpreter
+-----------------------
+The interpreter requires installation of link:pysos.html[PySOS], and of course python.  
+
+On startup, it connects to the SOS Server via PySOS, and loads the default sensor drivers, and then provides a command prompt for users to enter queries.
+
+If modules already exist on the network with the same module id, it will not remove them, and assumes they are the correct drivers.  This will be made more robust at a later date. 
+
+Making Queries
+~~~~~~~~~~~~~~
+A basic query in SOS DB looks like:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--> select mag-2 from mts310 with sample_rate 1046 number_samples 20
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+where mag-2 is the sensor we want read and mts310 is our sensor board type.
+
+These are the required parts for every query.
+
+The sensors provided, and the board types available, are all declared in sensor.xml.  To get multiple sensor values, the command would look like:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--> select mag-2,mag-1,x-accel from mts310 with sample_rate 100 number_samples 1
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Note that the interpreter currently does not accept spaces between the listing of sensors.  
+
+Setting Query Qualifactions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In SQl one can issue a query such as:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+select * from table where id = 10
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+in SOS DB, the same is possible with a command such as:
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--> select mag-2 from mts310 where mag-2 > 100 and mag-1 < 900 with sample_rate 100 number_samples 10
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Notice that we are setting a qualifaction for mag-1, but it is not listed in the select list.  By default, the interpreter will insert mag-1 into the select list for you.  Additonally, you can combine qualifactions just as you would in SQL with AND and OR.  
+
+Triggers
+~~~~~~~~
+SOS DB provides the capability to fire triggers.  The current implementation only supports toggling of LEDS, but later it will be extended to send messages to user defined modules.
+
+an example:
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--> select x-accel from mts310 with sample_rate 100 number_samples 10 on fire trigger(led, YELLOW_TOGGLE)
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+this will toggle the yellow led everytime the x-accel sensor is read.  This can easily be combined with the qualifiers to fire triggers only when the sensor value is acceptable. The sytanx for Trigger is:
+
+trigger(command_name, value)
+
+Several triggers can be specified in the same query, and are seperated by a ','.
+
+currently only the led command_name is supported
+and for led, the following values are defined:
+
+- YELLOW_TOGGLE
+- GREEN_TOGGLE
+- RED_TOGGLE
+- RED_ON
+- GREEN_ON
+- YELLOW_ON
+- RED_OFF
+- YELLOW_OFF
+- GREEN_OFF
+
+Logging the values To a file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+By default, all sensor results are printed users console as they come in, which can be messy and interrupts inputting new commands.  To alieve this issue, one can log all results to a file with a query such as:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--> select mag-2 from mts310 with sample_rate 100 number_samples 10 to file query_results
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Here query_results is the name of the file you want the logs to be saved in.  If it does not already exist, the interpreter will create it, and if it does already exist, all the old data will be lost.
+
+General Syntax of a Query
+~~~~~~~~~~~~~~~~~~~~~~~~~
+If you want to use all of the capabilities of the queries, the ordering is important.  The ordering is as such:
+
+- selection of sensors
+- board type
+- any qualifications
+- sample_rate and number_samples
+- any triggers
+- file direction
+
+Declaring the Sensor Drivers
+----------------------------
+The provided sensors are all declared in an xml file named sensors.xml.  An entry would look like:
+
+[c]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+<board>
+ <board-name>mts310</board-name>
+	 <sensor>
+		 <provided-sensors>
+			 <pair>
+				 <name>x-accel</name>
+					<value>4</value>
+				</pair>
+				<pair>
+				 <name>y-accel</name>
+					<value>5</name>
+				</pair>
+			</pair-sensors>
+			<locetion>/modules/sensordrivers/mts310/accel</location>
+			<file-name>accel_sensor</file-name>
+		</sensor>
+		<sensor> more sensor info here
+		</sensor>
+</board>
+<board> more boards here
+</board>
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+this declares a new board type mts310 and one sensor driver for this board.  This is the accel sensor driver that we all know and love.  It provides two sensor names, x-accel and y-accel, and their sensor Ids (this is usually defined in the board's header file).  The only rule is that no two sensor names are the same, and no two sensor values are the same, otherwise the results are undefined.  
+
+by default, mts310 is the assumed board.
+
+Next: link:sos_db_routing.html[Routing in SOS DB]
