@@ -73,6 +73,14 @@ A tutorial on how to use the SOS test suite for running a batch of applications 
 
 link:test_suite.html[Test Suite Guide]
 
+Using the SOS DB
+----------------
+Instruction on how to use the SOS DataBase application
+
+link:sos_db.html[SOS Database]
+link:sos_db_interpreter.html[SOS DB Interpreter]
+link:sos_db_routing.html[SOS DB Routing]
+
 Adding System Calls
 -------------------
 

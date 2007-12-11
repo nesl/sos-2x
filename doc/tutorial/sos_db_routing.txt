@@ -1,0 +1,15 @@
+Routing in SOS DB
+=================
+
+By default SOS DB uses the Tree Routing protocl provided by SOS, but due to the fact that it does not perform well, It is possible to change this around, with a few limitations on the replacement routing protocol.
+
+The requirements are:
+- every node is able to send messages to the Root, so that it can be forwarded to the micro server.
+
+- a message coming from the micro server must be able to reach all of the nodes in the network, without sending duplicate messages the any node.
+
+For messages being sent to nodes from the micro server, the protocol should respond to the sos message type (MOD_MSG_START + 4), which signifies that the message is being sent to all the children deeper in the network.  When each message is forwarded by the routing protocl, SOS DB expects each node to recieve the message so that it can act on it (typically this message is a new query, or a remove command).  When the message is recieved from the parent node, SOS DB should recieve a message of type: (MOD_MSG_START+1).
+
+When sending messages up the network, to the micro-server,  messages are sent with the message type: (MOD_MSG_START + 2).  The module does not expect these messages to be sent to SOS DB on each hop, only the root node expects to recieve this message.  Finally, each message sent allocates the routing header prior to sending it to the routing module, and this size needs to be made easily available via a SOS_CALL.
+
+Previously, Tree Routing did not have these capabilities, but it has been extended to keep track of up to 10 children nodes, and responds to all of these messages.

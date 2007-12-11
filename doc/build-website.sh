@@ -44,6 +44,9 @@ $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --att
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute iconsdir=../icons --attribute=styledir=.. generic_test.txt
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute icondsir=../icons --attribute=styledir=.. generic_kernel_test.txt
 $ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute icondsir=../icons --attribute=styledir=.. ceiling_array.txt
+$ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute icondsir=../icons --attribute=styledir=.. sos_db.txt 
+$ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute icondsir=../icons --attribute=styledir=.. sos_db_interpreter.txt 
+$ASCIIDOC_HTML --conf-file=../${LAYOUT}.conf --attribute icondsir=../icons --attribute=styledir=.. sos_db_routing.txt 
 
 cd ..
 
