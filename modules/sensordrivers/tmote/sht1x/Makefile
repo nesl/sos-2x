@@ -1,7 +1,8 @@
 # PROJ is the file name of your module.
-PROJ = tsr_sensor
-SB = tmote
+PROJ = sht11
+SB = sht11
 ROOTDIR = ../../../../..
+
 INCDIR += -I$(ROOTDIR)/modules/sensordrivers/include
 
 include $(ROOTDIR)/modules/Makerules
