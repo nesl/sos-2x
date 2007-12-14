@@ -9,26 +9,12 @@
 
 #include <sos_types.h>
 
-// Universal sensor ID's
-// Starts with common sensors found across all platforms.
-// Add new sensor ID's here when you add drivers for them.
-typedef enum {
-	LIGHT_AMBIENT_SENSOR    = 0,
-	LIGHT_PAR_SENSOR,
-	HUMIDITY_SENSOR,
-	TEMPERATURE_SENSOR,
-	INTERNAL_TEMPERATURE_SENSOR,
-	ACCEL_X_SENSOR,
-	ACCEL_Y_SENSOR,
-	MIC_SENSOR,
-	MAG_X_SENSOR,
-	MAG_Y_SENSOR,
-    ACCEL_SENSOR,
-} sensor_id_t;
-
-// Update this number if the total number of sensors
-// increases beyond this current limit.
-#define MAX_NUM_SENSORS   8
+// All the sensor ID's that may be used in this configuration
+// are defined in this file.
+// It is a platform specific file and can be found in respective 
+// include directories.
+// It also includes the definition of MAX_NUM_SENSORS
+#include <sensor_types.h>
 
 // Sensor status indicated by sensor driver.
 typedef enum {

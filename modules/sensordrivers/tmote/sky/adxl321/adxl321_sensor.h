@@ -1,0 +1,16 @@
+#ifndef _ADXL321_H_
+#define _ADXL321_H_
+
+typedef enum {
+	BANDPASS_0_5	= 0,
+	BANDPASS_5_10,
+	BANDPASS_10_15,
+	BANDPASS_15_20,
+	BANDPASS_20_25,
+	BANDPASS_25_30,
+	BANDPASS_30_35,
+	BANDPASS_35_40,
+	FILTER_NONE,
+} filter_type_t;
+
+#endif

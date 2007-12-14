@@ -81,6 +81,19 @@ DEFS += -DUSE_PREEMPTION_PROFILER
 DEFS += -DSOS_USE_PREEMPTION
 endif
 
+##################################################
+# Sensor Board options
+#################################################
+ifeq ($(SB), tmote)
+DEFS += -DTMOTE_SENSOR_BOARD
+endif
+ifeq ($(SB), tmote_impact)
+DEFS += -DTMOTE_IMPACT_SENSOR_BOARD
+endif
+ifeq ($(SB), tmote_invent)
+DEFS += -DTMOTE_INVENT_SENSOR_BOARD
+endif
+
 
 #################################################
 # MINI-ELF LOADER
