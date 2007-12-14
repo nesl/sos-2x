@@ -39,7 +39,7 @@ SRCS += adc_driver.c interrupt.c
 # Sky sensor board is being used.
 ifeq ($(SB), tmote)
 SRCS += sht1x_comm.c
-VPATH += $(ROOTDIR)/modules/sensordrivers/tmote/new_api/sht1x
+VPATH += $(ROOTDIR)/modules/sensordrivers/tmote/sky/sht1x
 endif
 
 CFLAGS += -Os -Wa,-adhlmsn=$(notdir $(<:.c=.lst))

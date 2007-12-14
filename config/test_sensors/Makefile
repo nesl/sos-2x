@@ -4,7 +4,7 @@
 
 PROJ = test_sensors_app
 MODE = new_sensing_api
-#SB = tmote
+SB = tmote
 ROOTDIR = ../..
 INCDIR += -I$(ROOTDIR)/modules/sensordrivers/include
 
@@ -23,10 +23,10 @@ SRCS += sht11.c
 SRCS += test_sensor.c
 
 # Paths
-vpath test_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/new_api/test/
-vpath par_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/new_api/par/
-vpath tsr_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/new_api/tsr/
-vpath sht11.c $(ROOTDIR)/modules/sensordrivers/tmote/new_api/sht1x/
+vpath test_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/sky/test/
+vpath par_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/sky/par/
+vpath tsr_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/sky/tsr/
+vpath sht11.c $(ROOTDIR)/modules/sensordrivers/tmote/sky/sht1x/
 endif
 
 ifeq ($(SB), tmote_invent)
