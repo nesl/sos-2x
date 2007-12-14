@@ -40,8 +40,8 @@ int8_t interrupt_init() {
 	P2SEL &= ~BV(7);
 	// Set Input direction
 	P2DIR &= ~BV(7);
-	// Set low-to-high interrupt edge select
-	P2IES &= ~BV(7);
+	// Set high-to-low interrupt edge select
+	P2IES |= BV(7);
 	// Enable interrupt
 	P2IE |= BV(7);
   	

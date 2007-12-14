@@ -1,10 +1,10 @@
 # -*-Makefile-*-
-# Testing ALL sensors on Tmote Sky
+# Testing ALL sensors on Tmote platform
 # NOTE: This is for testing the new sensing sub-system only.
 
 PROJ = test_sensors_app
 MODE = new_sensing_api
-SB = tmote
+SB = tmote_impact
 ROOTDIR = ../..
 INCDIR += -I$(ROOTDIR)/modules/sensordrivers/include
 
@@ -43,6 +43,21 @@ SRCS += test_sensor.c
 vpath test_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/invent/test/
 vpath light_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/invent/light/
 vpath mic_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/invent/mic/
+endif
+
+ifeq ($(SB), tmote_impact)
+# Testing custom ADXL321 sensor board for Tmote Sky.
+# Add necessary source files.
+# Test ADXL321 Impact sensor board
+SRCS += accel_sensor.c
+# Application module to pull sensor data
+SRCS += test_sensor.c
+# Include directory for the ADXL321 sensor board
+INCDIR += -I$(ROOTDIR)/modules/sensordrivers/tmote/sky/adxl321
+
+# Paths
+vpath test_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/sky/adxl321/test/
+vpath accel_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/sky/adxl321/
 endif
 
 include $(ROOTDIR)/config/Makerules

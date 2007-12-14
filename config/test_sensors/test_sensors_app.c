@@ -37,3 +37,17 @@ void sos_start(void)
 }
 #endif
 
+#ifdef TMOTE_IMPACT_SENSOR_BOARD
+mod_header_ptr accel_sensor_get_header();
+
+/**
+ * application start
+ * This function is called once at the end od SOS initialization
+ */
+void sos_start(void)
+{
+	ker_register_module(accel_sensor_get_header());
+	ker_register_module(test_sensor_get_header());
+}
+#endif
+

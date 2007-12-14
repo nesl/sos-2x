@@ -132,8 +132,8 @@ static int8_t accel_sensor_feedback(func_cb_ptr cb, sensor_driver_command_t comm
 					// GIO[0,2,3] control the mux for bandpass filters
 					P2SEL &= ~(BV(0)|BV(1)|BV(3)|BV(6));
 					P2DIR |= (BV(0)|BV(1)|BV(3)|BV(6));
-					// Set SHDN to LOW to turn ON the sensor board.
-					P2OUT &= ~BV(1);
+					// Set SHDN to HIGH to turn ON the sensor board.
+					P2OUT |= BV(1);
 					s->state = DRIVER_ENABLE;
 					if (context == NULL) return SOS_OK;
 					filter_type_t filter = *((filter_type_t *)context);
@@ -161,8 +161,8 @@ static int8_t accel_sensor_feedback(func_cb_ptr cb, sensor_driver_command_t comm
 					return SOS_OK;
 				}
 				case DRIVER_ENABLE: {
-					// Turn OFF the sensor.
-					P2OUT |= BV(1);
+					// Turn OFF the sensor (Active LOW shutdown).
+					P2OUT &= ~BV(1);
 					s->state = DRIVER_DISABLE;
 					return SOS_OK;
 				}
@@ -319,8 +319,8 @@ int8_t accel_sensor_msg_handler(void *state, Message *msg) {
 			P2SEL &= ~(BV(0)|BV(1)|BV(3)|BV(6));
 			P2DIR |= (BV(0)|BV(1)|BV(3)|BV(6));
 
-			// Set SHDN high by default to turn OFF the sensor board.
-			P2OUT |= BV(1);
+			// Set SHDN low by default to turn OFF the sensor board.
+			P2OUT &= ~BV(1);
 
 			// Sensor is disabled by default. Do not turn it ON here.
 			s->state = DRIVER_DISABLE;
