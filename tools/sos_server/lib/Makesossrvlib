@@ -2,6 +2,8 @@
 
 # Makerules for including the SOS Server Client Library
 
+MACHINE = $(shell uname -m)
+
 VPATH += $(ROOTDIR)/tools/sos_server/lib
 VPATH += $(ROOTDIR)/tools/sos_server/src
 
@@ -41,7 +43,11 @@ endif
 
 ifeq ($(MAKECMDGOALS), ppc)
 #SRCS += sossrv.c sock_utils.c parsecmd.c dev_serial_mac.c dev_network.c
+ifeq ($(MACHINE), i386)
+CFLAGS += -DLLITTLE_ENDIAN
+else
 CFLAGS += -DBBIG_ENDIAN
+endif
 LDFLAGS += -framework IOKit -framework CoreFoundation
 TRG=
 endif
