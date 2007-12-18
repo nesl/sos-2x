@@ -78,12 +78,12 @@ int8_t test_sensor_msg_handler(void *state, Message *msg) {
 
 static void user_isr() {
 	test_sensor_state_t *s = (test_sensor_state_t*)sys_get_state();
-	sensor_id_t sensor[2] = {ACCEL_X_SENSOR, ACCEL_Y_SENSOR, };
+	sensor_id_t sensor[1] = {ACCEL_X_SENSOR};
 
 	LED_DBG(LED_RED_TOGGLE);
 	if (s->user_pin == 0) {
 		s->user_pin = 1;
-		sys_sensor_start_sampling(sensor, 2, &(s->ctx), &(s->filter));
+		sys_sensor_start_sampling(sensor, 1, &(s->ctx), &(s->filter));
 	} else {
 		s->user_pin = 0;
 		sys_sensor_stop_sampling(ACCEL_X_SENSOR);
