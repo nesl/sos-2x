@@ -12,7 +12,6 @@
 #define DEBUG(...)
 #endif
 
-
 typedef struct {
 	sos_pid_t driver_id[MAX_NUM_SENSORS];		//! Process id of the sensor driver
 } sensor_state_t;
@@ -202,7 +201,7 @@ int8_t ker_sys_sensor_stop_sampling(sensor_id_t sensor) {
 int8_t ker_sensor_stop_sampling(sos_pid_t app_id, sensor_id_t sensor) {
 	if ((app_id == NULL_PID) ||
 		(sensor > MAX_NUM_SENSORS) ||
-		(s.driver_id[sensor] != NULL_PID)) {
+		(s.driver_id[sensor] == NULL_PID)) {
 		return -EINVAL;
 	}
 
