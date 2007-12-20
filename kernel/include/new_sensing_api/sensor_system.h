@@ -16,21 +16,25 @@
 // It also includes the definition of MAX_NUM_SENSORS
 #include <sensor_types.h>
 
+
 // Sensor status indicated by sensor driver.
-typedef enum {
+enum {
 	SENSOR_DATA					= 0,
 	SENSOR_DRIVER_UNREGISTERED,
 	SENSOR_SAMPLING_STOPPED,
 	SENSOR_SAMPLING_ERROR,
 	SENSOR_STATUS_UNKNOWN		= 0xFF,
-} sensor_status_t;
+};
+
+typedef uint8_t sensor_status_t;
 
 // Sensor data is wrapped in this structure
 // to provide additional meta-data to the application.
 typedef struct {
 	sensor_status_t status;
 	sensor_id_t sensor;
-	unsigned int num_samples;
+	//unsigned int num_samples;
+	uint16_t num_samples;
 	uint16_t buf[];
 } sensor_data_msg_t;
 
