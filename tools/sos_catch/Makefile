@@ -1,16 +1,36 @@
 # -*-Makefile-*- #
 
-PROJ = surge_dump
+PROJ = new_sensor_dump
 OBJS = sos_catch.o
 ROOTDIR = ../..
+SB = tmote_impact
+
+DEFS += -DNEW_SENSING_API
+
+ifeq ($(SB), tmote)
+DEFS += -DTMOTE_SENSOR_BOARD
+# Path to platform specific sensor types file
+INCDIR += -I$(ROOTDIR)/platform/tmote/include/
+endif
+
+ifeq ($(SB), tmote_invent)
+DEFS += -DTMOTE_INVENT_SENSOR_BOARD
+# Path to platform specific sensor types file
+INCDIR += -I$(ROOTDIR)/platform/tmote/include/
+endif
+
+ifeq ($(SB), tmote_impact)
+DEFS += -DTMOTE_IMPACT_SENSOR_BOARD
+# Path to platform specific sensor types file
+INCDIR += -I$(ROOTDIR)/platform/tmote/include/
+endif
+
+CFLAGS += $(DEFS)
 
 SRCS += $(PROJ).c
 
-# The path to the tree routing header:
-INCDIR += -I$(ROOTDIR)/modules/routing/tree_routing/
-
-# The path to the surge header:
-INCDIR += -I$(ROOTDIR)/modules/demos/surge/
+# Path to new sensing API include files
+INCDIR += -I$(ROOTDIR)/kernel/include/new_sensing_api/
 
 # Library for sqlite3:
 LDFLAGS += -lsqlite3
