@@ -8,6 +8,21 @@ sys.stderr = open("stderr", "w")
 from threading import Lock
 import time
 import struct
+import thread
+
+EVT_RESULT_ID = wx.NewId()
+
+def EVT_RESULT(win, func):
+    """Define Result Event."""
+    win.Connect(-1, -1, EVT_RESULT_ID, func)
+
+class ResultEvent(wx.PyEvent):
+    """Simple event to carry arbitrary result data."""
+    def __init__(self, data):
+        """Init Result Event."""
+        wx.PyEvent.__init__(self)
+        self.SetEventType(EVT_RESULT_ID)
+        self.data = data
 
 class MyFrame(wx.Frame):
 	def __init__(self, parent, id, title):
@@ -28,6 +43,7 @@ class MyFrame(wx.Frame):
 		self.sequence = 0
 		self.value = 0
 		self._rcvLock = Lock()
+        EVT_RESULT(self, self.PlotGraph)
 
 	def CreateGraphs(self, sensorid):
 		"""Add all graphs for displaying sensor data.
@@ -53,42 +69,38 @@ class MyFrame(wx.Frame):
 			print('Could not connect to SOS server..')
 			self.Close()
 		# Register the listener function
-		self.srv.register_trigger(self.PlotGraph, type=0x81)
+		self.srv.register_trigger(self.GetData, type=0x81)
 
-	def PlotGraph(self, msg):
+	def GetData(self, msg):
 		"""Update the graph on receiving sensor data."""
 		self._rcvLock.acquire()
 		print ('Sequence %d received.'%(self.sequence))
-		
 		# unpack data to get sensor id
 		(status, sensor, num_samples) = struct.unpack("<BBH", msg['data'][:self.SENSOR_DATA_HDR_SIZE]) 
 		print('Status: %d Sensor: %d Number of Samples: %d' % (status, sensor, num_samples))
 		# add data to its respective array
 		# clip data to adjust to the window size
-		# plot the new data
-		
 		# list of (x,y) data point tuples
 		data = [(1,2), (2,3), (3,5), (4,6), (5,8), (6,8), (12,10), (13,4)]
 		self.value = (self.value + 1) % 15
 		data[0] = (1, self.value)
-
-		# draw points as a line
-		line = plot.PolyLine(data, colour='red', width=1)
-
-		# also draw markers, default colour is black and size is 2
-		# other shapes 'circle', 'cross', 'square', 'dot', 'plus'
-		marker = plot.PolyMarker(data, marker='triangle')
-
-		# set up text, axis and draw
-		gc = plot.PlotGraphics([line, marker], 'Line/Marker Graph', 'x axis', 'y axis')
-	
-		# Draw graphs for each plot
-		# 'graph' is assigned to a tuple (id i, plot i) in each iteration
-		#for id, graph in self.plotter.iteritems():
-		self.plotter[sensor].Draw(gc, xAxis=(0,15), yAxis=(0,15))
-		print ('Sequence %d processed.'%(self.sequence))
+		# Post data to the plotting function
+        #wx.PostEvent(self, ResultEvent([sensor, data]))
+		print ('Sequence %d processed.' % (self.sequence))
 		self.sequence = self.sequence + 1
 		self._rcvLock.release()
+		
+	def PlotGraph(self, event):
+		"""Plot the graph for corresponding sensor data"""
+		line = plot.PolyLine(event.data[1], colour='red', width=1)
+		# also draw markers, default colour is black and size is 2
+		# other shapes 'circle', 'cross', 'square', 'dot', 'plus'
+		marker = plot.PolyMarker(event.data[1], marker='triangle')
+		# set up text, axis and draw
+		gc = plot.PlotGraphics([line, marker], 'Line/Marker Graph', 'x axis', 'y axis')
+		# Draw graphs for each plot
+		#for id, graph in self.plotter.iteritems():
+		self.plotter[event.data[0]].Draw(gc, xAxis=(0,15), yAxis=(0,15))
 
 	def __del__(self):
 		self.Close()
@@ -101,7 +113,7 @@ class MyFrame(wx.Frame):
 
 def __test():
 	app = wx.App()
-	f = MyFrame(None, 100, "Aceelerometer Data")
+	f = MyFrame(None, -1, "Aceelerometer Data")
 	sensorid = [0, 1]
 	f.CreateGraphs(sensorid)
 	f.ConnectSos()
