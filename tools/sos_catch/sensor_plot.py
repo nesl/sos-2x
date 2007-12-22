@@ -4,17 +4,13 @@ import wx
 import wx.lib.plot as plot
 import pysos
 import sys
-sys.stderr = open("stderr", "w")
 from threading import Lock
 import time
 import struct
 import thread
 
-EVT_RESULT_ID = wx.NewId()
-
-def EVT_RESULT(win, func):
-    """Define Result Event."""
-    win.Connect(-1, -1, EVT_RESULT_ID, func)
+sys.stderr = open("stderr", "w")
+EVT_RESULT_ID = wx.NewEventType()
 
 class ResultEvent(wx.PyEvent):
     """Simple event to carry arbitrary result data."""
@@ -43,7 +39,7 @@ class MyFrame(wx.Frame):
 		self.sequence = 0
 		self.value = 0
 		self._rcvLock = Lock()
-        EVT_RESULT(self, self.PlotGraph)
+		self.Connect(-1, -1, EVT_RESULT_ID, self.PlotGraph)
 
 	def CreateGraphs(self, sensorid):
 		"""Add all graphs for displaying sensor data.
@@ -85,8 +81,9 @@ class MyFrame(wx.Frame):
 		self.value = (self.value + 1) % 15
 		data[0] = (1, self.value)
 		# Post data to the plotting function
-        #wx.PostEvent(self, ResultEvent([sensor, data]))
-		print ('Sequence %d processed.' % (self.sequence))
+		event = ResultEvent([sensor, data])
+		wx.PostEvent(self, event)
+		print ('Sequence %d processed.'%(self.sequence))
 		self.sequence = self.sequence + 1
 		self._rcvLock.release()
 		
