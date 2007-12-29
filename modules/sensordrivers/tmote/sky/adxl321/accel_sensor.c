@@ -267,7 +267,7 @@ int8_t accel_sensor_msg_handler(void *state, Message *msg) {
 			// Setup the channel configuration parameters.
 			// For num_sensors > 1, there may be different configurations for 
 			// different channels, so setup multiple configurations accordingly.
-			s->config.sht0 = ADC_SAMPLE_TIME_64;
+			s->config.sht0 = ADC_SAMPLE_TIME_4;
 			s->config.ref2_5 = ADC_INTERNAL_REF2_5V;
 
 			// Try to register the sensor driver with sensor API for all 

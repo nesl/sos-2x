@@ -15,8 +15,11 @@
 #define TEST_SENSOR_PID			DFLT_APP_ID0
 #define USER_INT_FID			0
 
+#define NUM_SENSORS				1
+
 typedef struct {
 	sample_context_t ctx;
+	sensor_id_t sensor[NUM_SENSORS];
 	filter_type_t filter;
 	uint8_t user_pin;
 } test_sensor_state_t;
@@ -48,14 +51,20 @@ int8_t test_sensor_msg_handler(void *state, Message *msg) {
 			LED_DBG(LED_YELLOW_OFF);
 			s->user_pin = 0;
       		s->ctx.delay = 0;
-			s->ctx.period = 64; // this is in ticks from a 32kHz clock
+			// Set sensor array consisting of sensor ID's
+			// that need to be sampled
+			s->sensor[0] = ACCEL_X_SENSOR;
+			// Set sampling rate to 250 Hz.
+			// Period = 128 in ticks from a 32kHz clock
+			s->ctx.period = 128;
+			// Set continuous non-stop sampling
 			s->ctx.samples = 0;
+			// Set the buffer size to 32 samples
 			s->ctx.event_samples = 32;
+			// No filtering is required right now
 			s->filter = FILTER_NONE;
 			// Module starts sampling when the user button is pressed
-			if (sys_register_isr(PORT2_INTERRUPT, USER_INT_FID) == 0) {
-				LED_DBG(LED_RED_TOGGLE);
-			}
+			sys_register_isr(PORT2_INTERRUPT, USER_INT_FID);
 			break;
 		}
 		case MSG_DATA_READY: {
@@ -66,8 +75,10 @@ int8_t test_sensor_msg_handler(void *state, Message *msg) {
 			break;
 		}
 		case MSG_FINAL: {
-			sys_sensor_stop_sampling(ACCEL_X_SENSOR);
-			sys_sensor_stop_sampling(ACCEL_Y_SENSOR);
+			// Stopping sampling for even one sensor stops
+			// sampling for all other sensors too.
+			sys_sensor_stop_sampling(s->sensor[0]);
+			// Deregister interrupt handler
 			sys_deregister_isr(PORT2_INTERRUPT);
 			break;
 		}
@@ -78,15 +89,14 @@ int8_t test_sensor_msg_handler(void *state, Message *msg) {
 
 static void user_isr() {
 	test_sensor_state_t *s = (test_sensor_state_t*)sys_get_state();
-	sensor_id_t sensor[1] = {ACCEL_X_SENSOR};
 
 	LED_DBG(LED_RED_TOGGLE);
 	if (s->user_pin == 0) {
 		s->user_pin = 1;
-		sys_sensor_start_sampling(sensor, 1, &(s->ctx), &(s->filter));
+		sys_sensor_start_sampling(s->sensor, NUM_SENSORS, &(s->ctx), &(s->filter));
 	} else {
 		s->user_pin = 0;
-		sys_sensor_stop_sampling(ACCEL_X_SENSOR);
+		sys_sensor_stop_sampling(s->sensor[0]);
 	}
 }
 
