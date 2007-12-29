@@ -50,7 +50,7 @@
 //#define ADC_DRIVER_CHANNEL_NULL		0xFF
 
 // Settings for ADC :
-// source clock: SMCLK clocked at 1 Mhz.
+// source clock: ACLK clocked at 32 khz.
 #define ADC_SOURCE_CLOCK				ADC12SSEL_1
 // sample and conversion timings.
 #define ADC_CONVERSION_SC				SHS_0
@@ -97,7 +97,7 @@
 //#define TIMERA_SOURCE_CLK	TASSEL_2
 // Source clock - ACLK (set to 32 Khz in SOS)
 #define TIMERA_SOURCE_CLK	TASSEL_1
-// Clock divider: Set to 8, so effective clock rate is 4 Khz
+// Clock divider: Set to 1, so effective clock rate is 32 Khz
 #define TIMERA_CLK_DIVIDE	ID_0
 // Output mode - Set/Reset
 #define TIMERA_OUTPUT_MODE	OUTMOD_3

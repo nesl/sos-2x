@@ -3,6 +3,7 @@
 
 #include <sos.h>
 #include <adc_driver_private.h>
+#include <systime.h>
 
 //#define LED_DEBUG
 #include <led_dbg.h>
@@ -38,6 +39,7 @@ typedef struct adc_proc_state {
 	sensor_data_msg_t **send_buf_array;
 	uint8_t buf_ptr;
 	uint16_t *buf[2];
+	uint32_t timestamp[2];
 } adc_proc_state_t;
 
 static adc_proc_state_t s;
@@ -284,6 +286,7 @@ static int8_t handle_data_event(uint8_t buf_ptr, uint16_t num_samples) {
 		// Copy samples into the send_buf.
 		send_buf->status = SENSOR_DATA;
 		send_buf->sensor = 0;
+		send_buf->timestamp = s.timestamp[buf_ptr];
 		send_buf->num_samples = num_samples;
 		memcpy(send_buf->buf, s.buf[buf_ptr], num_samples * sizeof(uint16_t));
 		// Call data_ready event for the requested channel.
@@ -308,6 +311,7 @@ static int8_t handle_data_event(uint8_t buf_ptr, uint16_t num_samples) {
 			}
 			s.send_buf_array[i]->status = SENSOR_DATA;
 			s.send_buf_array[i]->sensor = 0;
+			s.send_buf_array[i]->timestamp = s.timestamp[buf_ptr];
 			s.send_buf_array[i]->num_samples = num_samples;
 		}
 		// Move the samples from s.buf[buf_ptr] to above data buffers.
@@ -503,6 +507,9 @@ static int8_t adc_start_sampling() {
 
 		// Enable and start ADC conversion.
 		ADC12CTL0 |= ( ENC | ADC12SC );
+
+		// Timestamp the sample
+		s.timestamp[0] = ker_systime32();
 	} else {
 		// Number of samples > 1. Start periodic sampling.
 		s.mode = ADC_PERIODIC_SAMPLE;
@@ -533,6 +540,9 @@ static int8_t adc_start_sampling() {
 
 		// Start counting, UP mode
 		TACTL |= TIMERA_COUNT_MODE;
+
+		// Timestamp the buffer
+		s.timestamp[0] = ker_systime32();
 	}
 
 	return SOS_OK;
@@ -1010,6 +1020,8 @@ interrupt (DACDMA_VECTOR) dac_dma_interrupt () {
 						DMA0CTL |= ( DMAEN | DMAIE );
 						// Toggle ENC bit in ADC.
 						ADC12CTL0 |= ENC;
+						// Set the buffer timestamp
+						s.timestamp[s.buf_ptr] = ker_systime32();
 					}
 				} else {
 					// Unlimited sampling.
@@ -1031,6 +1043,8 @@ interrupt (DACDMA_VECTOR) dac_dma_interrupt () {
 					DMA0CTL |= ( DMAEN | DMAIE );
 					// Toggle ENC bit in ADC.
 					ADC12CTL0 |= ENC;
+					// Set the buffer timestamp
+					s.timestamp[s.buf_ptr] = ker_systime32();
 				}
 			} else {
 				// More samples need to be collected in this iteration
