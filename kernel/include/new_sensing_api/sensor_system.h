@@ -33,8 +33,8 @@ typedef uint8_t sensor_status_t;
 typedef struct {
 	sensor_status_t status;
 	sensor_id_t sensor;
-	//unsigned int num_samples;
 	uint16_t num_samples;
+	uint32_t timestamp;
 	uint16_t buf[];
 } sensor_data_msg_t;
 
