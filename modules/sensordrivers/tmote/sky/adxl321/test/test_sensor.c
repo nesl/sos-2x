@@ -70,7 +70,9 @@ int8_t test_sensor_msg_handler(void *state, Message *msg) {
 		case MSG_DATA_READY: {
 			size_t len = msg->len;
 			sensor_data_msg_t *b = (sensor_data_msg_t *)sys_msg_take_data(msg);
-			sys_post_uart(TEST_SENSOR_PID, 0x81, len, b, SOS_MSG_RELEASE, BCAST_ADDRESS);
+			// Uncomment this line if you want to send data over UART:
+			//sys_post_uart(TEST_SENSOR_PID, 0x81, len, b, SOS_MSG_RELEASE, BCAST_ADDRESS);
+			sys_post_net(TEST_SENSOR_PID, 0x81, len, b, SOS_MSG_RELEASE, BCAST_ADDRESS);
 			LED_DBG(LED_YELLOW_TOGGLE);
 			break;
 		}
