@@ -1,3 +1,5 @@
+#!/bin/bash
+
 PREFIX=$SOSTOOLDIR
 PATH=$PREFIX/bin:$PATH
 

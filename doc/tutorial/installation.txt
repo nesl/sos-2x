@@ -134,7 +134,8 @@ Install Libraries for Cross-compilation
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/src/avrgcc
-source avrgcc.sh
+chmod +x avrgcc.sh
+./avrgcc.sh
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TIP: Open the avrgcc.sh script in a text editor to see the sequence of
@@ -155,7 +156,8 @@ code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/src/mspgcc
-source build-mspgcc.sh install
+chmod +x build-mspgcc.sh
+./build-mspgcc.sh install
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 NOTE: It is a modified copy of the msp430 build script from TinyOS 1.x.
@@ -179,7 +181,8 @@ Configure SOS Utilities
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/src/
-sh sostools.sh
+chmod +x sostools.sh
+./sostools.sh
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Troubleshooting
@@ -305,7 +308,8 @@ Install Libraries for Cross-compilation
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/src/avrgcc
-source avrgcc.sh
+chmod +x avrgcc.sh
+./avrgcc.sh
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
 TIP: Open the avrgcc.sh script in a text editor to see the sequence of
@@ -329,7 +333,8 @@ Intel based Mac on the website.
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/src/mspgcc
-source build-mspgcc.sh install
+chmod +x build-mspgcc.sh
+./build-mspgcc.sh install
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 NOTE: It is a modified copy of the msp430 build script from TinyOS 1.x. For *Intel based Mac*, 
@@ -355,7 +360,8 @@ Configure SOS Utilities
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/src/
-sh sostools.sh
+chmod +x sostools.sh
+./sostools.sh
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -463,7 +469,8 @@ Configure SOS Utilities
 [c]
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cd $SOSROOT/tools/src/
-sh sostools.sh
+chmod +x sostools.sh
+./sostools.sh
 code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [[advanced]]
