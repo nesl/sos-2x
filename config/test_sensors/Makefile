@@ -4,7 +4,7 @@
 
 PROJ = test_sensors_app
 MODE = new_sensing_api
-SB = tmote_impact
+SB = tmote
 ROOTDIR = ../..
 INCDIR += -I$(ROOTDIR)/modules/sensordrivers/include
 
@@ -19,6 +19,10 @@ SRCS += par_sensor.c
 SRCS += tsr_sensor.c
 # Test SHT1x Temperature and Humidity sensor
 SRCS += sht11.c
+# Test Internal Temperature sensor
+SRCS += temp_sensor.c
+# Test Internal Voltage sensor
+SRCS += volt_sensor.c
 # Application module to pull sensor data
 SRCS += test_sensor.c
 
@@ -27,6 +31,8 @@ vpath test_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/sky/test/
 vpath par_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/sky/par/
 vpath tsr_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/sky/tsr/
 vpath sht11.c $(ROOTDIR)/modules/sensordrivers/tmote/sky/sht1x/
+vpath temp_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/sky/temp/
+vpath volt_sensor.c $(ROOTDIR)/modules/sensordrivers/tmote/sky/volt/
 endif
 
 ifeq ($(SB), tmote_invent)
