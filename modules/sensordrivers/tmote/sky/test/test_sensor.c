@@ -10,7 +10,7 @@
 #define USER_INT_FID			0
 
 typedef struct {
-	sample_context_t ctx[2];
+	sample_context_t ctx[1];
 	uint16_t sequence;
 
 	uint16_t num_samples;
@@ -45,16 +45,10 @@ int8_t test_sensor_msg_handler(void *state, Message *msg) {
 			LED_DBG(LED_GREEN_OFF);
 			LED_DBG(LED_YELLOW_OFF);
 			s->sequence = 0;
-      s->ctx[0].delay = 0;
-			s->ctx[0].period = 4000; // this is in ticks from a 32kHz clock
-			s->ctx[0].samples = 64;
-			s->ctx[0].event_samples = 32;
-      s->ctx[1].delay = 200; // the temperature sensor needs 200ms of warmup
-			s->ctx[1].period = 512; // this is in ticks from the sos timer, e.g. 1024=1second
-			s->ctx[1].samples = 64;
-			s->ctx[1].event_samples = 32;
-			//sys_timer_start(0, 1024*2L, TIMER_REPEAT);
-			//sys_timer_start(0, 1024*2L, TIMER_ONE_SHOT);
+			s->ctx[0].delay = 200; // the temperature sensor needs 200ms of warmup
+			s->ctx[0].period = 512; // this is in ticks from the sos timer, e.g. 1024=1second
+			s->ctx[0].samples = 0;
+			s->ctx[0].event_samples = 1;
 			// Module starts sampling when the user button is pressed
 			if (sys_register_isr(PORT2_INTERRUPT, USER_INT_FID) == 0) {
 				LED_DBG(LED_RED_TOGGLE);
@@ -62,14 +56,6 @@ int8_t test_sensor_msg_handler(void *state, Message *msg) {
 			break;
 		}
 		case MSG_TIMER_TIMEOUT: {
-			/*
-			sensor_id_t sensor = LIGHT_PAR_SENSOR;
-			LED_DBG(LED_RED_TOGGLE);
-			if (sys_sensor_get_data(&sensor, 1, &(s->ctx[0]), NULL) < 0) {
-				LED_DBG(LED_GREEN_TOGGLE);
-				return -EINVAL;
-			}
-			*/
 			break;
 		}
 		case MSG_DATA_READY: {
@@ -93,13 +79,12 @@ int8_t test_sensor_msg_handler(void *state, Message *msg) {
 
 static void user_isr() {
 	test_sensor_state_t *s = (test_sensor_state_t*)sys_get_state();
-	sensor_id_t sensor[2] = {LIGHT_AMBIENT_SENSOR, LIGHT_PAR_SENSOR, };
+	sensor_id_t sensor[2];
 
 	LED_DBG(LED_RED_TOGGLE);
+	sensor[0] = INTERNAL_TEMPERATURE_SENSOR;
+	sensor[1] = INTERNAL_VOLTAGE_SENSOR;
 	sys_sensor_start_sampling(sensor, 2, &(s->ctx[0]), NULL);
-	sensor[0] = TEMPERATURE_SENSOR;
-	sensor[1] = HUMIDITY_SENSOR;
-	sys_sensor_start_sampling(sensor, 2, &(s->ctx[1]), NULL);
 }
 
 #ifndef _MODULE_
