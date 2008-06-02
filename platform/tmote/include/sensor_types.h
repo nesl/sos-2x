@@ -43,6 +43,7 @@ enum {
 	INTERNAL_TEMPERATURE_SENSOR,
 	ACCEL_X_SENSOR,
 	ACCEL_Y_SENSOR,
+	INTERNAL_VOLTAGE_SENSOR,
 };
 // Update this number if the total number of sensors
 // increases beyond this current limit.
