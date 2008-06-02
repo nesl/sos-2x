@@ -148,6 +148,9 @@ enum {
   //! 171 - Microphone sensor
   MIC_SENSOR_PID = (APP_MOD_MIN_PID + 43),
 
+  //! 172 - Voltage Sensor
+  VOLT_SENSOR_PID = (APP_MOD_MIN_PID + 44),
+
 //! PLEASE add the name to modules/mod_pid.c
 };
 
